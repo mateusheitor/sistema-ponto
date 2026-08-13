@@ -161,19 +161,19 @@ async function loadRecords() {
   try {
     let q;
     
-    // Constrói a query com base nos filtros
+    // Constrói a query SEM orderBy para evitar necessidade de índice composto no Firestore
+    // A ordenação é feita no lado do cliente (JavaScript) após buscar os dados
     if (employeeId === 'all') {
       if (dateValue) {
-        q = query(collection(db, 'time_records'), where('dateString', '==', dateValue), orderBy('timestamp', 'asc'));
+        q = query(collection(db, 'time_records'), where('dateString', '==', dateValue));
       } else {
-        // Se não tiver data, pega os últimos 50 (simplificação, Firestore exige índice para queries complexas)
-        q = query(collection(db, 'time_records'), orderBy('timestamp', 'desc')); 
+        q = query(collection(db, 'time_records'));
       }
     } else {
       if (dateValue) {
-        q = query(collection(db, 'time_records'), where('userId', '==', employeeId), where('dateString', '==', dateValue), orderBy('timestamp', 'asc'));
+        q = query(collection(db, 'time_records'), where('userId', '==', employeeId), where('dateString', '==', dateValue));
       } else {
-        q = query(collection(db, 'time_records'), where('userId', '==', employeeId), orderBy('timestamp', 'desc'));
+        q = query(collection(db, 'time_records'), where('userId', '==', employeeId));
       }
     }
 
@@ -185,8 +185,12 @@ async function loadRecords() {
       return;
     }
 
-    snapshot.forEach((doc) => {
-      const data = doc.data();
+    // Ordena os resultados por timestamp no lado do cliente
+    const records = [];
+    snapshot.forEach((d) => records.push({ id: d.id, ...d.data() }));
+    records.sort((a, b) => a.timestamp.toDate() - b.timestamp.toDate());
+
+    records.forEach((data) => {
       const dateStr = data.timestamp.toDate().toLocaleDateString('pt-BR');
       const timeStr = data.timestamp.toDate().toLocaleTimeString('pt-BR');
       

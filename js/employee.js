@@ -1,4 +1,4 @@
-import { auth, onAuthStateChanged, signOut, db, collection, addDoc, query, where, getDocs, orderBy } from './firebase-config.js';
+import { auth, onAuthStateChanged, signOut, db, collection, addDoc, query, where, getDocs } from './firebase-config.js';
 
 const userNameSpan = document.getElementById('user-name');
 const btnLogout = document.getElementById('btn-logout');
@@ -78,11 +78,11 @@ async function loadTodayRecords() {
   const todayStr = new Date().toISOString().split('T')[0];
   
   try {
+    // Query sem orderBy para evitar necessidade de índice composto
     const q = query(
       collection(db, 'time_records'),
       where('userId', '==', currentUser.uid),
-      where('dateString', '==', todayStr),
-      orderBy('timestamp', 'asc')
+      where('dateString', '==', todayStr)
     );
     
     const querySnapshot = await getDocs(q);
@@ -93,8 +93,12 @@ async function loadTodayRecords() {
       return;
     }
 
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
+    // Ordena por timestamp no cliente
+    const records = [];
+    querySnapshot.forEach((doc) => records.push({ id: doc.id, ...doc.data() }));
+    records.sort((a, b) => a.timestamp.toDate() - b.timestamp.toDate());
+
+    records.forEach((data) => {
       const timeStr = data.timestamp.toDate().toLocaleTimeString('pt-BR');
       
       let badgeClass = '';
@@ -112,6 +116,6 @@ async function loadTodayRecords() {
     });
   } catch (error) {
     console.error('Erro ao buscar registros:', error);
-    tableBody.innerHTML = '<tr><td colspan="2" class="text-center" style="color: var(--danger);">Erro ao carregar dados. (Verifique as permissões/índices no Firebase)</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="2" class="text-center" style="color: var(--danger);">Erro ao carregar dados. Verifique as permissões no Firebase.</td></tr>';
   }
 }
