@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PontoWeb - Painel Administrativo</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="navbar-brand">PontoWeb <span style="color: var(--text-muted); font-size: 1rem; font-weight: 400; margin-left: 0.5rem;">Admin</span></div>
+    <div class="navbar-user">
+      <span id="user-name" style="font-weight: 500;">Administrador</span>
+      <button id="btn-logout" class="btn btn-outline" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Sair</button>
+    </div>
+  </nav>
+
+  <main class="container">
+    <div class="card mb-4">
+      <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1.5rem;">Filtros e Relatórios</h2>
+      
+      <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <div class="form-group" style="margin-bottom: 0; min-width: 200px;">
+          <label for="filter-date" class="form-label">Data</label>
+          <input type="date" id="filter-date" class="form-input">
+        </div>
+        <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 200px;">
+          <label for="filter-employee" class="form-label">Funcionário</label>
+          <select id="filter-employee" class="form-input">
+            <option value="all">Todos os Funcionários</option>
+            <!-- Funcionários serão carregados aqui -->
+          </select>
+        </div>
+        <div style="display: flex; align-items: flex-end;">
+          <button id="btn-filter" class="btn btn-primary">Aplicar Filtro</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1.5rem;">Registros de Ponto</h2>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Funcionário</th>
+              <th>Tipo</th>
+              <th>Horário</th>
+            </tr>
+          </thead>
+          <tbody id="admin-records-table-body">
+            <tr>
+              <td colspan="4" class="text-center" style="color: var(--text-muted);">Carregando registros...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script type="module" src="js/firebase-config.js"></script>
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>

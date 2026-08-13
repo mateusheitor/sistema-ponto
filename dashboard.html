@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PontoWeb - Meu Painel</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="navbar-brand">PontoWeb</div>
+    <div class="navbar-user">
+      <span id="user-name" style="font-weight: 500;">Carregando...</span>
+      <button id="btn-logout" class="btn btn-outline" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Sair</button>
+    </div>
+  </nav>
+
+  <main class="container">
+    <div class="dashboard-grid">
+      
+      <!-- Coluna Esquerda: Relógio e Botões -->
+      <div>
+        <div class="card text-center">
+          <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">Registrar Ponto</h2>
+          <div class="clock-display" id="clock">00:00:00</div>
+          <div class="date-display" id="date">Carregando data...</div>
+          
+          <div class="punch-buttons mt-4">
+            <button class="btn btn-success" id="btn-entrada">Entrada</button>
+            <button class="btn btn-warning" id="btn-pausa">Pausa Almoço</button>
+            <button class="btn btn-primary" id="btn-volta">Volta Almoço</button>
+            <button class="btn btn-danger" id="btn-saida">Saída</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Coluna Direita: Histórico do Dia -->
+      <div>
+        <div class="card">
+          <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1.5rem;">Meus Registros de Hoje</h2>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tipo</th>
+                  <th>Horário</th>
+                </tr>
+              </thead>
+              <tbody id="records-table-body">
+                <tr>
+                  <td colspan="2" class="text-center" style="color: var(--text-muted);">Carregando registros...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script type="module" src="js/firebase-config.js"></script>
+  <script type="module" src="js/employee.js"></script>
+</body>
+</html>
