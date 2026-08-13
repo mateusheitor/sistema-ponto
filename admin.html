@@ -5,6 +5,55 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PontoWeb - Painel Administrativo</title>
   <link rel="stylesheet" href="css/style.css">
+  <style>
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .modal-overlay.active { opacity: 1; pointer-events: all; }
+    .modal-box {
+      background: white;
+      border-radius: 1rem;
+      padding: 2rem;
+      width: 100%; max-width: 460px;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+      transform: translateY(20px);
+      transition: transform 0.25s ease;
+    }
+    .modal-overlay.active .modal-box { transform: translateY(0); }
+    .modal-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    .modal-header h3 { font-size: 1.25rem; font-weight: 700; }
+    .modal-close {
+      background: none; border: none; font-size: 1.5rem;
+      cursor: pointer; color: var(--text-muted); line-height: 1;
+      transition: color 0.2s;
+    }
+    .modal-close:hover { color: var(--text-main); }
+    .role-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.5rem; }
+    .role-option { position: relative; }
+    .role-option input[type=radio] { position: absolute; opacity: 0; }
+    .role-option label {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 0.4rem; padding: 1rem; border: 2px solid var(--border-color);
+      border-radius: var(--radius-md); cursor: pointer; font-weight: 500;
+      transition: all 0.2s ease; font-size: 0.875rem;
+    }
+    .role-option label .role-icon { font-size: 1.5rem; }
+    .role-option input:checked + label {
+      border-color: var(--primary-color);
+      background-color: rgba(79,70,229,0.05);
+      color: var(--primary-color);
+    }
+    #msg-novo-user { font-size: 0.875rem; text-align: center; min-height: 1.25rem; }
+  </style>
 </head>
 <body>
 
@@ -12,6 +61,7 @@
     <div class="navbar-brand">PontoWeb <span style="color: var(--text-muted); font-size: 1rem; font-weight: 400; margin-left: 0.5rem;">Admin</span></div>
     <div class="navbar-user">
       <span id="user-name" style="font-weight: 500;">Administrador</span>
+      <button id="btn-novo-user" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">+ Novo Usuário</button>
       <button id="btn-logout" class="btn btn-outline" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Sair</button>
     </div>
   </nav>
@@ -59,6 +109,54 @@
       </div>
     </div>
   </main>
+
+  <!-- Modal: Novo Usuário -->
+  <div class="modal-overlay" id="modal-novo-user">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Criar Novo Usuário</h3>
+        <button class="modal-close" id="btn-close-modal">&times;</button>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Nome completo</label>
+        <input type="text" id="new-name" class="form-input" placeholder="João da Silva">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">E-mail</label>
+        <input type="email" id="new-email" class="form-input" placeholder="joao@empresa.com">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Senha inicial</label>
+        <input type="password" id="new-password" class="form-input" placeholder="Mínimo 6 caracteres">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Tipo de acesso</label>
+        <div class="role-selector">
+          <div class="role-option">
+            <input type="radio" name="role" id="role-employee" value="employee" checked>
+            <label for="role-employee">
+              <span class="role-icon">👤</span>
+              Funcionário
+            </label>
+          </div>
+          <div class="role-option">
+            <input type="radio" name="role" id="role-admin" value="admin">
+            <label for="role-admin">
+              <span class="role-icon">🛡️</span>
+              Administrador
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-block" id="btn-criar-user">Criar Usuário</button>
+      <div id="msg-novo-user" class="mt-2"></div>
+    </div>
+  </div>
 
   <script type="module" src="js/firebase-config.js"></script>
   <script type="module" src="js/admin.js"></script>
