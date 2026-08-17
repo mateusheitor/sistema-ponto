@@ -232,154 +232,83 @@ async function loadRecords() {
 // Evento do botão de filtro
 btnFilter.addEventListener('click', loadRecords);
 
-// ── Local de Trabalho & Geofencing com Google Maps ───────────────
+// ── Local de Trabalho & Geofencing com Leaflet Map ───────────────
 
-let gMap = null;
-let gMarker = null;
-let gCircle = null;
-let gGeocoder = null;
-let gAutocomplete = null;
-let isGoogleMapsLoaded = false;
+let leafletMap = null;
+let leafletMarker = null;
+let leafletCircle = null;
 
-// Carrega o script do Google Maps dinamicamente com a API Key do projeto
-function loadGoogleMapsScript() {
-  return new Promise((resolve) => {
-    if (window.google && window.google.maps) {
-      isGoogleMapsLoaded = true;
-      resolve(true);
-      return;
-    }
-
-    // Callback de erro de autenticação do Google Maps
-    window.gm_authFailure = () => {
-      console.warn("Google Maps: Chave não autenticada para Maps JavaScript API ou Places API.");
-      msgWorkspace.style.color = 'var(--text-muted)';
-      msgWorkspace.innerText = '💡 Dica: A busca e o mapa utilizam o Google Maps. Caso queira ativar todas as APIs do Google Maps, ative Maps JavaScript API e Places API no console Google Cloud.';
-    };
-
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${firebaseConfig.apiKey}&libraries=places&language=pt-BR`;
-    script.async = true;
-    script.defer = true;
-    script.onload = () => {
-      isGoogleMapsLoaded = true;
-      resolve(true);
-    };
-    script.onerror = () => {
-      console.warn("Não foi possível carregar o script do Google Maps.");
-      resolve(false);
-    };
-    document.head.appendChild(script);
-  });
-}
-
-// Inicializa ou atualiza o Google Maps
+// Inicializa ou atualiza o Mapa Leaflet
 function initOrUpdateMap(lat, lng, radius) {
   const mapElement = document.getElementById('workspace-map');
-  if (!mapElement) return;
+  if (!mapElement || typeof L === 'undefined') return;
 
-  if (!isGoogleMapsLoaded || !window.google || !window.google.maps) {
-    mapElement.innerHTML = `
-      <div style="text-align: center; padding: 1rem;">
-        <p style="font-weight: 500; color: var(--text-main);">📍 Coordenadas Selecionadas</p>
-        <p style="color: var(--text-muted); font-size: 0.875rem;">Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)} (Raio: ${radius}m)</p>
-        <a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 0.5rem; color: var(--primary-color); font-weight: 500;">Abrir no Google Maps ↗</a>
-      </div>
-    `;
-    return;
-  }
+  const latNum = parseFloat(lat);
+  const lngNum = parseFloat(lng);
+  const radiusNum = parseFloat(radius) || 100;
 
-  const position = { lat: parseFloat(lat), lng: parseFloat(lng) };
-
-  if (!gMap) {
-    gMap = new google.maps.Map(mapElement, {
-      center: position,
-      zoom: 16,
-      mapTypeControl: true,
-      streetViewControl: false,
-      fullscreenControl: true
+  if (!leafletMap) {
+    // Cria o mapa centrado nas coordenadas
+    leafletMap = L.map('workspace-map', {
+      center: [latNum, lngNum],
+      zoom: 16
     });
 
-    gGeocoder = new google.maps.Geocoder();
+    // Camada de visualização do OpenStreetMap
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap'
+    }).addTo(leafletMap);
 
     // Marcador arrastável
-    gMarker = new google.maps.Marker({
-      position: position,
-      map: gMap,
-      draggable: true,
-      animation: google.maps.Animation.DROP,
-      title: 'Local da Empresa'
-    });
+    leafletMarker = L.marker([latNum, lngNum], { draggable: true }).addTo(leafletMap);
 
-    // Círculo representando o raio da cerca virtual
-    gCircle = new google.maps.Circle({
-      map: gMap,
-      center: position,
-      radius: parseFloat(radius) || 100,
+    // Círculo da cerca virtual
+    leafletCircle = L.circle([latNum, lngNum], {
+      radius: radiusNum,
+      color: '#4f46e5',
       fillColor: '#4f46e5',
       fillOpacity: 0.18,
-      strokeColor: '#4f46e5',
-      strokeOpacity: 0.85,
-      strokeWeight: 2
+      weight: 2
+    }).addTo(leafletMap);
+
+    // Evento ao arrastar o marcador
+    leafletMarker.on('dragend', () => {
+      const pos = leafletMarker.getLatLng();
+      applyNewCoordinates(pos.lat, pos.lng, true);
     });
 
-    // Evento ao arrastar o pino
-    gMarker.addListener('dragend', (e) => {
-      const newLat = e.latLng.lat();
-      const newLng = e.latLng.lng();
-      applyNewCoordinates(newLat, newLng, true);
+    // Evento ao clicar no mapa
+    leafletMap.on('click', (e) => {
+      applyNewCoordinates(e.latlng.lat, e.latlng.lng, true);
     });
 
-    // Evento ao clicar em qualquer ponto do mapa
-    gMap.addListener('click', (e) => {
-      const newLat = e.latLng.lat();
-      const newLng = e.latLng.lng();
-      applyNewCoordinates(newLat, newLng, true);
-    });
-
-    // Inicializa o Autocomplete do Google Places no campo de endereço
-    try {
-      gAutocomplete = new google.maps.places.Autocomplete(workspaceAddress, {
-        fields: ['geometry', 'name', 'formatted_address']
-      });
-
-      gAutocomplete.addListener('place_changed', () => {
-        const place = gAutocomplete.getPlace();
-        if (place && place.geometry && place.geometry.location) {
-          const newLat = place.geometry.location.lat();
-          const newLng = place.geometry.location.lng();
-          const addr = place.formatted_address || place.name;
-          workspaceAddress.value = addr;
-          applyNewCoordinates(newLat, newLng, false);
-          msgWorkspace.style.color = 'var(--success)';
-          msgWorkspace.innerText = `✅ Local encontrado pelo Google Maps: ${addr}`;
-        } else {
-          // Se o usuário digitou e deu Enter sem selecionar da lista
-          searchAddress(workspaceAddress.value.trim());
-        }
-      });
-    } catch (autoErr) {
-      console.warn("Autocomplete Google Places não inicializado:", autoErr);
-    }
+    // Força recalcular tamanho após carregar
+    setTimeout(() => {
+      if (leafletMap) leafletMap.invalidateSize();
+    }, 200);
 
   } else {
-    // Atualiza mapa existente
-    gMap.setCenter(position);
-    gMarker.setPosition(position);
-    gCircle.setCenter(position);
-    gCircle.setRadius(parseFloat(radius) || 100);
+    // Atualiza mapa já existente
+    leafletMap.setView([latNum, lngNum], 16);
+    leafletMarker.setLatLng([latNum, lngNum]);
+    leafletCircle.setLatLng([latNum, lngNum]);
+    leafletCircle.setRadius(radiusNum);
+    leafletMap.invalidateSize();
   }
 }
 
-// Atualiza os inputs e o círculo no mapa
+// Aplica novas coordenadas na tela e no mapa
 function applyNewCoordinates(lat, lng, doReverseGeocode = false) {
-  workspaceLat.value = parseFloat(lat).toFixed(6);
-  workspaceLng.value = parseFloat(lng).toFixed(6);
+  const latFixed = parseFloat(lat).toFixed(6);
+  const lngFixed = parseFloat(lng).toFixed(6);
 
-  const position = { lat: parseFloat(lat), lng: parseFloat(lng) };
-  if (gMarker) gMarker.setPosition(position);
-  if (gCircle) gCircle.setCenter(position);
-  if (gMap) gMap.panTo(position);
+  workspaceLat.value = latFixed;
+  workspaceLng.value = lngFixed;
+
+  if (leafletMarker) leafletMarker.setLatLng([lat, lng]);
+  if (leafletCircle) leafletCircle.setLatLng([lat, lng]);
+  if (leafletMap) leafletMap.panTo([lat, lng]);
 
   if (doReverseGeocode) {
     reverseGeocode(lat, lng);
@@ -389,47 +318,30 @@ function applyNewCoordinates(lat, lng, doReverseGeocode = false) {
 // Atualiza o raio do círculo em tempo real ao digitar
 workspaceRadius.addEventListener('input', () => {
   const r = parseFloat(workspaceRadius.value);
-  if (gCircle && !isNaN(r) && r > 0) {
-    gCircle.setRadius(r);
+  if (leafletCircle && !isNaN(r) && r > 0) {
+    leafletCircle.setRadius(r);
   }
 });
 
 // Geocodificação reversa (Coordenadas -> Endereço)
 async function reverseGeocode(lat, lng) {
-  if (gGeocoder) {
-    try {
-      const response = await gGeocoder.geocode({ location: { lat: parseFloat(lat), lng: parseFloat(lng) } });
-      if (response.results && response.results.length > 0) {
-        workspaceAddress.value = response.results[0].formatted_address;
-        msgWorkspace.style.color = 'var(--text-muted)';
-        msgWorkspace.innerText = `📍 Endereço atualizado: ${response.results[0].formatted_address}`;
-        return;
-      }
-    } catch (e) {
-      console.warn("Geocodificação reversa Google falhou, tentando fallback...", e);
-    }
-  }
-
-  // Fallback para OpenStreetMap
   try {
     const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`, {
-      headers: { 'Accept-Language': 'pt-BR,pt;q=0.9' }
+      headers: { 'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8' }
     });
     const data = await res.json();
     if (data && data.display_name) {
       workspaceAddress.value = data.display_name;
       msgWorkspace.style.color = 'var(--text-muted)';
-      msgWorkspace.innerText = `📍 Endereço atualizado: ${data.display_name}`;
+      msgWorkspace.innerText = `📍 Posição definida: ${data.display_name}`;
     }
   } catch (err) {
-    console.error("Erro na geocodificação reversa:", err);
+    console.warn("Aviso na geocodificação reversa:", err);
   }
 }
 
 // Carrega as configurações salvas do Firestore
 async function loadWorkspaceSettings() {
-  await loadGoogleMapsScript();
-
   let initialLat = -23.55052;
   let initialLng = -46.633308;
   let initialRadius = 100;
@@ -457,15 +369,15 @@ async function loadWorkspaceSettings() {
     console.error('Erro ao carregar configurações de local de trabalho:', error);
   }
 
-  // Inicializa o Google Maps com as coordenadas atuais ou padrão
+  // Inicializa o Mapa Leaflet
   initOrUpdateMap(initialLat, initialLng, initialRadius);
 }
 
-// Busca endereço no Google Maps (com suporte a links do Maps e fallback)
+// Busca endereço via Nominatim (com suporte a coordenadas diretas)
 async function searchAddress(address) {
   if (!address) {
     msgWorkspace.style.color = 'var(--danger)';
-    msgWorkspace.innerText = 'Digite um endereço ou cole um link do Google Maps.';
+    msgWorkspace.innerText = 'Digite um endereço para buscar no mapa.';
     return;
   }
 
@@ -485,41 +397,19 @@ async function searchAddress(address) {
   btnSearchAddress.disabled = true;
   btnSearchAddress.innerText = 'Buscando...';
   msgWorkspace.style.color = 'var(--text-muted)';
-  msgWorkspace.innerText = 'Buscando localização no Google Maps...';
+  msgWorkspace.innerText = 'Consultando serviço de localização...';
 
-  // 1. Tenta buscar usando o Geocoder do Google Maps
-  if (gGeocoder) {
-    try {
-      const res = await gGeocoder.geocode({ address: address, componentRestrictions: { country: 'BR' } });
-      if (res.results && res.results.length > 0) {
-        const place = res.results[0];
-        const lat = place.geometry.location.lat();
-        const lng = place.geometry.location.lng();
-        workspaceAddress.value = place.formatted_address;
-        applyNewCoordinates(lat, lng, false);
-        initOrUpdateMap(lat, lng, workspaceRadius.value);
-        msgWorkspace.style.color = 'var(--success)';
-        msgWorkspace.innerText = `✅ Encontrado pelo Google Maps: ${place.formatted_address}`;
-        btnSearchAddress.disabled = false;
-        btnSearchAddress.innerText = '🔍 Buscar no Maps';
-        return;
-      }
-    } catch (gErr) {
-      console.warn("Geocoder do Google falhou, tentando serviço auxiliar...", gErr);
-    }
-  }
-
-  // 2. Fallback para Nominatim (OpenStreetMap) caso Geocoder do Google não responda
   try {
     const response = await fetch(
       `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(address)}`,
-      { headers: { 'Accept-Language': 'pt-BR,pt;q=0.9' } }
+      { headers: { 'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8' } }
     );
     const results = await response.json();
 
     if (results && results.length > 0) {
       const lat = parseFloat(results[0].lat);
       const lon = parseFloat(results[0].lon);
+      workspaceAddress.value = results[0].display_name;
       applyNewCoordinates(lat, lon, false);
       initOrUpdateMap(lat, lon, workspaceRadius.value);
       msgWorkspace.style.color = 'var(--success)';
@@ -534,7 +424,7 @@ async function searchAddress(address) {
     msgWorkspace.innerText = 'Erro ao consultar serviço de localização. Tente novamente.';
   } finally {
     btnSearchAddress.disabled = false;
-    btnSearchAddress.innerText = '🔍 Buscar no Maps';
+    btnSearchAddress.innerText = '🔍 Buscar Coordenadas';
   }
 }
 
@@ -560,7 +450,7 @@ btnSaveWorkspace.addEventListener('click', async () => {
 
   if (isNaN(lat) || isNaN(lng)) {
     msgWorkspace.style.color = 'var(--danger)';
-    msgWorkspace.innerText = 'Busque ou selecione as coordenadas no mapa antes de salvar.';
+    msgWorkspace.innerText = 'Busque ou clique no mapa para posicionar as coordenadas antes de salvar.';
     return;
   }
 
@@ -594,4 +484,5 @@ btnSaveWorkspace.addEventListener('click', async () => {
     btnSaveWorkspace.innerText = '💾 Salvar Localização';
   }
 });
+
 
