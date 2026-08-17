@@ -2,7 +2,7 @@
 // Importar as funções necessárias dos SDKs do Firebase
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, query, where, getDocs, doc, getDoc, orderBy } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, query, where, getDocs, doc, getDoc, setDoc, orderBy } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
 // TODO: Substitua pelas configurações do seu projeto Firebase
 // 1. Vá para o console do Firebase (https://console.firebase.google.com/)
@@ -22,4 +22,4 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-export { auth, db, onAuthStateChanged, signInWithEmailAndPassword, signOut, collection, addDoc, query, where, getDocs, doc, getDoc, orderBy };
+export { auth, db, onAuthStateChanged, signInWithEmailAndPassword, signOut, collection, addDoc, query, where, getDocs, doc, getDoc, setDoc, orderBy };

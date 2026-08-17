@@ -1,5 +1,4 @@
-import { auth, onAuthStateChanged, signOut, db, collection, query, where, getDocs, orderBy, getDoc, doc, addDoc } from './firebase-config.js';
-import { setDoc } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+import { auth, onAuthStateChanged, signOut, db, collection, query, where, getDocs, orderBy, getDoc, doc, setDoc, addDoc } from './firebase-config.js';
 
 const FIREBASE_API_KEY = 'AIzaSyAlhwyEr5-IxqvfSL6V6oUzwQ980V7_FIc';
 
@@ -9,6 +8,15 @@ const filterDate = document.getElementById('filter-date');
 const filterEmployee = document.getElementById('filter-employee');
 const btnFilter = document.getElementById('btn-filter');
 const tableBody = document.getElementById('admin-records-table-body');
+
+// Workspace elements
+const workspaceAddress = document.getElementById('workspace-address');
+const btnSearchAddress = document.getElementById('btn-search-address');
+const workspaceRadius  = document.getElementById('workspace-radius');
+const workspaceLat     = document.getElementById('workspace-lat');
+const workspaceLng     = document.getElementById('workspace-lng');
+const btnSaveWorkspace = document.getElementById('btn-save-workspace');
+const msgWorkspace     = document.getElementById('msg-workspace');
 
 // Modal elements
 const modalOverlay = document.getElementById('modal-novo-user');
@@ -33,6 +41,7 @@ onAuthStateChanged(auth, async (user) => {
     if (userDocSnap.exists() && userDocSnap.data().role === 'admin') {
       currentUser = user;
       userNameSpan.innerText = user.email;
+      await loadWorkspaceSettings();
       await loadEmployees();
       await loadRecords(); // Carrega os de hoje por padrão
     } else {
@@ -224,3 +233,110 @@ async function loadRecords() {
 
 // Evento do botão de filtro
 btnFilter.addEventListener('click', loadRecords);
+
+// ── Local de Trabalho & Geofencing ─────────────────────────────
+
+// Carrega as configurações de local de trabalho salvas
+async function loadWorkspaceSettings() {
+  try {
+    const docRef = doc(db, 'settings', 'workspace');
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      if (data.address) workspaceAddress.value = data.address;
+      if (data.radius)  workspaceRadius.value  = data.radius;
+      if (data.latitude != null)  workspaceLat.value = data.latitude;
+      if (data.longitude != null) workspaceLng.value = data.longitude;
+      msgWorkspace.style.color = 'var(--text-muted)';
+      msgWorkspace.innerText = `Localização configurada: ${data.address || 'Coordenadas salvas'} (Raio: ${data.radius}m)`;
+    }
+  } catch (error) {
+    console.error('Erro ao carregar configurações de local de trabalho:', error);
+  }
+}
+
+// Busca coordenadas a partir do endereço via Nominatim (OpenStreetMap)
+btnSearchAddress.addEventListener('click', async () => {
+  const address = workspaceAddress.value.trim();
+  if (!address) {
+    msgWorkspace.style.color = 'var(--danger)';
+    msgWorkspace.innerText = 'Digite um endereço para buscar as coordenadas.';
+    return;
+  }
+
+  btnSearchAddress.disabled = true;
+  btnSearchAddress.innerText = 'Buscando...';
+  msgWorkspace.style.color = 'var(--text-muted)';
+  msgWorkspace.innerText = 'Consultando serviço de mapas...';
+
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(address)}`,
+      { headers: { 'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8' } }
+    );
+    const results = await response.json();
+
+    if (results && results.length > 0) {
+      const lat = parseFloat(results[0].lat);
+      const lon = parseFloat(results[0].lon);
+      workspaceLat.value = lat;
+      workspaceLng.value = lon;
+      msgWorkspace.style.color = 'var(--success)';
+      msgWorkspace.innerText = `✅ Encontrado: ${results[0].display_name}`;
+    } else {
+      msgWorkspace.style.color = 'var(--danger)';
+      msgWorkspace.innerText = 'Endereço não encontrado. Tente incluir cidade, estado ou CEP para maior precisão.';
+    }
+  } catch (error) {
+    console.error('Erro ao geocodificar endereço:', error);
+    msgWorkspace.style.color = 'var(--danger)';
+    msgWorkspace.innerText = 'Erro ao consultar serviço de localização. Tente novamente.';
+  } finally {
+    btnSearchAddress.disabled = false;
+    btnSearchAddress.innerText = '🔍 Buscar Coordenadas';
+  }
+});
+
+// Salva as configurações de localização no Firestore
+btnSaveWorkspace.addEventListener('click', async () => {
+  const address = workspaceAddress.value.trim();
+  const radius  = parseFloat(workspaceRadius.value);
+  const lat     = parseFloat(workspaceLat.value);
+  const lng     = parseFloat(workspaceLng.value);
+
+  if (isNaN(lat) || isNaN(lng)) {
+    msgWorkspace.style.color = 'var(--danger)';
+    msgWorkspace.innerText = 'Busque ou insira as coordenadas de latitude e longitude antes de salvar.';
+    return;
+  }
+
+  if (isNaN(radius) || radius <= 0) {
+    msgWorkspace.style.color = 'var(--danger)';
+    msgWorkspace.innerText = 'Informe um raio válido em metros (ex: 100).';
+    return;
+  }
+
+  btnSaveWorkspace.disabled = true;
+  btnSaveWorkspace.innerText = 'Salvando...';
+  msgWorkspace.innerText = '';
+
+  try {
+    await setDoc(doc(db, 'settings', 'workspace'), {
+      address: address || '',
+      latitude: lat,
+      longitude: lng,
+      radius: radius,
+      updatedAt: new Date()
+    });
+
+    msgWorkspace.style.color = 'var(--success)';
+    msgWorkspace.innerText = `✅ Configurações de localização salvas com sucesso! (Raio: ${radius}m)`;
+  } catch (error) {
+    console.error('Erro ao salvar local de trabalho:', error);
+    msgWorkspace.style.color = 'var(--danger)';
+    msgWorkspace.innerText = 'Erro ao salvar no banco de dados. Verifique as permissões no Firebase.';
+  } finally {
+    btnSaveWorkspace.disabled = false;
+    btnSaveWorkspace.innerText = '💾 Salvar Localização';
+  }
+});

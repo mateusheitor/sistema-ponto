@@ -1,4 +1,4 @@
-import { auth, onAuthStateChanged, signOut, db, collection, addDoc, query, where, getDocs } from './firebase-config.js';
+import { auth, onAuthStateChanged, signOut, db, collection, addDoc, query, where, getDocs, doc, getDoc } from './firebase-config.js';
 
 const userNameSpan = document.getElementById('user-name');
 const btnLogout = document.getElementById('btn-logout');
@@ -58,6 +58,22 @@ function getCurrentPosition() {
   });
 }
 
+// Calcula a distância em metros entre duas coordenadas GPS (Fórmula de Haversine)
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371e3; // Raio da Terra em metros
+  const phi1 = lat1 * Math.PI / 180;
+  const phi2 = lat2 * Math.PI / 180;
+  const deltaPhi = (lat2 - lat1) * Math.PI / 180;
+  const deltaLambda = (lon2 - lon1) * Math.PI / 180;
+
+  const a = Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+            Math.cos(phi1) * Math.cos(phi2) *
+            Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c; // Distância em metros
+}
+
 // Função para registrar o ponto
 async function registerPunch(type) {
   if (!currentUser) return;
@@ -86,7 +102,28 @@ async function registerPunch(type) {
       return; // Bloqueia o registro
     }
 
-    // 2. Salva o ponto com as coordenadas no Firestore
+    // 2. Verifica a Cerca Virtual (Geofencing) configurada pelo Administrador
+    try {
+      const workspaceDoc = await getDoc(doc(db, 'settings', 'workspace'));
+      if (workspaceDoc.exists()) {
+        const workspace = workspaceDoc.data();
+        if (workspace.latitude != null && workspace.longitude != null && workspace.radius) {
+          const distance = calculateDistance(latitude, longitude, workspace.latitude, workspace.longitude);
+
+          if (distance > workspace.radius) {
+            const distanceFormatted = Math.round(distance);
+            const addressInfo = workspace.address ? `\n\n📍 Local configurado: ${workspace.address}` : '';
+            alert(`⛔ Registro Bloqueado!\n\nVocê está fora da região do local de trabalho.\n\n• Sua distância: ${distanceFormatted} metros\n• Raio permitido: ${workspace.radius} metros${addressInfo}\n\nAproxime-se do local de trabalho para conseguir bater o ponto.`);
+            return; // Bloqueia o registro
+          }
+        }
+      }
+    } catch (fenceError) {
+      console.warn('Aviso: Não foi possível validar a cerca geográfica no momento:', fenceError);
+      // Se houver erro de leitura das configurações, pode continuar ou registrar aviso
+    }
+
+    // 3. Salva o ponto com as coordenadas no Firestore
     const now = new Date();
     await addDoc(collection(db, 'time_records'), {
       userId: currentUser.uid,
