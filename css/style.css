@@ -274,3 +274,75 @@ tr:hover {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+/* Button States */
+.btn:disabled,
+.btn.btn-registered {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: grayscale(20%);
+}
+
+/* Workspace & Geofencing Responsive Layout */
+.workspace-search-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .workspace-search-row {
+    flex-direction: row;
+    align-items: flex-end;
+  }
+}
+
+.workspace-controls-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+@media (min-width: 520px) {
+  .workspace-controls-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 960px) {
+  .workspace-controls-grid {
+    grid-template-columns: 160px 1fr 1fr auto;
+  }
+}
+
+.workspace-map-container {
+  height: 280px;
+  width: 100%;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  background: #e5e7eb;
+  z-index: 1;
+}
+
+@media (min-width: 768px) {
+  .workspace-map-container {
+    height: 350px;
+  }
+}
+
+/* Filter Responsive Layout */
+.filter-form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+@media (min-width: 640px) {
+  .filter-form-grid {
+    grid-template-columns: 200px 1fr auto;
+  }
+}
+

@@ -76,38 +76,38 @@
       <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">📍 Local de Trabalho e Cerca Virtual</h2>
       <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.5rem;">Defina o endereço da empresa e o raio máximo permitido. Funcionários fora do raio configurado terão o registro de ponto bloqueado.</p>
       
-      <div style="display: flex; flex-direction: column; gap: 1rem;">
-        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-          <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 250px;">
+      <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+        <div class="workspace-search-row">
+          <div class="form-group" style="margin-bottom: 0; flex: 1;">
             <label for="workspace-address" class="form-label">Endereço da Empresa</label>
             <input type="text" id="workspace-address" class="form-input" placeholder="Ex: Av. Paulista, 1000, São Paulo, SP">
           </div>
-          <div style="display: flex; align-items: flex-end;">
-            <button id="btn-search-address" class="btn btn-outline" style="white-space: nowrap;">🔍 Buscar Coordenadas</button>
+          <div>
+            <button id="btn-search-address" class="btn btn-outline" style="width: 100%; white-space: nowrap;">🔍 Buscar Coordenadas</button>
           </div>
         </div>
 
-        <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
-          <div class="form-group" style="margin-bottom: 0; width: 160px;">
-            <label for="workspace-radius" class="form-label">Raio Permitido (metros)</label>
+        <div class="workspace-controls-grid">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="workspace-radius" class="form-label">Raio (metros)</label>
             <input type="number" id="workspace-radius" class="form-input" value="100" min="10" max="50000" placeholder="Ex: 100">
           </div>
-          <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 140px;">
+          <div class="form-group" style="margin-bottom: 0;">
             <label for="workspace-lat" class="form-label">Latitude</label>
             <input type="text" id="workspace-lat" class="form-input" placeholder="Ex: -23.5613" readonly style="background-color: var(--bg-color);">
           </div>
-          <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 140px;">
+          <div class="form-group" style="margin-bottom: 0;">
             <label for="workspace-lng" class="form-label">Longitude</label>
             <input type="text" id="workspace-lng" class="form-input" placeholder="Ex: -46.6565" readonly style="background-color: var(--bg-color);">
           </div>
           <div>
-            <button id="btn-save-workspace" class="btn btn-success">💾 Salvar Localização</button>
+            <button id="btn-save-workspace" class="btn btn-success" style="width: 100%; white-space: nowrap;">💾 Salvar Localização</button>
           </div>
         </div>
 
         <!-- Mapa Interativo -->
-        <div style="margin-top: 0.25rem;">
-          <div id="workspace-map" style="height: 320px; width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-color); overflow: hidden; background: #e5e7eb; z-index: 1;">
+        <div>
+          <div id="workspace-map" class="workspace-map-container">
           </div>
           <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 0.4rem; display: block;">
             💡 Digite o endereço e clique em <strong>"Buscar"</strong>, arraste o pino azul ou clique direto no mapa para posicionar a empresa. O círculo indica o raio da cerca virtual.
@@ -121,20 +121,20 @@
     <div class="card mb-4">
       <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1.5rem;">Filtros e Relatórios</h2>
       
-      <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-        <div class="form-group" style="margin-bottom: 0; min-width: 200px;">
+      <div class="filter-form-grid">
+        <div class="form-group" style="margin-bottom: 0;">
           <label for="filter-date" class="form-label">Data</label>
           <input type="date" id="filter-date" class="form-input">
         </div>
-        <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 200px;">
+        <div class="form-group" style="margin-bottom: 0;">
           <label for="filter-employee" class="form-label">Funcionário</label>
           <select id="filter-employee" class="form-input">
             <option value="all">Todos os Funcionários</option>
             <!-- Funcionários serão carregados aqui -->
           </select>
         </div>
-        <div style="display: flex; align-items: flex-end;">
-          <button id="btn-filter" class="btn btn-primary">Aplicar Filtro</button>
+        <div>
+          <button id="btn-filter" class="btn btn-primary" style="width: 100%;">Aplicar Filtro</button>
         </div>
       </div>
     </div>

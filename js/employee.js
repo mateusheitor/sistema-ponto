@@ -6,15 +6,48 @@ const clockDisplay = document.getElementById('clock');
 const dateDisplay = document.getElementById('date');
 const tableBody = document.getElementById('records-table-body');
 
-// Botões de Ponto
-const buttons = {
-  entrada: document.getElementById('btn-entrada'),
-  pausa: document.getElementById('btn-pausa'),
-  volta: document.getElementById('btn-volta'),
-  saida: document.getElementById('btn-saida')
+// Configuração dos Botões de Ponto e seus tipos
+const PUNCH_CONFIG = {
+  'Entrada': {
+    btn: document.getElementById('btn-entrada'),
+    label: 'Entrada',
+    registeredLabel: '✓ Entrada (Feito)'
+  },
+  'Pausa para Almoço': {
+    btn: document.getElementById('btn-pausa'),
+    label: 'Pausa Almoço',
+    registeredLabel: '✓ Pausa (Feita)'
+  },
+  'Volta do Almoço': {
+    btn: document.getElementById('btn-volta'),
+    label: 'Volta Almoço',
+    registeredLabel: '✓ Volta (Feita)'
+  },
+  'Saída': {
+    btn: document.getElementById('btn-saida'),
+    label: 'Saída',
+    registeredLabel: '✓ Saída (Feita)'
+  }
 };
 
 let currentUser = null;
+let todayRegisteredTypes = new Set();
+
+// Atualiza o estado dos botões conforme os registros de hoje
+function updateButtonStates() {
+  for (const [type, config] of Object.entries(PUNCH_CONFIG)) {
+    if (!config.btn) continue;
+    if (todayRegisteredTypes.has(type)) {
+      config.btn.disabled = true;
+      config.btn.classList.add('btn-registered');
+      config.btn.innerText = config.registeredLabel;
+    } else {
+      config.btn.disabled = false;
+      config.btn.classList.remove('btn-registered');
+      config.btn.innerText = config.label;
+    }
+  }
+}
 
 // Relógio em tempo real
 function updateClock() {
@@ -78,11 +111,35 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 async function registerPunch(type) {
   if (!currentUser) return;
 
-  // Desabilita todos os botões durante o processo
-  Object.values(buttons).forEach(btn => btn.disabled = true);
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  // 1. Verifica se já registrou esse tipo de ponto hoje
+  if (todayRegisteredTypes.has(type)) {
+    alert(`⚠️ Você já registrou o ponto de "${type}" hoje. Cada tipo só pode ser registrado 1 vez por dia.`);
+    return;
+  }
+
+  // Desabilita todos os botões durante o processo para evitar duplo clique
+  Object.values(PUNCH_CONFIG).forEach(c => {
+    if (c.btn) c.btn.disabled = true;
+  });
 
   try {
-    // 1. Obtém a localização — obrigatória para bater o ponto
+    // 2. Consulta adicional ao banco para garantir que não foi batido em outra aba
+    const checkQuery = query(
+      collection(db, 'time_records'),
+      where('userId', '==', currentUser.uid),
+      where('dateString', '==', todayStr),
+      where('type', '==', type)
+    );
+    const checkSnap = await getDocs(checkQuery);
+    if (!checkSnap.empty) {
+      alert(`⚠️ O ponto de "${type}" já foi registrado hoje.`);
+      await loadTodayRecords();
+      return;
+    }
+
+    // 3. Obtém a localização — obrigatória para bater o ponto
     let latitude, longitude, accuracy;
     try {
       const position = await getCurrentPosition();
@@ -102,7 +159,7 @@ async function registerPunch(type) {
       return; // Bloqueia o registro
     }
 
-    // 2. Verifica a Cerca Virtual (Geofencing) configurada pelo Administrador
+    // 4. Verifica a Cerca Virtual (Geofencing) configurada pelo Administrador
     try {
       const workspaceDoc = await getDoc(doc(db, 'settings', 'workspace'));
       if (workspaceDoc.exists()) {
@@ -120,39 +177,38 @@ async function registerPunch(type) {
       }
     } catch (fenceError) {
       console.warn('Aviso: Não foi possível validar a cerca geográfica no momento:', fenceError);
-      // Se houver erro de leitura das configurações, pode continuar ou registrar aviso
     }
 
-    // 3. Salva o ponto com as coordenadas no Firestore
+    // 5. Salva o ponto com as coordenadas no Firestore
     const now = new Date();
     await addDoc(collection(db, 'time_records'), {
       userId: currentUser.uid,
       userEmail: currentUser.email,
       timestamp: now,
       type: type,
-      dateString: now.toISOString().split('T')[0], // Formato YYYY-MM-DD para busca
+      dateString: todayStr,
       latitude,
       longitude,
       accuracy
     });
 
     alert(`✅ Ponto registrado com sucesso: ${type}`);
-    await loadTodayRecords(); // Recarrega a tabela
+    await loadTodayRecords(); // Recarrega a tabela e atualiza os botões
 
   } catch (error) {
     console.error("Erro ao registrar ponto: ", error);
     alert('Erro ao registrar ponto. Tente novamente.');
   } finally {
-    // Reabilita os botões ao finalizar
-    Object.values(buttons).forEach(btn => btn.disabled = false);
+    // Reabilita apenas os botões que ainda não foram registrados hoje
+    updateButtonStates();
   }
 }
 
 // Event Listeners dos Botões
-buttons.entrada.addEventListener('click', () => registerPunch('Entrada'));
-buttons.pausa.addEventListener('click', () => registerPunch('Pausa para Almoço'));
-buttons.volta.addEventListener('click', () => registerPunch('Volta do Almoço'));
-buttons.saida.addEventListener('click', () => registerPunch('Saída'));
+PUNCH_CONFIG['Entrada'].btn?.addEventListener('click', () => registerPunch('Entrada'));
+PUNCH_CONFIG['Pausa para Almoço'].btn?.addEventListener('click', () => registerPunch('Pausa para Almoço'));
+PUNCH_CONFIG['Volta do Almoço'].btn?.addEventListener('click', () => registerPunch('Volta do Almoço'));
+PUNCH_CONFIG['Saída'].btn?.addEventListener('click', () => registerPunch('Saída'));
 
 // Carregar registros de hoje
 async function loadTodayRecords() {
@@ -172,15 +228,26 @@ async function loadTodayRecords() {
     const querySnapshot = await getDocs(q);
     tableBody.innerHTML = '';
     
+    // Atualiza os tipos registrados hoje
+    todayRegisteredTypes.clear();
+
     if (querySnapshot.empty) {
       tableBody.innerHTML = '<tr><td colspan="2" class="text-center text-muted">Nenhum registro encontrado hoje.</td></tr>';
+      updateButtonStates();
       return;
     }
 
     // Ordena por timestamp no cliente
     const records = [];
-    querySnapshot.forEach((doc) => records.push({ id: doc.id, ...doc.data() }));
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      records.push({ id: doc.id, ...data });
+      if (data.type) todayRegisteredTypes.add(data.type);
+    });
     records.sort((a, b) => a.timestamp.toDate() - b.timestamp.toDate());
+
+    // Atualiza estado dos botões (desabilita os já registrados)
+    updateButtonStates();
 
     records.forEach((data) => {
       const timeStr = data.timestamp.toDate().toLocaleTimeString('pt-BR');
@@ -201,5 +268,7 @@ async function loadTodayRecords() {
   } catch (error) {
     console.error('Erro ao buscar registros:', error);
     tableBody.innerHTML = '<tr><td colspan="2" class="text-center" style="color: var(--danger);">Erro ao carregar dados. Verifique as permissões no Firebase.</td></tr>';
+    updateButtonStates();
   }
 }
+
