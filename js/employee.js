@@ -43,24 +43,71 @@ btnLogout.addEventListener('click', async () => {
   window.location.href = 'index.html';
 });
 
+// Obtém a geolocalização atual como Promise
+function getCurrentPosition() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error('Geolocalização não é suportada por este navegador.'));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0
+    });
+  });
+}
+
 // Função para registrar o ponto
 async function registerPunch(type) {
   if (!currentUser) return;
-  
+
+  // Desabilita todos os botões durante o processo
+  Object.values(buttons).forEach(btn => btn.disabled = true);
+
   try {
+    // 1. Obtém a localização — obrigatória para bater o ponto
+    let latitude, longitude, accuracy;
+    try {
+      const position = await getCurrentPosition();
+      latitude  = position.coords.latitude;
+      longitude = position.coords.longitude;
+      accuracy  = position.coords.accuracy;
+    } catch (geoError) {
+      let msg = 'É necessário permitir o acesso à localização para registrar o ponto.';
+      if (geoError.code === 1) {
+        msg = '⛔ Permissão de localização negada. Permita o acesso ao GPS nas configurações do navegador e tente novamente.';
+      } else if (geoError.code === 2) {
+        msg = '📡 Não foi possível determinar sua localização. Verifique sua conexão e tente novamente.';
+      } else if (geoError.code === 3) {
+        msg = '⏱️ Tempo esgotado ao obter a localização. Tente novamente.';
+      }
+      alert(msg);
+      return; // Bloqueia o registro
+    }
+
+    // 2. Salva o ponto com as coordenadas no Firestore
     const now = new Date();
     await addDoc(collection(db, 'time_records'), {
       userId: currentUser.uid,
       userEmail: currentUser.email,
       timestamp: now,
       type: type,
-      dateString: now.toISOString().split('T')[0] // Formato YYYY-MM-DD para busca
+      dateString: now.toISOString().split('T')[0], // Formato YYYY-MM-DD para busca
+      latitude,
+      longitude,
+      accuracy
     });
-    alert(`Ponto registrado com sucesso: ${type}`);
+
+    alert(`✅ Ponto registrado com sucesso: ${type}`);
     await loadTodayRecords(); // Recarrega a tabela
+
   } catch (error) {
     console.error("Erro ao registrar ponto: ", error);
     alert('Erro ao registrar ponto. Tente novamente.');
+  } finally {
+    // Reabilita os botões ao finalizar
+    Object.values(buttons).forEach(btn => btn.disabled = false);
   }
 }
 

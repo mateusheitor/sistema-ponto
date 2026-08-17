@@ -156,7 +156,7 @@ async function loadRecords() {
   const dateValue = filterDate.value; // YYYY-MM-DD
   const employeeId = filterEmployee.value;
 
-  tableBody.innerHTML = '<tr><td colspan="4" class="text-center"><span class="loader"></span></td></tr>';
+  tableBody.innerHTML = '<tr><td colspan="5" class="text-center"><span class="loader"></span></td></tr>';
 
   try {
     let q;
@@ -181,7 +181,7 @@ async function loadRecords() {
     tableBody.innerHTML = '';
     
     if (snapshot.empty) {
-      tableBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Nenhum registro encontrado para estes filtros.</td></tr>';
+      tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Nenhum registro encontrado para estes filtros.</td></tr>';
       return;
     }
 
@@ -201,18 +201,24 @@ async function loadRecords() {
       else if (data.type === 'Saída') badgeClass = 'badge-saida';
 
       const tr = document.createElement('tr');
+
+      const locationCell = (data.latitude != null && data.longitude != null)
+        ? `<a href="https://www.google.com/maps?q=${data.latitude},${data.longitude}" target="_blank" rel="noopener noreferrer" title="Precisão: ±${Math.round(data.accuracy ?? 0)}m">📍 Ver no Mapa</a>`
+        : '<span style="color: var(--text-muted);">—</span>';
+
       tr.innerHTML = `
         <td>${dateStr}</td>
         <td><strong>${data.userEmail}</strong></td>
         <td><span class="badge ${badgeClass}">${data.type}</span></td>
         <td>${timeStr}</td>
+        <td>${locationCell}</td>
       `;
       tableBody.appendChild(tr);
     });
 
   } catch (error) {
     console.error('Erro ao buscar registros:', error);
-    tableBody.innerHTML = '<tr><td colspan="4" class="text-center" style="color: var(--danger);">Erro ao carregar dados. (Você pode precisar criar um Índice no Firestore para esta Query)</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="5" class="text-center" style="color: var(--danger);">Erro ao carregar dados. (Você pode precisar criar um Índice no Firestore para esta Query)</td></tr>';
   }
 }
 
