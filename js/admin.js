@@ -1,6 +1,4 @@
-import { auth, onAuthStateChanged, signOut, db, collection, query, where, getDocs, orderBy, getDoc, doc, setDoc, addDoc } from './firebase-config.js';
-
-const FIREBASE_API_KEY = 'AIzaSyAlhwyEr5-IxqvfSL6V6oUzwQ980V7_FIc';
+import { firebaseConfig, auth, onAuthStateChanged, signOut, db, collection, query, where, getDocs, orderBy, getDoc, doc, setDoc, addDoc } from './firebase-config.js';
 
 const userNameSpan = document.getElementById('user-name');
 const btnLogout = document.getElementById('btn-logout');
@@ -99,7 +97,7 @@ btnCriarUser.addEventListener('click', async () => {
   try {
     // 1. Cria o usuário no Firebase Auth via REST (não afeta a sessão do admin)
     const authRes = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FIREBASE_API_KEY}`,
+      `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${firebaseConfig.apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

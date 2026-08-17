@@ -1,0 +1,42 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Função auxiliar para verificar se o usuário está autenticado
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Função auxiliar para verificar se o usuário é Administrador
+    function isAdmin() {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Regras para a coleção de Usuários
+    match /users/{userId} {
+      // O próprio usuário pode ler seu documento; admins podem ler todos
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      // Apenas admins podem criar/editar usuários
+      allow write: if isAdmin();
+    }
+
+    // Regras para os Registros de Ponto
+    match /time_records/{recordId} {
+      // Funcionário lê apenas os seus próprios registros; Admin pode ler todos
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      // Funcionário só pode criar registro associado ao seu próprio UID
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      // Registros de ponto não podem ser editados ou excluídos diretamente por funcionários
+      allow update, delete: if isAdmin();
+    }
+
+    // Regras para Configurações (ex: Local de trabalho / Cerca virtual)
+    match /settings/{settingId} {
+      // Qualquer funcionário logado pode ler para validar a distância do ponto
+      allow read: if isAuthenticated();
+      // Apenas o Administrador pode alterar as configurações
+      allow write: if isAdmin();
+    }
+  }
+}
