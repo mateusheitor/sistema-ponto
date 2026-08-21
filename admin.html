@@ -7,12 +7,9 @@
   <title>PontoWeb - Painel Administrativo</title>
   <meta name="description" content="Painel administrativo para gestão de ponto, banco de horas e aprovação de edições.">
   <link rel="stylesheet" href="css/style.css">
-  <!-- Leaflet Map CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <!-- Leaflet Map JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
-    /* Modais */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -120,7 +117,6 @@
       min-height: 1.25rem;
     }
 
-    /* Reject modal */
     #modal-reject .modal-box {
       max-width: 400px;
     }
@@ -155,7 +151,6 @@
 
   <main class="container">
 
-    <!-- Tab Navigation -->
     <div class="tab-nav" role="tablist">
       <button class="tab-btn active" data-tab="tab-registros" role="tab" id="tab-btn-registros">
         📋 Filtros e Relatórios / Registros de Ponto
@@ -168,12 +163,8 @@
       </button>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════
-         ABA 1 — Filtros, Registros de Ponto e Solicitações de Edição
-    ════════════════════════════════════════════════════════════════ -->
     <div id="tab-registros" class="tab-panel active">
 
-      <!-- Filtros -->
       <div class="card mb-4">
         <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1.5rem;">Filtros e Relatórios</h2>
         <div class="filter-form-grid">
@@ -193,7 +184,6 @@
         </div>
       </div>
 
-      <!-- Registros de Ponto -->
       <div class="card mb-4">
         <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1.5rem;">Registros de Ponto</h2>
         <div class="table-container">
@@ -216,7 +206,6 @@
         </div>
       </div>
 
-      <!-- Solicitações de Edição Pendentes -->
       <div class="card" id="edit-requests-card">
         <div class="pending-requests-section" style="margin-top:0; border-top:none; padding-top:0;">
           <h3>
@@ -247,9 +236,6 @@
       </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════
-         ABA 2 — Local de Trabalho e Cerca Virtual
-    ════════════════════════════════════════════════════════════════ -->
     <div id="tab-workspace" class="tab-panel">
       <div class="card">
         <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">📍 Local de Trabalho e Cerca Virtual
@@ -292,7 +278,6 @@
             </div>
           </div>
 
-          <!-- Mapa Interativo -->
           <div>
             <div id="workspace-map" class="workspace-map-container"></div>
             <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 0.4rem; display: block;">
@@ -306,15 +291,11 @@
       </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════
-         ABA 3 — Banco de Horas (Visão Geral / Por Funcionário)
-    ════════════════════════════════════════════════════════════════ -->
     <div id="tab-banco-horas" class="tab-panel">
       <div class="card">
         <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1.5rem;">⏱️ Banco de Horas — Visão
           Administrativa</h2>
 
-        <!-- Seleção de funcionário -->
         <div class="filter-form-grid" style="margin-bottom: 1.5rem;">
           <div class="form-group" style="margin-bottom: 0;">
             <label for="bh-filter-employee" class="form-label">Funcionário</label>
@@ -324,7 +305,6 @@
           </div>
         </div>
 
-        <!-- Seleção de Período -->
         <div class="bh-period-selector">
           <button class="bh-period-btn active" data-period="week" id="admin-bh-btn-week">📅 Esta Semana</button>
           <button class="bh-period-btn" data-period="month" id="admin-bh-btn-month">📆 Este Mês</button>
@@ -332,14 +312,12 @@
           <button class="bh-period-btn" data-period="custom-range" id="admin-bh-btn-range">📊 Período</button>
         </div>
 
-        <!-- Mês específico -->
         <div class="bh-custom-range" id="admin-bh-range-month">
           <label style="font-size:0.875rem; font-weight:500; color:var(--text-muted);">Mês:</label>
           <input type="month" id="admin-bh-month-input">
           <button class="btn btn-primary btn-sm" id="admin-bh-apply-month">Aplicar</button>
         </div>
 
-        <!-- Período personalizado -->
         <div class="bh-custom-range" id="admin-bh-range-custom">
           <label style="font-size:0.875rem; font-weight:500; color:var(--text-muted);">De:</label>
           <input type="date" id="admin-bh-date-start">
@@ -348,7 +326,6 @@
           <button class="btn btn-primary btn-sm" id="admin-bh-apply-range">Aplicar</button>
         </div>
 
-        <!-- Resumo -->
         <div class="bh-summary-grid mt-4" id="admin-bh-summary-grid">
           <div class="bh-summary-card">
             <span class="bh-value" id="admin-bh-total-worked">--</span>
@@ -368,7 +345,6 @@
           </div>
         </div>
 
-        <!-- Tabela de dias -->
         <div class="table-container mt-2">
           <table>
             <thead>
@@ -398,7 +374,6 @@
 
   </main>
 
-  <!-- Modal: Novo Usuário -->
   <div class="modal-overlay" id="modal-novo-user">
     <div class="modal-box">
       <div class="modal-header">
@@ -440,7 +415,6 @@
     </div>
   </div>
 
-  <!-- Modal: Rejeitar Solicitação -->
   <div class="modal-overlay" id="modal-reject">
     <div class="modal-box">
       <div class="modal-header">
