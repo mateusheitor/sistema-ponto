@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,55 +14,117 @@
   <style>
     /* Modais */
     .modal-overlay {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.5);
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
       backdrop-filter: blur(4px);
-      display: flex; align-items: center; justify-content: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       z-index: 1000;
-      opacity: 0; pointer-events: none;
+      opacity: 0;
+      pointer-events: none;
       transition: opacity 0.25s ease;
     }
-    .modal-overlay.active { opacity: 1; pointer-events: all; }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
     .modal-box {
       background: white;
       border-radius: 1rem;
       padding: 2rem;
-      width: 100%; max-width: 460px;
-      box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+      width: 100%;
+      max-width: 460px;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
       transform: translateY(20px);
       transition: transform 0.25s ease;
     }
-    .modal-overlay.active .modal-box { transform: translateY(0); }
+
+    .modal-overlay.active .modal-box {
+      transform: translateY(0);
+    }
+
     .modal-header {
-      display: flex; justify-content: space-between; align-items: center;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 1.5rem;
     }
-    .modal-header h3 { font-size: 1.25rem; font-weight: 700; }
+
+    .modal-header h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
     .modal-close {
-      background: none; border: none; font-size: 1.5rem;
-      cursor: pointer; color: var(--text-muted); line-height: 1;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-muted);
+      line-height: 1;
       transition: color 0.2s;
     }
-    .modal-close:hover { color: var(--text-main); }
-    .role-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.5rem; }
-    .role-option { position: relative; }
-    .role-option input[type=radio] { position: absolute; opacity: 0; }
-    .role-option label {
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 0.4rem; padding: 1rem; border: 2px solid var(--border-color);
-      border-radius: var(--radius-md); cursor: pointer; font-weight: 500;
-      transition: all 0.2s ease; font-size: 0.875rem;
+
+    .modal-close:hover {
+      color: var(--text-main);
     }
-    .role-option label .role-icon { font-size: 1.5rem; }
-    .role-option input:checked + label {
+
+    .role-selector {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .role-option {
+      position: relative;
+    }
+
+    .role-option input[type=radio] {
+      position: absolute;
+      opacity: 0;
+    }
+
+    .role-option label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 1rem;
+      border: 2px solid var(--border-color);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      font-size: 0.875rem;
+    }
+
+    .role-option label .role-icon {
+      font-size: 1.5rem;
+    }
+
+    .role-option input:checked+label {
       border-color: var(--primary-color);
-      background-color: rgba(79,70,229,0.05);
+      background-color: rgba(79, 70, 229, 0.05);
       color: var(--primary-color);
     }
-    #msg-novo-user { font-size: 0.875rem; text-align: center; min-height: 1.25rem; }
+
+    #msg-novo-user {
+      font-size: 0.875rem;
+      text-align: center;
+      min-height: 1.25rem;
+    }
 
     /* Reject modal */
-    #modal-reject .modal-box { max-width: 400px; }
+    #modal-reject .modal-box {
+      max-width: 400px;
+    }
+
     .reject-detail-box {
       background: var(--bg-color);
       border-radius: var(--radius-md);
@@ -70,16 +133,22 @@
       font-size: 0.875rem;
       color: var(--text-muted);
     }
-    .reject-detail-box strong { color: var(--text-main); }
+
+    .reject-detail-box strong {
+      color: var(--text-main);
+    }
   </style>
 </head>
+
 <body>
 
   <nav class="navbar">
-    <div class="navbar-brand">PontoWeb <span style="color: var(--text-muted); font-size: 1rem; font-weight: 400; margin-left: 0.5rem;">Admin</span></div>
+    <div class="navbar-brand">PontoWeb <span
+        style="color: var(--text-muted); font-size: 1rem; font-weight: 400; margin-left: 0.5rem;">Admin</span></div>
     <div class="navbar-user">
       <span id="user-name" style="font-weight: 500;">Administrador</span>
-      <button id="btn-novo-user" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">+ Novo Usuário</button>
+      <button id="btn-novo-user" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">+ Novo
+        Usuário</button>
       <button id="btn-logout" class="btn btn-outline" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Sair</button>
     </div>
   </nav>
@@ -91,11 +160,11 @@
       <button class="tab-btn active" data-tab="tab-registros" role="tab" id="tab-btn-registros">
         📋 Filtros e Relatórios / Registros de Ponto
       </button>
-      <button class="tab-btn" data-tab="tab-workspace" role="tab" id="tab-btn-workspace">
-        📍 Local de Trabalho e Cerca Virtual
-      </button>
       <button class="tab-btn" data-tab="tab-banco-horas" role="tab" id="tab-btn-bh">
         ⏱️ Banco de Horas
+      </button>
+      <button class="tab-btn" data-tab="tab-workspace" role="tab" id="tab-btn-workspace">
+        📍 Local de Trabalho e Cerca Virtual
       </button>
     </div>
 
@@ -183,35 +252,43 @@
     ════════════════════════════════════════════════════════════════ -->
     <div id="tab-workspace" class="tab-panel">
       <div class="card">
-        <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">📍 Local de Trabalho e Cerca Virtual</h2>
-        <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.5rem;">Defina o endereço da empresa e o raio máximo permitido. Funcionários fora do raio configurado terão o registro de ponto bloqueado.</p>
+        <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">📍 Local de Trabalho e Cerca Virtual
+        </h2>
+        <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.5rem;">Defina o endereço da empresa e
+          o raio máximo permitido. Funcionários fora do raio configurado terão o registro de ponto bloqueado.</p>
 
         <div style="display: flex; flex-direction: column; gap: 1.25rem;">
           <div class="workspace-search-row">
             <div class="form-group" style="margin-bottom: 0; flex: 1;">
               <label for="workspace-address" class="form-label">Endereço da Empresa</label>
-              <input type="text" id="workspace-address" class="form-input" placeholder="Ex: Av. Paulista, 1000, São Paulo, SP">
+              <input type="text" id="workspace-address" class="form-input"
+                placeholder="Ex: Av. Paulista, 1000, São Paulo, SP">
             </div>
             <div>
-              <button id="btn-search-address" class="btn btn-outline" style="width: 100%; white-space: nowrap;">🔍 Buscar Coordenadas</button>
+              <button id="btn-search-address" class="btn btn-outline" style="width: 100%; white-space: nowrap;">🔍
+                Buscar Coordenadas</button>
             </div>
           </div>
 
           <div class="workspace-controls-grid">
             <div class="form-group" style="margin-bottom: 0;">
               <label for="workspace-radius" class="form-label">Raio (metros)</label>
-              <input type="number" id="workspace-radius" class="form-input" value="100" min="10" max="50000" placeholder="Ex: 100">
+              <input type="number" id="workspace-radius" class="form-input" value="100" min="10" max="50000"
+                placeholder="Ex: 100">
             </div>
             <div class="form-group" style="margin-bottom: 0;">
               <label for="workspace-lat" class="form-label">Latitude</label>
-              <input type="text" id="workspace-lat" class="form-input" placeholder="Ex: -23.5613" readonly style="background-color: var(--bg-color);">
+              <input type="text" id="workspace-lat" class="form-input" placeholder="Ex: -23.5613" readonly
+                style="background-color: var(--bg-color);">
             </div>
             <div class="form-group" style="margin-bottom: 0;">
               <label for="workspace-lng" class="form-label">Longitude</label>
-              <input type="text" id="workspace-lng" class="form-input" placeholder="Ex: -46.6565" readonly style="background-color: var(--bg-color);">
+              <input type="text" id="workspace-lng" class="form-input" placeholder="Ex: -46.6565" readonly
+                style="background-color: var(--bg-color);">
             </div>
             <div>
-              <button id="btn-save-workspace" class="btn btn-success" style="width: 100%; white-space: nowrap;">💾 Salvar Localização</button>
+              <button id="btn-save-workspace" class="btn btn-success" style="width: 100%; white-space: nowrap;">💾
+                Salvar Localização</button>
             </div>
           </div>
 
@@ -219,7 +296,8 @@
           <div>
             <div id="workspace-map" class="workspace-map-container"></div>
             <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 0.4rem; display: block;">
-              💡 Digite o endereço e clique em <strong>"Buscar"</strong>, arraste o pino azul ou clique direto no mapa para posicionar a empresa. O círculo indica o raio da cerca virtual.
+              💡 Digite o endereço e clique em <strong>"Buscar"</strong>, arraste o pino azul ou clique direto no mapa
+              para posicionar a empresa. O círculo indica o raio da cerca virtual.
             </small>
           </div>
 
@@ -233,7 +311,8 @@
     ════════════════════════════════════════════════════════════════ -->
     <div id="tab-banco-horas" class="tab-panel">
       <div class="card">
-        <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1.5rem;">⏱️ Banco de Horas — Visão Administrativa</h2>
+        <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1.5rem;">⏱️ Banco de Horas — Visão
+          Administrativa</h2>
 
         <!-- Seleção de funcionário -->
         <div class="filter-form-grid" style="margin-bottom: 1.5rem;">
@@ -247,10 +326,10 @@
 
         <!-- Seleção de Período -->
         <div class="bh-period-selector">
-          <button class="bh-period-btn active" data-period="week"         id="admin-bh-btn-week">📅 Esta Semana</button>
-          <button class="bh-period-btn"        data-period="month"        id="admin-bh-btn-month">📆 Este Mês</button>
-          <button class="bh-period-btn"        data-period="custom-month" id="admin-bh-btn-cmonth">🗓️ Mês Específico</button>
-          <button class="bh-period-btn"        data-period="custom-range" id="admin-bh-btn-range">📊 Período</button>
+          <button class="bh-period-btn active" data-period="week" id="admin-bh-btn-week">📅 Esta Semana</button>
+          <button class="bh-period-btn" data-period="month" id="admin-bh-btn-month">📆 Este Mês</button>
+          <button class="bh-period-btn" data-period="custom-month" id="admin-bh-btn-cmonth">🗓️ Mês Específico</button>
+          <button class="bh-period-btn" data-period="custom-range" id="admin-bh-btn-range">📊 Período</button>
         </div>
 
         <!-- Mês específico -->
@@ -304,7 +383,9 @@
               </tr>
             </thead>
             <tbody id="admin-bh-table-body">
-              <tr><td colspan="7" class="text-center text-muted">Selecione um funcionário e período.</td></tr>
+              <tr>
+                <td colspan="7" class="text-center text-muted">Selecione um funcionário e período.</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -375,7 +456,8 @@
 
       <div class="form-group">
         <label class="form-label" for="reject-reason">Motivo da rejeição (opcional)</label>
-        <textarea id="reject-reason" class="form-input" rows="2" placeholder="Ex: Horário incoerente com o sistema..." style="resize:vertical;"></textarea>
+        <textarea id="reject-reason" class="form-input" rows="2" placeholder="Ex: Horário incoerente com o sistema..."
+          style="resize:vertical;"></textarea>
       </div>
 
       <div style="display:flex; gap:0.75rem;">
@@ -389,4 +471,5 @@
   <script type="module" src="js/firebase-config.js"></script>
   <script type="module" src="js/admin.js"></script>
 </body>
+
 </html>
