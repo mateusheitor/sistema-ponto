@@ -2,39 +2,32 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Permite que usuários autenticados leiam configurações
     match /settings/{document} {
       allow read: if request.auth != null;
       allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Permite que usuários leiam/criem seus próprios registros de ponto
     match /time_records/{recordId} {
       allow read: if request.auth != null && (
         resource.data.userId == request.auth.uid ||
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
       );
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      // Apenas admin pode atualizar registros (aprovação de edição)
       allow update: if request.auth != null &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Solicitações de edição de ponto
     match /edit_requests/{requestId} {
-      // Funcionário pode criar e ler suas próprias solicitações
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
       allow read: if request.auth != null && (
         resource.data.userId == request.auth.uid ||
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
       );
-      // Apenas admin pode atualizar (aprovar/rejeitar)
       allow update: if request.auth != null &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
       allow delete: if false;
     }
 
-    // Usuários: leitura pelo próprio usuário ou admin
     match /users/{userId} {
       allow read: if request.auth != null && (
         request.auth.uid == userId ||

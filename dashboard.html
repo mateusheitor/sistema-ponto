@@ -7,7 +7,6 @@
   <meta name="description" content="Painel do funcionário para registro e consulta de ponto e banco de horas.">
   <link rel="stylesheet" href="css/style.css">
   <style>
-    /* Modal de edição de ponto */
     .modal-overlay {
       position: fixed; inset: 0;
       background: rgba(0,0,0,0.5);
@@ -63,7 +62,6 @@
   <main class="container">
     <div class="dashboard-grid">
       
-      <!-- Coluna Esquerda: Relógio e Botões -->
       <div>
         <div class="card text-center">
           <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">Registrar Ponto</h2>
@@ -79,10 +77,8 @@
         </div>
       </div>
 
-      <!-- Coluna Direita: Registros + Banco de Horas -->
       <div>
         <div class="card">
-          <!-- Abas -->
           <div class="employee-tab-nav">
             <button class="employee-tab-btn active" data-etab="tab-registros" id="etab-btn-registros">
               📋 Registros de Hoje
@@ -92,7 +88,6 @@
             </button>
           </div>
 
-          <!-- Painel: Registros de Hoje -->
           <div id="tab-registros" class="employee-tab-panel">
             <div class="table-container">
               <table>
@@ -113,11 +108,9 @@
             <div id="edit-requests-status" style="margin-top: 1rem;"></div>
           </div>
 
-          <!-- Painel: Banco de Horas -->
           <div id="tab-banco-horas" class="employee-tab-panel" style="display:none;">
             <h2 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1.25rem;">⏱️ Banco de Horas</h2>
 
-            <!-- Seleção de Período -->
             <div class="bh-period-selector">
               <button class="bh-period-btn active" data-period="week" id="bh-btn-week">📅 Esta Semana</button>
               <button class="bh-period-btn" data-period="month" id="bh-btn-month">📆 Este Mês</button>
@@ -125,14 +118,12 @@
               <button class="bh-period-btn" data-period="custom-range" id="bh-btn-range">📊 Período</button>
             </div>
 
-            <!-- Mês específico -->
             <div class="bh-custom-range" id="bh-range-month">
               <label style="font-size:0.875rem; font-weight:500; color:var(--text-muted);">Mês:</label>
               <input type="month" id="bh-month-input">
               <button class="btn btn-primary btn-sm" id="bh-apply-month">Aplicar</button>
             </div>
 
-            <!-- Período personalizado -->
             <div class="bh-custom-range" id="bh-range-custom">
               <label style="font-size:0.875rem; font-weight:500; color:var(--text-muted);">De:</label>
               <input type="date" id="bh-date-start">
@@ -141,7 +132,6 @@
               <button class="btn btn-primary btn-sm" id="bh-apply-range">Aplicar</button>
             </div>
 
-            <!-- Resumo -->
             <div class="bh-summary-grid" id="bh-summary-grid">
               <div class="bh-summary-card">
                 <span class="bh-value" id="bh-total-worked">--</span>
@@ -161,7 +151,6 @@
               </div>
             </div>
 
-            <!-- Tabela de dias -->
             <div class="table-container">
               <table>
                 <thead>
@@ -192,7 +181,6 @@
     </div>
   </main>
 
-  <!-- Modal: Solicitar Edição de Ponto -->
   <div class="modal-overlay" id="modal-edit-record">
     <div class="modal-box">
       <div class="modal-header">

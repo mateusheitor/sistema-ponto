@@ -4,7 +4,6 @@ import {
   getDoc, doc, setDoc, addDoc, updateDoc, serverTimestamp
 } from './firebase-config.js';
 
-// ── Elementos do DOM ─────────────────────────────────────────────────
 const userNameSpan   = document.getElementById('user-name');
 const btnLogout      = document.getElementById('btn-logout');
 const filterDate     = document.getElementById('filter-date');
@@ -12,7 +11,6 @@ const filterEmployee = document.getElementById('filter-employee');
 const btnFilter      = document.getElementById('btn-filter');
 const tableBody      = document.getElementById('admin-records-table-body');
 
-// Workspace elements
 const workspaceAddress = document.getElementById('workspace-address');
 const btnSearchAddress = document.getElementById('btn-search-address');
 const workspaceRadius  = document.getElementById('workspace-radius');
@@ -21,14 +19,12 @@ const workspaceLng     = document.getElementById('workspace-lng');
 const btnSaveWorkspace = document.getElementById('btn-save-workspace');
 const msgWorkspace     = document.getElementById('msg-workspace');
 
-// Modal: novo usuário
 const modalOverlay  = document.getElementById('modal-novo-user');
 const btnNovoUser   = document.getElementById('btn-novo-user');
 const btnCloseModal = document.getElementById('btn-close-modal');
 const btnCriarUser  = document.getElementById('btn-criar-user');
 const msgNovoUser   = document.getElementById('msg-novo-user');
 
-// Modal: rejeitar
 const modalReject      = document.getElementById('modal-reject');
 const btnCloseReject   = document.getElementById('btn-close-reject-modal');
 const btnCancelReject  = document.getElementById('btn-cancel-reject');
@@ -40,11 +36,9 @@ const rejectInfoType   = document.getElementById('reject-info-type');
 const rejectInfoTime   = document.getElementById('reject-info-time');
 const rejectInfoJust   = document.getElementById('reject-info-just');
 
-// Edit requests
 const editRequestsTableBody = document.getElementById('edit-requests-table-body');
 const pendingDot            = document.getElementById('pending-dot');
 
-// Banco de horas admin
 const adminBhTableBody    = document.getElementById('admin-bh-table-body');
 const adminBhTotalWorked  = document.getElementById('admin-bh-total-worked');
 const adminBhTotalExpected = document.getElementById('admin-bh-total-expected');
@@ -54,14 +48,12 @@ const adminBhDaysWorked   = document.getElementById('admin-bh-days-worked');
 const bhFilterEmployee    = document.getElementById('bh-filter-employee');
 
 let currentUser      = null;
-let rejectingRequest = null; // { id, data }
+let rejectingRequest = null;
 const META_DIARIA_HORAS = 8;
 
-// Seta data de hoje por padrão
 const today = new Date().toISOString().split('T')[0];
 filterDate.value = today;
 
-// ── Autenticação ─────────────────────────────────────────────────────
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     const userDocRef  = doc(db, 'users', user.uid);
@@ -83,13 +75,11 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// ── Logout ────────────────────────────────────────────────────────────
 btnLogout.addEventListener('click', async () => {
   await signOut(auth);
   window.location.href = 'index.html';
 });
 
-// ── Tab navigation ────────────────────────────────────────────────────
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const target = btn.dataset.tab;
@@ -98,14 +88,12 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.add('active');
     document.getElementById(target).classList.add('active');
 
-    // Inicializa mapa se entrar na aba workspace
     if (target === 'tab-workspace' && leafletMap) {
       setTimeout(() => leafletMap.invalidateSize(), 200);
     }
   });
 });
 
-// ── Modal: Novo Usuário ───────────────────────────────────────────────
 btnNovoUser.addEventListener('click', () => {
   modalOverlay.classList.add('active');
   msgNovoUser.innerText  = '';
@@ -119,7 +107,6 @@ btnNovoUser.addEventListener('click', () => {
 btnCloseModal.addEventListener('click', () => modalOverlay.classList.remove('active'));
 modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) modalOverlay.classList.remove('active'); });
 
-// ── Criar usuário via REST API (não faz logout do admin) ──────────────
 btnCriarUser.addEventListener('click', async () => {
   const name     = document.getElementById('new-name').value.trim();
   const email    = document.getElementById('new-email').value.trim();
@@ -183,7 +170,6 @@ btnCriarUser.addEventListener('click', async () => {
   }
 });
 
-// ── Carregar funcionários ─────────────────────────────────────────────
 async function loadEmployees() {
   try {
     const snap = await getDocs(query(collection(db, 'users'), where('role', '==', 'employee')));
@@ -201,7 +187,6 @@ async function loadEmployees() {
   }
 }
 
-// ── Carregar registros de ponto ───────────────────────────────────────
 async function loadRecords() {
   const dateValue  = filterDate.value;
   const employeeId = filterEmployee.value;
@@ -268,7 +253,6 @@ async function loadRecords() {
 
 btnFilter.addEventListener('click', loadRecords);
 
-// ── Solicitações de Edição de Ponto ───────────────────────────────────
 async function loadEditRequests() {
   editRequestsTableBody.innerHTML = '<tr><td colspan="7" class="text-center"><span class="loader"></span></td></tr>';
 
@@ -279,7 +263,7 @@ async function loadEditRequests() {
     requests.sort((a, b) => {
       const aTime = a.createdAt?.toDate?.() ?? new Date(0);
       const bTime = b.createdAt?.toDate?.() ?? new Date(0);
-      return bTime - aTime; // mais recentes primeiro
+      return bTime - aTime;
     });
 
     const pendingCount = requests.filter(r => r.status === 'pending').length;
@@ -328,7 +312,6 @@ async function loadEditRequests() {
       editRequestsTableBody.appendChild(tr);
     });
 
-    // Attach approve listeners
     editRequestsTableBody.querySelectorAll('.btn-approve').forEach(btn => {
       btn.addEventListener('click', () => {
         const reqId = btn.dataset.id;
@@ -337,7 +320,6 @@ async function loadEditRequests() {
       });
     });
 
-    // Attach reject listeners
     editRequestsTableBody.querySelectorAll('.btn-reject').forEach(btn => {
       btn.addEventListener('click', () => {
         const reqId = btn.dataset.id;
@@ -352,7 +334,6 @@ async function loadEditRequests() {
   }
 }
 
-// ── Aprovar edição ────────────────────────────────────────────────────
 async function approveEditRequest(reqId, req, btn) {
   if (!confirm(`Aprovar a alteração de "${req.type}" para ${req.requestedTime}?\n\nFuncionário: ${req.userEmail}\nJustificativa: ${req.justification}`)) return;
 
@@ -360,13 +341,12 @@ async function approveEditRequest(reqId, req, btn) {
   btn.innerText = '...';
 
   try {
-    // Reconstrói o novo timestamp com o horário solicitado
+
     const [h, m]        = req.requestedTime.split(':').map(Number);
     const originalDate  = req.originalTimestamp.toDate();
     const newTimestamp  = new Date(originalDate);
     newTimestamp.setHours(h, m, 0, 0);
 
-    // Atualiza o registro de ponto original
     await updateDoc(doc(db, 'time_records', req.recordId), {
       timestamp: newTimestamp,
       edited:    true,
@@ -374,7 +354,6 @@ async function approveEditRequest(reqId, req, btn) {
       editNote:  req.justification
     });
 
-    // Marca a solicitação como aprovada
     await updateDoc(doc(db, 'edit_requests', reqId), {
       status:     'approved',
       resolvedAt: new Date(),
@@ -393,7 +372,6 @@ async function approveEditRequest(reqId, req, btn) {
   }
 }
 
-// ── Modal: Rejeitar ───────────────────────────────────────────────────
 function openRejectModal(reqId, req) {
   rejectingRequest = { id: reqId, data: req };
   rejectInfoUser.innerText = req.userEmail || req.userId;
@@ -443,7 +421,6 @@ btnConfirmReject.addEventListener('click', async () => {
   }
 });
 
-// ── Local de Trabalho & Geofencing ───────────────────────────────────
 let leafletMap    = null;
 let leafletMarker = null;
 let leafletCircle = null;
@@ -622,8 +599,6 @@ btnSaveWorkspace.addEventListener('click', async () => {
   }
 });
 
-// ── Banco de Horas (Admin) ────────────────────────────────────────────
-
 function formatMinutes(totalMinutes) {
   const sign  = totalMinutes < 0 ? '-' : '';
   const abs   = Math.abs(Math.round(totalMinutes));
@@ -768,7 +743,6 @@ function initAdminBancoDeHoras() {
 
   const getSelectedEmployee = () => bhFilterEmployee.value;
 
-  // Botões de período
   document.querySelectorAll('#tab-banco-horas .bh-period-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('#tab-banco-horas .bh-period-btn').forEach(b => b.classList.remove('active'));
@@ -808,12 +782,10 @@ function initAdminBancoDeHoras() {
     loadAdminBancoDeHoras(getSelectedEmployee(), start, end);
   });
 
-  // Recarrega ao trocar funcionário
   bhFilterEmployee.addEventListener('change', () => {
     if (currentPeriod) loadAdminBancoDeHoras(getSelectedEmployee(), currentPeriod.start, currentPeriod.end);
   });
 
-  // Carrega semana atual ao entrar na aba
   document.getElementById('tab-btn-bh').addEventListener('click', () => {
     if (adminBhTotalWorked.innerText === '--' && getSelectedEmployee()) {
       const { start, end } = currentWeekRange();
@@ -821,3 +793,4 @@ function initAdminBancoDeHoras() {
     }
   });
 }
+

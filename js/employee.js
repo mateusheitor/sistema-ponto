@@ -3,7 +3,6 @@ import {
   db, collection, addDoc, query, where, getDocs, doc, getDoc, updateDoc, serverTimestamp
 } from './firebase-config.js';
 
-// ── Elementos do DOM ────────────────────────────────────────────────
 const userNameSpan   = document.getElementById('user-name');
 const btnLogout      = document.getElementById('btn-logout');
 const clockDisplay   = document.getElementById('clock');
@@ -11,7 +10,6 @@ const dateDisplay    = document.getElementById('date');
 const tableBody      = document.getElementById('records-table-body');
 const editRequestsStatus = document.getElementById('edit-requests-status');
 
-// Modal edição
 const modalEdit      = document.getElementById('modal-edit-record');
 const btnCloseEdit   = document.getElementById('btn-close-edit-modal');
 const editInfoType   = document.getElementById('edit-info-type');
@@ -21,7 +19,6 @@ const editJustification = document.getElementById('edit-justification');
 const btnSubmitEdit  = document.getElementById('btn-submit-edit');
 const msgEditModal   = document.getElementById('msg-edit-modal');
 
-// Banco de horas
 const bhTableBody    = document.getElementById('bh-table-body');
 const bhTotalWorked  = document.getElementById('bh-total-worked');
 const bhTotalExpected = document.getElementById('bh-total-expected');
@@ -29,11 +26,9 @@ const bhBalance      = document.getElementById('bh-balance');
 const bhBalanceCard  = document.getElementById('bh-balance-card');
 const bhDaysWorked   = document.getElementById('bh-days-worked');
 
-// Abas do funcionário
 const employeeTabBtns = document.querySelectorAll('.employee-tab-btn');
 const bhPanelBtns    = document.querySelectorAll('.bh-period-btn');
 
-// ── Configuração dos Botões de Ponto ────────────────────────────────
 const PUNCH_CONFIG = {
   'Entrada':           { btn: document.getElementById('btn-entrada'), label: 'Entrada',        registeredLabel: '✓ Entrada (Feito)' },
   'Pausa para Almoço': { btn: document.getElementById('btn-pausa'),   label: 'Pausa Almoço',   registeredLabel: '✓ Pausa (Feita)'   },
@@ -41,13 +36,12 @@ const PUNCH_CONFIG = {
   'Saída':             { btn: document.getElementById('btn-saida'),   label: 'Saída',           registeredLabel: '✓ Saída (Feita)'   }
 };
 
-const META_DIARIA_HORAS = 8; // Meta de horas por dia útil
+const META_DIARIA_HORAS = 8;
 
 let currentUser     = null;
 let todayRegisteredTypes = new Set();
-let editingRecord   = null; // { id, data } do registro a editar
+let editingRecord   = null;
 
-// ── Relógio ─────────────────────────────────────────────────────────
 function updateClock() {
   const now = new Date();
   clockDisplay.innerText = now.toLocaleTimeString('pt-BR');
@@ -56,12 +50,10 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
-// ── Autenticação ─────────────────────────────────────────────────────
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     currentUser = user;
 
-    // Busca o nome do usuário no Firestore
     try {
       const userDoc = await getDoc(doc(db, 'users', user.uid));
       userNameSpan.innerText = userDoc.exists() ? (userDoc.data().name || user.email) : user.email;
@@ -75,13 +67,11 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// ── Logout ───────────────────────────────────────────────────────────
 btnLogout.addEventListener('click', async () => {
   await signOut(auth);
   window.location.href = 'index.html';
 });
 
-// ── Atualiza estado dos botões ───────────────────────────────────────
 function updateButtonStates() {
   for (const [type, config] of Object.entries(PUNCH_CONFIG)) {
     if (!config.btn) continue;
@@ -97,7 +87,6 @@ function updateButtonStates() {
   }
 }
 
-// ── Geolocalização ──────────────────────────────────────────────────
 function getCurrentPosition() {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
@@ -110,7 +99,6 @@ function getCurrentPosition() {
   });
 }
 
-// ── Haversine ──────────────────────────────────────────────────────
 function calculateDistance(lat1, lon1, lat2, lon2) {
   const R = 6371e3;
   const phi1 = lat1 * Math.PI / 180, phi2 = lat2 * Math.PI / 180;
@@ -120,7 +108,6 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-// ── Registrar Ponto ─────────────────────────────────────────────────
 async function registerPunch(type) {
   if (!currentUser) return;
   const todayStr = new Date().toISOString().split('T')[0];
@@ -133,7 +120,7 @@ async function registerPunch(type) {
   Object.values(PUNCH_CONFIG).forEach(c => { if (c.btn) c.btn.disabled = true; });
 
   try {
-    // Verifica duplicidade no banco
+
     const checkSnap = await getDocs(query(
       collection(db, 'time_records'),
       where('userId', '==', currentUser.uid),
@@ -146,7 +133,6 @@ async function registerPunch(type) {
       return;
     }
 
-    // Geolocalização
     let latitude, longitude, accuracy;
     try {
       const pos = await getCurrentPosition();
@@ -162,7 +148,6 @@ async function registerPunch(type) {
       return;
     }
 
-    // Geofencing
     try {
       const wsDoc = await getDoc(doc(db, 'settings', 'workspace'));
       if (wsDoc.exists()) {
@@ -180,7 +165,6 @@ async function registerPunch(type) {
       console.warn('Cerca virtual indisponível:', fenceErr);
     }
 
-    // Salva o ponto
     const now = new Date();
     await addDoc(collection(db, 'time_records'), {
       userId:     currentUser.uid,
@@ -207,7 +191,6 @@ PUNCH_CONFIG['Pausa para Almoço'].btn?.addEventListener('click', () => register
 PUNCH_CONFIG['Volta do Almoço'].btn?.addEventListener('click',   () => registerPunch('Volta do Almoço'));
 PUNCH_CONFIG['Saída'].btn?.addEventListener('click',             () => registerPunch('Saída'));
 
-// ── Carregar registros de hoje ──────────────────────────────────────
 async function loadTodayRecords() {
   if (!currentUser) return;
   tableBody.innerHTML = '<tr><td colspan="3" class="text-center"><span class="loader"></span></td></tr>';
@@ -239,7 +222,6 @@ async function loadTodayRecords() {
     records.sort((a, b) => a.timestamp.toDate() - b.timestamp.toDate());
     updateButtonStates();
 
-    // Busca solicitações pendentes do dia para sinalizar na tabela
     const pendingSnap = await getDocs(query(
       collection(db, 'edit_requests'),
       where('userId', '==', currentUser.uid),
@@ -272,7 +254,6 @@ async function loadTodayRecords() {
       tableBody.appendChild(tr);
     });
 
-    // Listeners nos botões de editar
     tableBody.querySelectorAll('.btn-edit-record').forEach(btn => {
       btn.addEventListener('click', () => {
         const recId  = btn.dataset.id;
@@ -288,7 +269,6 @@ async function loadTodayRecords() {
   }
 }
 
-// ── Minhas solicitações pendentes ───────────────────────────────────
 async function loadMyEditRequests() {
   if (!currentUser || !editRequestsStatus) return;
   try {
@@ -311,14 +291,12 @@ async function loadMyEditRequests() {
   }
 }
 
-// ── Modal de edição ─────────────────────────────────────────────────
 function openEditModal(record) {
   editingRecord = record;
   const timeStr = record.timestamp.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   editInfoType.innerText = record.type;
   editInfoTime.innerText = timeStr;
 
-  // Pré-preenche com o horário atual do registro
   const h = record.timestamp.toDate().getHours().toString().padStart(2, '0');
   const m = record.timestamp.toDate().getMinutes().toString().padStart(2, '0');
   editNewTime.value = `${h}:${m}`;
@@ -361,7 +339,7 @@ btnSubmitEdit.addEventListener('click', async () => {
       type:               editingRecord.type,
       originalTimestamp:  editingRecord.timestamp,
       originalDateString: editingRecord.dateString,
-      requestedTime:      newTime,  // "HH:MM"
+      requestedTime:      newTime,
       justification,
       status:             'pending',
       createdAt:          new Date()
@@ -386,7 +364,6 @@ btnSubmitEdit.addEventListener('click', async () => {
   }
 });
 
-// ── Abas do funcionário ─────────────────────────────────────────────
 employeeTabBtns.forEach(btn => {
   btn.addEventListener('click', () => {
     const targetPanel = btn.dataset.etab;
@@ -398,9 +375,6 @@ employeeTabBtns.forEach(btn => {
   });
 });
 
-// ── Banco de Horas ──────────────────────────────────────────────────
-
-/** Formata minutos totais em "Xh Ym" */
 function formatMinutes(totalMinutes) {
   const sign    = totalMinutes < 0 ? '-' : '';
   const abs     = Math.abs(Math.round(totalMinutes));
@@ -409,16 +383,14 @@ function formatMinutes(totalMinutes) {
   return `${sign}${hours}h${minutes.toString().padStart(2, '0')}`;
 }
 
-/** Retorna data no formato "YYYY-MM-DD" */
 function toDateStr(date) {
   return date.toISOString().split('T')[0];
 }
 
-/** Retorna o início (segunda-feira) e fim (domingo) da semana atual */
 function currentWeekRange() {
   const now   = new Date();
-  const day   = now.getDay(); // 0=Dom, 1=Seg...
-  const diffStart = (day === 0) ? -6 : 1 - day; // ajusta para segunda
+  const day   = now.getDay();
+  const diffStart = (day === 0) ? -6 : 1 - day;
   const start = new Date(now);
   start.setDate(now.getDate() + diffStart);
   start.setHours(0, 0, 0, 0);
@@ -428,7 +400,6 @@ function currentWeekRange() {
   return { start, end };
 }
 
-/** Retorna o início e fim do mês atual */
 function currentMonthRange() {
   const now   = new Date();
   const start = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -436,7 +407,6 @@ function currentMonthRange() {
   return { start, end };
 }
 
-/** Retorna o início e fim de um mês a partir de "YYYY-MM" */
 function monthRange(yearMonthStr) {
   const [y, m] = yearMonthStr.split('-').map(Number);
   const start  = new Date(y, m - 1, 1);
@@ -444,12 +414,8 @@ function monthRange(yearMonthStr) {
   return { start, end };
 }
 
-/**
- * Calcula o banco de horas a partir de um conjunto de registros.
- * Retorna um array de objetos por dia com os totais.
- */
 function calcBancoDeHoras(records) {
-  // Agrupa por data
+
   const byDay = {};
   records.forEach(r => {
     const ds = r.dateString;
@@ -473,10 +439,10 @@ function calcBancoDeHoras(records) {
       const pauseMin = (pausa && volta) ? (volta - pausa) / 60000 : 0;
       workedMin = totalMin - pauseMin;
     } else if (entrada && pausa) {
-      // Só trabalhou até a pausa
+
       workedMin = (pausa - entrada) / 60000;
     } else if (volta && saida) {
-      // Só voltou e saiu
+
       workedMin = (saida - volta) / 60000;
     }
 
@@ -499,7 +465,6 @@ function calcBancoDeHoras(records) {
   });
 }
 
-/** Carrega e exibe o banco de horas para um período */
 async function loadBancoDeHoras(start, end) {
   if (!currentUser) return;
 
@@ -513,8 +478,7 @@ async function loadBancoDeHoras(start, end) {
   const endStr   = toDateStr(end);
 
   try {
-    // Firestore não suporta range em strings juntamente com igualdade sem um índice composto.
-    // Para simplificar e não exigir configuração manual de índice, filtramos no cliente.
+
     const snap = await getDocs(query(
       collection(db, 'time_records'),
       where('userId', '==', currentUser.uid)
@@ -574,7 +538,6 @@ async function loadBancoDeHoras(start, end) {
     bhBalance.innerText       = (totalBalanceMin >= 0 ? '+' : '') + formatMinutes(totalBalanceMin);
     bhDaysWorked.innerText    = daysWithData;
 
-    // Estilo do saldo
     bhBalanceCard.classList.remove('positive', 'negative', 'neutral');
     if (totalBalanceMin > 0)       bhBalanceCard.classList.add('positive');
     else if (totalBalanceMin < 0)  bhBalanceCard.classList.add('negative');
@@ -586,19 +549,16 @@ async function loadBancoDeHoras(start, end) {
   }
 }
 
-// ── Inicializa lógica do banco de horas ─────────────────────────────
 function initBancoDeHoras() {
-  // Configura data default no input de mês
+
   const now = new Date();
   const ymStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
   document.getElementById('bh-month-input').value = ymStr;
 
-  // Configura datas no range personalizado
   const { start: ws, end: we } = currentWeekRange();
   document.getElementById('bh-date-start').value = toDateStr(ws);
   document.getElementById('bh-date-end').value   = toDateStr(now);
 
-  // Botões de período
   bhPanelBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       bhPanelBtns.forEach(b => b.classList.remove('active'));
@@ -606,7 +566,6 @@ function initBancoDeHoras() {
 
       const period = btn.dataset.period;
 
-      // Esconde todos os inputs customizados
       document.getElementById('bh-range-month').classList.remove('visible');
       document.getElementById('bh-range-custom').classList.remove('visible');
 
@@ -627,7 +586,6 @@ function initBancoDeHoras() {
     });
   });
 
-  // Aplicar mês específico
   document.getElementById('bh-apply-month').addEventListener('click', () => {
     const val = document.getElementById('bh-month-input').value;
     if (!val) return;
@@ -635,7 +593,6 @@ function initBancoDeHoras() {
     loadBancoDeHoras(start, end);
   });
 
-  // Aplicar período personalizado
   document.getElementById('bh-apply-range').addEventListener('click', () => {
     const startVal = document.getElementById('bh-date-start').value;
     const endVal   = document.getElementById('bh-date-end').value;
@@ -649,13 +606,13 @@ function initBancoDeHoras() {
     loadBancoDeHoras(start, end);
   });
 
-  // Carrega a semana atual ao abrir a aba
   const bhTabBtn = document.getElementById('etab-btn-bh');
   bhTabBtn.addEventListener('click', () => {
-    // Só carrega se não tiver dados ainda
+
     if (bhTotalWorked.innerText === '--') {
       const { start, end } = currentWeekRange();
       loadBancoDeHoras(start, end);
     }
   });
 }
+

@@ -33,7 +33,6 @@ body {
   flex-direction: column;
 }
 
-/* Utils */
 .container {
   width: 100%;
   max-width: 1200px;
@@ -49,7 +48,6 @@ body {
 .mb-4 { margin-bottom: 2rem; }
 .hidden { display: none !important; }
 
-/* Cards & Layout */
 .card {
   background: var(--card-bg);
   border-radius: var(--radius-lg);
@@ -63,7 +61,6 @@ body {
   box-shadow: var(--shadow-lg);
 }
 
-/* Buttons */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -102,7 +99,6 @@ body {
   width: 100%;
 }
 
-/* Forms */
 .form-group {
   margin-bottom: 1.5rem;
   text-align: left;
@@ -131,7 +127,6 @@ body {
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
-/* Navbar */
 .navbar {
   background: var(--card-bg);
   box-shadow: var(--shadow-sm);
@@ -153,7 +148,6 @@ body {
   gap: 1rem;
 }
 
-/* Login Page specific */
 .login-wrapper {
   display: flex;
   align-items: center;
@@ -182,7 +176,6 @@ body {
   margin-top: 0.5rem;
 }
 
-/* Dashboard specific */
 .dashboard-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -217,7 +210,6 @@ body {
   gap: 1rem;
 }
 
-/* Table styles */
 .table-container {
   overflow-x: auto;
 }
@@ -245,7 +237,6 @@ tr:hover {
   background-color: var(--bg-color);
 }
 
-/* Badges */
 .badge {
   padding: 0.25rem 0.75rem;
   border-radius: 9999px;
@@ -259,7 +250,6 @@ tr:hover {
 .badge-volta { background-color: #dbeafe; color: #1e40af; }
 .badge-saida { background-color: #fee2e2; color: #991b1b; }
 
-/* Loader */
 .loader {
   border: 3px solid var(--bg-color);
   border-top: 3px solid var(--primary-color);
@@ -275,7 +265,6 @@ tr:hover {
   100% { transform: rotate(360deg); }
 }
 
-/* Button States */
 .btn:disabled,
 .btn.btn-registered {
   opacity: 0.55;
@@ -283,7 +272,6 @@ tr:hover {
   filter: grayscale(20%);
 }
 
-/* Workspace & Geofencing Responsive Layout */
 .workspace-search-row {
   display: flex;
   flex-direction: column;
@@ -332,7 +320,6 @@ tr:hover {
   }
 }
 
-/* Filter Responsive Layout */
 .filter-form-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -346,7 +333,6 @@ tr:hover {
   }
 }
 
-/* ── Tab Navigation (Admin) ──────────────────────────────────────── */
 .tab-nav {
   display: flex;
   gap: 0.25rem;
@@ -388,7 +374,6 @@ tr:hover {
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
 
-/* ── Banco de Horas ──────────────────────────────────────────────── */
 .bh-period-selector {
   display: flex;
   flex-wrap: wrap;
@@ -476,13 +461,11 @@ tr:hover {
 .bh-summary-card.negative .bh-value { color: var(--danger); }
 .bh-summary-card.neutral  .bh-value { color: var(--warning); }
 
-/* ── Edit Request Badges ─────────────────────────────────────────── */
 .badge-pending  { background-color: #fef3c7; color: #92400e; }
 .badge-approved { background-color: #d1fae5; color: #065f46; }
 .badge-rejected { background-color: #fee2e2; color: #991b1b; }
 .badge-edited   { background-color: #ede9fe; color: #5b21b6; }
 
-/* ── Edit Action Buttons ─────────────────────────────────────────── */
 .edit-action-btns { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 
 .btn-sm {
@@ -503,7 +486,6 @@ tr:hover {
 }
 .btn-reject:hover { background: #fca5a5; }
 
-/* ── Dashboard Employee Tabs ─────────────────────────────────────── */
 .employee-tab-nav {
   display: flex;
   gap: 0;
@@ -531,7 +513,6 @@ tr:hover {
   font-weight: 600;
 }
 
-/* ── Pending notification dot ────────────────────────────────────── */
 .pending-dot {
   display: inline-block;
   width: 8px; height: 8px;
@@ -547,7 +528,6 @@ tr:hover {
   50%       { opacity: 0.5; transform: scale(0.8); }
 }
 
-/* ── Edit record button in table ─────────────────────────────────── */
 .btn-edit-record {
   background: none;
   border: 1px solid var(--border-color);
@@ -565,7 +545,6 @@ tr:hover {
   background: rgba(79,70,229,0.05);
 }
 
-/* Edit info box */
 .edit-info-box {
   background: #eff6ff;
   border: 1px solid #bfdbfe;
@@ -576,7 +555,6 @@ tr:hover {
   margin-top: 1rem;
 }
 
-/* Solicitações pendentes accordion */
 .pending-requests-section {
   margin-top: 1.5rem;
   border-top: 1px solid var(--border-color);
@@ -591,3 +569,4 @@ tr:hover {
   align-items: center;
   gap: 0.5rem;
 }
+
