@@ -700,13 +700,16 @@ async function loadAdminBancoDeHoras(userId, start, end) {
   try {
     const snap = await getDocs(query(
       collection(db, 'time_records'),
-      where('userId', '==', userId),
-      where('dateString', '>=', startStr),
-      where('dateString', '<=', endStr)
+      where('userId', '==', userId)
     ));
 
     const records = [];
-    snap.forEach(d => records.push({ id: d.id, ...d.data() }));
+    snap.forEach(d => {
+      const data = d.data();
+      if (data.dateString >= startStr && data.dateString <= endStr) {
+        records.push({ id: d.id, ...data });
+      }
+    });
 
     if (records.length === 0) {
       adminBhTableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">Nenhum registro neste período.</td></tr>`;

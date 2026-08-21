@@ -513,16 +513,20 @@ async function loadBancoDeHoras(start, end) {
   const endStr   = toDateStr(end);
 
   try {
-    // Firestore não suporta range em strings diretamente sem índice, então filtramos no cliente
+    // Firestore não suporta range em strings juntamente com igualdade sem um índice composto.
+    // Para simplificar e não exigir configuração manual de índice, filtramos no cliente.
     const snap = await getDocs(query(
       collection(db, 'time_records'),
-      where('userId', '==', currentUser.uid),
-      where('dateString', '>=', startStr),
-      where('dateString', '<=', endStr)
+      where('userId', '==', currentUser.uid)
     ));
 
     const records = [];
-    snap.forEach(d => records.push({ id: d.id, ...d.data() }));
+    snap.forEach(d => {
+      const data = d.data();
+      if (data.dateString >= startStr && data.dateString <= endStr) {
+        records.push({ id: d.id, ...data });
+      }
+    });
 
     if (records.length === 0) {
       bhTableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">Nenhum registro neste período (${startStr} a ${endStr}).</td></tr>`;
