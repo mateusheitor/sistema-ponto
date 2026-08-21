@@ -1,42 +1,47 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Função auxiliar para verificar se o usuário está autenticado
-    function isAuthenticated() {
-      return request.auth != null;
+
+    // Permite que usuários autenticados leiam configurações
+    match /settings/{document} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Função auxiliar para verificar se o usuário é Administrador
-    function isAdmin() {
-      return isAuthenticated() && 
+    // Permite que usuários leiam/criem seus próprios registros de ponto
+    match /time_records/{recordId} {
+      allow read: if request.auth != null && (
+        resource.data.userId == request.auth.uid ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      // Apenas admin pode atualizar registros (aprovação de edição)
+      allow update: if request.auth != null &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Regras para a coleção de Usuários
+    // Solicitações de edição de ponto
+    match /edit_requests/{requestId} {
+      // Funcionário pode criar e ler suas próprias solicitações
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read: if request.auth != null && (
+        resource.data.userId == request.auth.uid ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+      // Apenas admin pode atualizar (aprovar/rejeitar)
+      allow update: if request.auth != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow delete: if false;
+    }
+
+    // Usuários: leitura pelo próprio usuário ou admin
     match /users/{userId} {
-      // O próprio usuário pode ler seu documento; admins podem ler todos
-      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
-      // Apenas admins podem criar/editar usuários
-      allow write: if isAdmin();
-    }
-
-    // Regras para os Registros de Ponto
-    match /time_records/{recordId} {
-      // Funcionário lê apenas os seus próprios registros; Admin pode ler todos
-      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
-      // Funcionário só pode criar registro associado ao seu próprio UID
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      // Registros de ponto não podem ser editados ou excluídos diretamente por funcionários
-      allow update, delete: if isAdmin();
-    }
-
-    // Regras para Configurações (ex: Local de trabalho / Cerca virtual)
-    match /settings/{settingId} {
-      // Qualquer funcionário logado pode ler para validar a distância do ponto
-      allow read: if isAuthenticated();
-      // Apenas o Administrador pode alterar as configurações
-      allow write: if isAdmin();
+      allow read: if request.auth != null && (
+        request.auth.uid == userId ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+      allow write: if request.auth != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
   }
 }

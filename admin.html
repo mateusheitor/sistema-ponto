@@ -4,12 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PontoWeb - Painel Administrativo</title>
+  <meta name="description" content="Painel administrativo para gestão de ponto, banco de horas e aprovação de edições.">
   <link rel="stylesheet" href="css/style.css">
   <!-- Leaflet Map CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <!-- Leaflet Map JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
+    /* Modais */
     .modal-overlay {
       position: fixed; inset: 0;
       background: rgba(0,0,0,0.5);
@@ -57,6 +59,18 @@
       color: var(--primary-color);
     }
     #msg-novo-user { font-size: 0.875rem; text-align: center; min-height: 1.25rem; }
+
+    /* Reject modal */
+    #modal-reject .modal-box { max-width: 400px; }
+    .reject-detail-box {
+      background: var(--bg-color);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1rem;
+      margin-bottom: 1rem;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+    .reject-detail-box strong { color: var(--text-main); }
   </style>
 </head>
 <body>
@@ -71,95 +85,236 @@
   </nav>
 
   <main class="container">
-    <!-- Card: Configuração do Local de Trabalho -->
-    <div class="card mb-4">
-      <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">📍 Local de Trabalho e Cerca Virtual</h2>
-      <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.5rem;">Defina o endereço da empresa e o raio máximo permitido. Funcionários fora do raio configurado terão o registro de ponto bloqueado.</p>
-      
-      <div style="display: flex; flex-direction: column; gap: 1.25rem;">
-        <div class="workspace-search-row">
-          <div class="form-group" style="margin-bottom: 0; flex: 1;">
-            <label for="workspace-address" class="form-label">Endereço da Empresa</label>
-            <input type="text" id="workspace-address" class="form-input" placeholder="Ex: Av. Paulista, 1000, São Paulo, SP">
+
+    <!-- Tab Navigation -->
+    <div class="tab-nav" role="tablist">
+      <button class="tab-btn active" data-tab="tab-registros" role="tab" id="tab-btn-registros">
+        📋 Filtros e Relatórios / Registros de Ponto
+      </button>
+      <button class="tab-btn" data-tab="tab-workspace" role="tab" id="tab-btn-workspace">
+        📍 Local de Trabalho e Cerca Virtual
+      </button>
+      <button class="tab-btn" data-tab="tab-banco-horas" role="tab" id="tab-btn-bh">
+        ⏱️ Banco de Horas
+      </button>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         ABA 1 — Filtros, Registros de Ponto e Solicitações de Edição
+    ════════════════════════════════════════════════════════════════ -->
+    <div id="tab-registros" class="tab-panel active">
+
+      <!-- Filtros -->
+      <div class="card mb-4">
+        <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1.5rem;">Filtros e Relatórios</h2>
+        <div class="filter-form-grid">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="filter-date" class="form-label">Data</label>
+            <input type="date" id="filter-date" class="form-input">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="filter-employee" class="form-label">Funcionário</label>
+            <select id="filter-employee" class="form-input">
+              <option value="all">Todos os Funcionários</option>
+            </select>
           </div>
           <div>
-            <button id="btn-search-address" class="btn btn-outline" style="width: 100%; white-space: nowrap;">🔍 Buscar Coordenadas</button>
+            <button id="btn-filter" class="btn btn-primary" style="width: 100%;">Aplicar Filtro</button>
           </div>
         </div>
+      </div>
 
-        <div class="workspace-controls-grid">
-          <div class="form-group" style="margin-bottom: 0;">
-            <label for="workspace-radius" class="form-label">Raio (metros)</label>
-            <input type="number" id="workspace-radius" class="form-input" value="100" min="10" max="50000" placeholder="Ex: 100">
+      <!-- Registros de Ponto -->
+      <div class="card mb-4">
+        <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1.5rem;">Registros de Ponto</h2>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Funcionário</th>
+                <th>Tipo</th>
+                <th>Horário</th>
+                <th>Localização</th>
+              </tr>
+            </thead>
+            <tbody id="admin-records-table-body">
+              <tr>
+                <td colspan="5" class="text-center" style="color: var(--text-muted);">Carregando registros...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Solicitações de Edição Pendentes -->
+      <div class="card" id="edit-requests-card">
+        <div class="pending-requests-section" style="margin-top:0; border-top:none; padding-top:0;">
+          <h3>
+            ✏️ Solicitações de Edição de Ponto
+            <span class="pending-dot" id="pending-dot" style="display:none;"></span>
+          </h3>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Funcionário</th>
+                  <th>Tipo</th>
+                  <th>Hora Original</th>
+                  <th>Hora Solicitada</th>
+                  <th>Justificativa</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="edit-requests-table-body">
+                <tr>
+                  <td colspan="7" class="text-center" style="color: var(--text-muted);">Carregando...</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-          <div class="form-group" style="margin-bottom: 0;">
-            <label for="workspace-lat" class="form-label">Latitude</label>
-            <input type="text" id="workspace-lat" class="form-input" placeholder="Ex: -23.5613" readonly style="background-color: var(--bg-color);">
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         ABA 2 — Local de Trabalho e Cerca Virtual
+    ════════════════════════════════════════════════════════════════ -->
+    <div id="tab-workspace" class="tab-panel">
+      <div class="card">
+        <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">📍 Local de Trabalho e Cerca Virtual</h2>
+        <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.5rem;">Defina o endereço da empresa e o raio máximo permitido. Funcionários fora do raio configurado terão o registro de ponto bloqueado.</p>
+
+        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+          <div class="workspace-search-row">
+            <div class="form-group" style="margin-bottom: 0; flex: 1;">
+              <label for="workspace-address" class="form-label">Endereço da Empresa</label>
+              <input type="text" id="workspace-address" class="form-input" placeholder="Ex: Av. Paulista, 1000, São Paulo, SP">
+            </div>
+            <div>
+              <button id="btn-search-address" class="btn btn-outline" style="width: 100%; white-space: nowrap;">🔍 Buscar Coordenadas</button>
+            </div>
           </div>
-          <div class="form-group" style="margin-bottom: 0;">
-            <label for="workspace-lng" class="form-label">Longitude</label>
-            <input type="text" id="workspace-lng" class="form-input" placeholder="Ex: -46.6565" readonly style="background-color: var(--bg-color);">
+
+          <div class="workspace-controls-grid">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="workspace-radius" class="form-label">Raio (metros)</label>
+              <input type="number" id="workspace-radius" class="form-input" value="100" min="10" max="50000" placeholder="Ex: 100">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="workspace-lat" class="form-label">Latitude</label>
+              <input type="text" id="workspace-lat" class="form-input" placeholder="Ex: -23.5613" readonly style="background-color: var(--bg-color);">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="workspace-lng" class="form-label">Longitude</label>
+              <input type="text" id="workspace-lng" class="form-input" placeholder="Ex: -46.6565" readonly style="background-color: var(--bg-color);">
+            </div>
+            <div>
+              <button id="btn-save-workspace" class="btn btn-success" style="width: 100%; white-space: nowrap;">💾 Salvar Localização</button>
+            </div>
           </div>
+
+          <!-- Mapa Interativo -->
           <div>
-            <button id="btn-save-workspace" class="btn btn-success" style="width: 100%; white-space: nowrap;">💾 Salvar Localização</button>
+            <div id="workspace-map" class="workspace-map-container"></div>
+            <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 0.4rem; display: block;">
+              💡 Digite o endereço e clique em <strong>"Buscar"</strong>, arraste o pino azul ou clique direto no mapa para posicionar a empresa. O círculo indica o raio da cerca virtual.
+            </small>
+          </div>
+
+          <div id="msg-workspace" style="font-size: 0.875rem; min-height: 1.25rem;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         ABA 3 — Banco de Horas (Visão Geral / Por Funcionário)
+    ════════════════════════════════════════════════════════════════ -->
+    <div id="tab-banco-horas" class="tab-panel">
+      <div class="card">
+        <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1.5rem;">⏱️ Banco de Horas — Visão Administrativa</h2>
+
+        <!-- Seleção de funcionário -->
+        <div class="filter-form-grid" style="margin-bottom: 1.5rem;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="bh-filter-employee" class="form-label">Funcionário</label>
+            <select id="bh-filter-employee" class="form-input">
+              <option value="">Selecione um funcionário</option>
+            </select>
           </div>
         </div>
 
-        <!-- Mapa Interativo -->
-        <div>
-          <div id="workspace-map" class="workspace-map-container">
+        <!-- Seleção de Período -->
+        <div class="bh-period-selector">
+          <button class="bh-period-btn active" data-period="week"         id="admin-bh-btn-week">📅 Esta Semana</button>
+          <button class="bh-period-btn"        data-period="month"        id="admin-bh-btn-month">📆 Este Mês</button>
+          <button class="bh-period-btn"        data-period="custom-month" id="admin-bh-btn-cmonth">🗓️ Mês Específico</button>
+          <button class="bh-period-btn"        data-period="custom-range" id="admin-bh-btn-range">📊 Período</button>
+        </div>
+
+        <!-- Mês específico -->
+        <div class="bh-custom-range" id="admin-bh-range-month">
+          <label style="font-size:0.875rem; font-weight:500; color:var(--text-muted);">Mês:</label>
+          <input type="month" id="admin-bh-month-input">
+          <button class="btn btn-primary btn-sm" id="admin-bh-apply-month">Aplicar</button>
+        </div>
+
+        <!-- Período personalizado -->
+        <div class="bh-custom-range" id="admin-bh-range-custom">
+          <label style="font-size:0.875rem; font-weight:500; color:var(--text-muted);">De:</label>
+          <input type="date" id="admin-bh-date-start">
+          <label style="font-size:0.875rem; font-weight:500; color:var(--text-muted);">Até:</label>
+          <input type="date" id="admin-bh-date-end">
+          <button class="btn btn-primary btn-sm" id="admin-bh-apply-range">Aplicar</button>
+        </div>
+
+        <!-- Resumo -->
+        <div class="bh-summary-grid mt-4" id="admin-bh-summary-grid">
+          <div class="bh-summary-card">
+            <span class="bh-value" id="admin-bh-total-worked">--</span>
+            <span class="bh-label">Trabalhadas</span>
           </div>
-          <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 0.4rem; display: block;">
-            💡 Digite o endereço e clique em <strong>"Buscar"</strong>, arraste o pino azul ou clique direto no mapa para posicionar a empresa. O círculo indica o raio da cerca virtual.
-          </small>
+          <div class="bh-summary-card">
+            <span class="bh-value" id="admin-bh-total-expected">--</span>
+            <span class="bh-label">Esperadas</span>
+          </div>
+          <div class="bh-summary-card" id="admin-bh-balance-card">
+            <span class="bh-value" id="admin-bh-balance">--</span>
+            <span class="bh-label">Saldo</span>
+          </div>
+          <div class="bh-summary-card">
+            <span class="bh-value" id="admin-bh-days-worked">--</span>
+            <span class="bh-label">Dias Trabalhados</span>
+          </div>
         </div>
 
-        <div id="msg-workspace" style="font-size: 0.875rem; min-height: 1.25rem;"></div>
+        <!-- Tabela de dias -->
+        <div class="table-container mt-2">
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Entrada</th>
+                <th>Pausa</th>
+                <th>Volta</th>
+                <th>Saída</th>
+                <th>Total</th>
+                <th>Saldo do Dia</th>
+              </tr>
+            </thead>
+            <tbody id="admin-bh-table-body">
+              <tr><td colspan="7" class="text-center text-muted">Selecione um funcionário e período.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="margin-top: 0.75rem; font-size: 0.8125rem; color: var(--text-muted);">
+          💡 Meta diária: <strong>8h00</strong>. Saldo considera horas extras ou faltantes por dia com registro.
+        </div>
       </div>
     </div>
 
-    <div class="card mb-4">
-      <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1.5rem;">Filtros e Relatórios</h2>
-      
-      <div class="filter-form-grid">
-        <div class="form-group" style="margin-bottom: 0;">
-          <label for="filter-date" class="form-label">Data</label>
-          <input type="date" id="filter-date" class="form-input">
-        </div>
-        <div class="form-group" style="margin-bottom: 0;">
-          <label for="filter-employee" class="form-label">Funcionário</label>
-          <select id="filter-employee" class="form-input">
-            <option value="all">Todos os Funcionários</option>
-            <!-- Funcionários serão carregados aqui -->
-          </select>
-        </div>
-        <div>
-          <button id="btn-filter" class="btn btn-primary" style="width: 100%;">Aplicar Filtro</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1.5rem;">Registros de Ponto</h2>
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Funcionário</th>
-              <th>Tipo</th>
-              <th>Horário</th>
-              <th>Localização</th>
-            </tr>
-          </thead>
-          <tbody id="admin-records-table-body">
-            <tr>
-              <td colspan="5" class="text-center" style="color: var(--text-muted);">Carregando registros...</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
   </main>
 
   <!-- Modal: Novo Usuário -->
@@ -190,23 +345,44 @@
         <div class="role-selector">
           <div class="role-option">
             <input type="radio" name="role" id="role-employee" value="employee" checked>
-            <label for="role-employee">
-              <span class="role-icon">👤</span>
-              Funcionário
-            </label>
+            <label for="role-employee"><span class="role-icon">👤</span> Funcionário</label>
           </div>
           <div class="role-option">
             <input type="radio" name="role" id="role-admin" value="admin">
-            <label for="role-admin">
-              <span class="role-icon">🛡️</span>
-              Administrador
-            </label>
+            <label for="role-admin"><span class="role-icon">🛡️</span> Administrador</label>
           </div>
         </div>
       </div>
 
       <button class="btn btn-primary btn-block" id="btn-criar-user">Criar Usuário</button>
       <div id="msg-novo-user" class="mt-2"></div>
+    </div>
+  </div>
+
+  <!-- Modal: Rejeitar Solicitação -->
+  <div class="modal-overlay" id="modal-reject">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>❌ Rejeitar Solicitação</h3>
+        <button class="modal-close" id="btn-close-reject-modal">&times;</button>
+      </div>
+      <div class="reject-detail-box" id="reject-detail-box">
+        <div>Funcionário: <strong id="reject-info-user">—</strong></div>
+        <div>Tipo: <strong id="reject-info-type">—</strong></div>
+        <div>Hora solicitada: <strong id="reject-info-time">—</strong></div>
+        <div>Justificativa: <em id="reject-info-just">—</em></div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="reject-reason">Motivo da rejeição (opcional)</label>
+        <textarea id="reject-reason" class="form-input" rows="2" placeholder="Ex: Horário incoerente com o sistema..." style="resize:vertical;"></textarea>
+      </div>
+
+      <div style="display:flex; gap:0.75rem;">
+        <button class="btn btn-outline" style="flex:1;" id="btn-cancel-reject">Cancelar</button>
+        <button class="btn btn-danger" style="flex:1;" id="btn-confirm-reject">Confirmar Rejeição</button>
+      </div>
+      <div id="msg-reject" style="font-size:0.875rem; text-align:center; margin-top:0.75rem; min-height:1.25rem;"></div>
     </div>
   </div>
 

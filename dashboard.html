@@ -4,7 +4,51 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PontoWeb - Meu Painel</title>
+  <meta name="description" content="Painel do funcionário para registro e consulta de ponto e banco de horas.">
   <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* Modal de edição de ponto */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .modal-overlay.active { opacity: 1; pointer-events: all; }
+    .modal-box {
+      background: white;
+      border-radius: 1rem;
+      padding: 2rem;
+      width: 100%; max-width: 460px;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+      transform: translateY(20px);
+      transition: transform 0.25s ease;
+    }
+    .modal-overlay.active .modal-box { transform: translateY(0); }
+    .modal-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    .modal-header h3 { font-size: 1.25rem; font-weight: 700; }
+    .modal-close {
+      background: none; border: none; font-size: 1.5rem;
+      cursor: pointer; color: var(--text-muted); line-height: 1;
+      transition: color 0.2s;
+    }
+    .modal-close:hover { color: var(--text-main); }
+    .modal-original-info {
+      background: var(--bg-color);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1rem;
+      margin-bottom: 1.25rem;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+    .modal-original-info strong { color: var(--text-main); }
+  </style>
 </head>
 <body>
 
@@ -35,30 +79,151 @@
         </div>
       </div>
 
-      <!-- Coluna Direita: Histórico do Dia -->
+      <!-- Coluna Direita: Registros + Banco de Horas -->
       <div>
         <div class="card">
-          <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1.5rem;">Meus Registros de Hoje</h2>
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Tipo</th>
-                  <th>Horário</th>
-                </tr>
-              </thead>
-              <tbody id="records-table-body">
-                <tr>
-                  <td colspan="2" class="text-center" style="color: var(--text-muted);">Carregando registros...</td>
-                </tr>
-              </tbody>
-            </table>
+          <!-- Abas -->
+          <div class="employee-tab-nav">
+            <button class="employee-tab-btn active" data-etab="tab-registros" id="etab-btn-registros">
+              📋 Registros de Hoje
+            </button>
+            <button class="employee-tab-btn" data-etab="tab-banco-horas" id="etab-btn-bh">
+              ⏱️ Banco de Horas
+            </button>
           </div>
+
+          <!-- Painel: Registros de Hoje -->
+          <div id="tab-registros" class="employee-tab-panel">
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Tipo</th>
+                    <th>Horário</th>
+                    <th>Ação</th>
+                  </tr>
+                </thead>
+                <tbody id="records-table-body">
+                  <tr>
+                    <td colspan="3" class="text-center" style="color: var(--text-muted);">Carregando registros...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div id="edit-requests-status" style="margin-top: 1rem;"></div>
+          </div>
+
+          <!-- Painel: Banco de Horas -->
+          <div id="tab-banco-horas" class="employee-tab-panel" style="display:none;">
+            <h2 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1.25rem;">⏱️ Banco de Horas</h2>
+
+            <!-- Seleção de Período -->
+            <div class="bh-period-selector">
+              <button class="bh-period-btn active" data-period="week" id="bh-btn-week">📅 Esta Semana</button>
+              <button class="bh-period-btn" data-period="month" id="bh-btn-month">📆 Este Mês</button>
+              <button class="bh-period-btn" data-period="custom-month" id="bh-btn-custom-month">🗓️ Mês Específico</button>
+              <button class="bh-period-btn" data-period="custom-range" id="bh-btn-range">📊 Período</button>
+            </div>
+
+            <!-- Mês específico -->
+            <div class="bh-custom-range" id="bh-range-month">
+              <label style="font-size:0.875rem; font-weight:500; color:var(--text-muted);">Mês:</label>
+              <input type="month" id="bh-month-input">
+              <button class="btn btn-primary btn-sm" id="bh-apply-month">Aplicar</button>
+            </div>
+
+            <!-- Período personalizado -->
+            <div class="bh-custom-range" id="bh-range-custom">
+              <label style="font-size:0.875rem; font-weight:500; color:var(--text-muted);">De:</label>
+              <input type="date" id="bh-date-start">
+              <label style="font-size:0.875rem; font-weight:500; color:var(--text-muted);">Até:</label>
+              <input type="date" id="bh-date-end">
+              <button class="btn btn-primary btn-sm" id="bh-apply-range">Aplicar</button>
+            </div>
+
+            <!-- Resumo -->
+            <div class="bh-summary-grid" id="bh-summary-grid">
+              <div class="bh-summary-card">
+                <span class="bh-value" id="bh-total-worked">--</span>
+                <span class="bh-label">Trabalhadas</span>
+              </div>
+              <div class="bh-summary-card">
+                <span class="bh-value" id="bh-total-expected">--</span>
+                <span class="bh-label">Esperadas</span>
+              </div>
+              <div class="bh-summary-card" id="bh-balance-card">
+                <span class="bh-value" id="bh-balance">--</span>
+                <span class="bh-label">Saldo</span>
+              </div>
+              <div class="bh-summary-card">
+                <span class="bh-value" id="bh-days-worked">--</span>
+                <span class="bh-label">Dias Trabalhados</span>
+              </div>
+            </div>
+
+            <!-- Tabela de dias -->
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Entrada</th>
+                    <th>Pausa</th>
+                    <th>Volta</th>
+                    <th>Saída</th>
+                    <th>Total</th>
+                    <th>Saldo do Dia</th>
+                  </tr>
+                </thead>
+                <tbody id="bh-table-body">
+                  <tr><td colspan="7" class="text-center text-muted">Selecione um período.</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div style="margin-top: 0.75rem; font-size: 0.8125rem; color: var(--text-muted);">
+              💡 Meta diária: <strong>8h00</strong>. O saldo considera horas extras ou faltantes por dia útil com registro.
+            </div>
+          </div>
+
         </div>
       </div>
 
     </div>
   </main>
+
+  <!-- Modal: Solicitar Edição de Ponto -->
+  <div class="modal-overlay" id="modal-edit-record">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>✏️ Solicitar Edição de Ponto</h3>
+        <button class="modal-close" id="btn-close-edit-modal">&times;</button>
+      </div>
+
+      <div class="modal-original-info" id="edit-original-info">
+        <div>Tipo: <strong id="edit-info-type">—</strong></div>
+        <div>Horário atual: <strong id="edit-info-time">—</strong></div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="edit-new-time">Nova hora solicitada</label>
+        <input type="time" id="edit-new-time" class="form-input">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="edit-justification">Justificativa <span style="color:var(--danger)">*</span></label>
+        <textarea id="edit-justification" class="form-input" rows="3" placeholder="Descreva o motivo da correção..." style="resize: vertical;"></textarea>
+      </div>
+
+      <button class="btn btn-primary btn-block" id="btn-submit-edit">Enviar Solicitação</button>
+
+      <div class="edit-info-box">
+        ℹ️ Sua solicitação ficará <strong>pendente</strong> até que o administrador aprove ou rejeite. O registro só será alterado após aprovação.
+      </div>
+
+      <div id="msg-edit-modal" style="font-size: 0.875rem; text-align: center; min-height: 1.25rem; margin-top: 0.75rem;"></div>
+    </div>
+  </div>
 
   <script type="module" src="js/firebase-config.js"></script>
   <script type="module" src="js/employee.js"></script>
