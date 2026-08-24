@@ -1,5 +1,5 @@
 import {
-  auth, onAuthStateChanged, signOut,
+  auth, onAuthStateChanged, signOut, updatePassword,
   db, collection, addDoc, query, where, getDocs, doc, getDoc, updateDoc, serverTimestamp
 } from './firebase-config.js';
 import { insertSVGs, showToast } from './svg.js';
@@ -56,8 +56,64 @@ onAuthStateChanged(auth, async (user) => {
     currentUser = user;
 
     try {
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      userNameSpan.innerText = userDoc.exists() ? (userDoc.data().name || user.email) : user.email;
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+      
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        userNameSpan.innerText = userData.name || user.email;
+        
+        if (userData.firstLogin === true) {
+          const modalForcePassword = document.getElementById('modal-force-password');
+          const formForcePassword = document.getElementById('form-force-password');
+          const fpNewPassword = document.getElementById('fp-new-password');
+          const fpConfirmPassword = document.getElementById('fp-confirm-password');
+          const btnSubmitFp = document.getElementById('btn-submit-force-password');
+
+          if (modalForcePassword) {
+            modalForcePassword.classList.add('active');
+            
+            formForcePassword.addEventListener('submit', async (e) => {
+              e.preventDefault();
+              const p1 = fpNewPassword.value;
+              const p2 = fpConfirmPassword.value;
+
+              if (p1.length < 6) {
+                showToast('A senha deve ter no mínimo 6 caracteres.', 'warning');
+                return;
+              }
+              if (p1 !== p2) {
+                showToast('As senhas não conferem.', 'warning');
+                return;
+              }
+
+              btnSubmitFp.disabled = true;
+              btnSubmitFp.innerHTML = '<span data-icon="save" class="icon-sm"></span> Atualizando...';
+
+              try {
+                await updatePassword(auth.currentUser, p1);
+                await updateDoc(userDocRef, { firstLogin: false });
+                
+                showToast('Senha atualizada com sucesso!', 'success');
+                modalForcePassword.classList.remove('active');
+              } catch (error) {
+                console.error('Erro ao atualizar senha:', error);
+                if (error.code === 'auth/requires-recent-login') {
+                  showToast('Sessão expirada. Faça login novamente para alterar a senha.', 'error', 6000);
+                  setTimeout(() => { signOut(auth); }, 3000);
+                } else {
+                  showToast('Erro ao atualizar senha. Tente novamente.', 'error');
+                }
+              } finally {
+                btnSubmitFp.disabled = false;
+                btnSubmitFp.innerHTML = '<span data-icon="save" class="icon-sm"></span> Atualizar Senha';
+              }
+            });
+          }
+        }
+      } else {
+        userNameSpan.innerText = user.email;
+      }
     } catch { userNameSpan.innerText = user.email; }
 
     await loadTodayRecords();

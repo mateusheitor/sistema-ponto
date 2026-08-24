@@ -258,6 +258,33 @@
 
       <div id="msg-edit-modal"
         style="font-size: 0.875rem; text-align: center; min-height: 1.25rem; margin-top: 0.75rem;"></div>
+  </div>
+
+  <!-- Modal: Troca de Senha Obrigatória -->
+  <div class="modal-overlay" id="modal-force-password" style="z-index: 9999;">
+    <div class="modal-box" style="max-width: 400px; padding: 2rem;">
+      <div class="modal-header" style="justify-content: center; margin-bottom: 1.5rem;">
+        <h3 style="text-align: center; color: var(--primary-color);">
+          <span data-icon="user-shield" class="icon-sm"></span> Segurança
+        </h3>
+      </div>
+      <p style="text-align: center; font-size: 0.95rem; color: var(--text-main); margin-bottom: 1.5rem; line-height: 1.5;">
+        Como este é o seu <strong>primeiro acesso</strong>, por motivos de segurança, você precisa cadastrar uma nova senha.
+      </p>
+      
+      <form id="form-force-password">
+        <div class="form-group">
+          <label class="form-label" for="fp-new-password">Nova Senha</label>
+          <input type="password" id="fp-new-password" class="form-input" placeholder="Mínimo de 6 caracteres" required minlength="6">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="fp-confirm-password">Confirmar Nova Senha</label>
+          <input type="password" id="fp-confirm-password" class="form-input" placeholder="Digite a senha novamente" required minlength="6">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" id="btn-submit-force-password" style="margin-top: 1rem;">
+          <span data-icon="save" class="icon-sm"></span> Atualizar Senha
+        </button>
+      </form>
     </div>
   </div>
 

@@ -154,7 +154,7 @@ btnCriarUser.addEventListener('click', async () => {
     }
 
     const newUid = authData.localId;
-    await setDoc(doc(db, 'users', newUid), { name, email, role });
+    await setDoc(doc(db, 'users', newUid), { name, email, role, firstLogin: true });
 
     showToast(`Usuário "${name}" criado com sucesso!`, 'success');
 
