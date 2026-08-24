@@ -349,8 +349,9 @@ btnSubmitEdit.addEventListener('click', async () => {
     });
 
     msgEditModal.style.color = 'var(--success)';
-    msgEditModal.innerText   = 'Solicitação enviada! Aguarde aprovação do administrador.';
+    msgEditModal.innerHTML   = '<span data-icon="check" class="icon-sm"></span> Solicitação enviada! Aguarde aprovação do administrador.';
     showToast('Solicitação enviada! Aguarde a aprovação do administrador.', 'success');
+
 
     setTimeout(async () => {
       modalEdit.classList.remove('active');

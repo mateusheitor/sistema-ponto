@@ -392,8 +392,9 @@ btnConfirmApprove.addEventListener('click', async () => {
     console.error('Erro ao aprovar edição:', err);
     showToast('Erro ao aprovar. Verifique as permissões do Firestore.', 'error');
     btn.disabled  = false;
-    btn.innerText = '<span data-icon="check" class="icon-sm"></span> Aprovar';
+    btn.innerHTML = '<span data-icon="check" class="icon-sm"></span> Aprovar';
   }
+
 });
 
 function openRejectModal(reqId, req) {
