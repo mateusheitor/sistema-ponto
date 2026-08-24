@@ -28,6 +28,17 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    match /insert_requests/{requestId} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read: if request.auth != null && (
+        resource.data.userId == request.auth.uid ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+      allow update: if request.auth != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow delete: if false;
+    }
+
     match /users/{userId} {
       allow read: if request.auth != null && (
         request.auth.uid == userId ||

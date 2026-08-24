@@ -51,6 +51,12 @@ let pendingApproval = null; // { reqId, req, btn }
 const editRequestsTableBody = document.getElementById('edit-requests-table-body');
 const pendingDot            = document.getElementById('pending-dot');
 
+const insertRequestsTableBody = document.getElementById('insert-requests-table-body');
+const pendingDotInsert        = document.getElementById('pending-dot-insert');
+
+const modalAction         = document.getElementById('modal-action-request');
+const btnCloseAction      = document.getElementById('btn-close-action-modal');
+
 const adminBhTableBody    = document.getElementById('admin-bh-table-body');
 const adminBhTotalWorked  = document.getElementById('admin-bh-total-worked');
 const adminBhTotalExpected = document.getElementById('admin-bh-total-expected');
@@ -78,6 +84,7 @@ onAuthStateChanged(auth, async (user) => {
       await loadEmployees();
       await loadRecords();
       await loadEditRequests();
+      await loadInsertRequests();
       initAdminBancoDeHoras();
     } else {
       window.location.href = 'index.html';
@@ -341,6 +348,125 @@ async function loadEditRequests() {
   }
 }
 
+async function loadInsertRequests() {
+  insertRequestsTableBody.innerHTML = '<tr><td colspan="7" class="text-center"><span class="loader"></span></td></tr>';
+
+  try {
+    const snap = await getDocs(query(collection(db, 'insert_requests')));
+    const requests = [];
+    snap.forEach(d => requests.push({ id: d.id, ...d.data() }));
+    requests.sort((a, b) => {
+      const aTime = a.createdAt?.toDate?.() ?? new Date(0);
+      const bTime = b.createdAt?.toDate?.() ?? new Date(0);
+      return bTime - aTime;
+    });
+
+    const pendingCount = requests.filter(r => r.status === 'pending').length;
+    if (pendingDotInsert) pendingDotInsert.style.display = pendingCount > 0 ? 'inline-block' : 'none';
+
+    insertRequestsTableBody.innerHTML = '';
+
+    if (requests.length === 0) {
+      insertRequestsTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Nenhuma solicitação encontrada.</td></tr>';
+      return;
+    }
+
+    requests.forEach(req => {
+      const requestedDateParts = req.requestedDateString.split('-');
+      const formattedDate = `${requestedDateParts[2]}/${requestedDateParts[1]}/${requestedDateParts[0]}`;
+      
+      const statusMap = {
+        pending:  '<span class="badge badge-pending"><span data-icon="ampulheta" class="icon-sm"></span> Pendente</span>',
+        approved: '<span class="badge badge-approved"><span data-icon="check" class="icon-sm"></span> Aprovado</span>',
+        rejected: '<span class="badge badge-rejected"><span data-icon="deni" class="icon-sm"></span> Rejeitado</span>'
+      };
+      const statusBadge = statusMap[req.status] || req.status;
+
+      const actions = req.status === 'pending'
+        ? `<div class="edit-action-btns">
+             <button class="btn btn-approve-insert btn-sm" data-id="${req.id}"><span data-icon="check" class="icon-sm"></span> Aprovar</button>
+             <button class="btn btn-reject-insert btn-sm" data-id="${req.id}"><span data-icon="deni" class="icon-sm"></span> Rejeitar</button>
+           </div>`
+        : `<span style="font-size:0.8rem; color:var(--text-muted);">${req.resolvedAt?.toDate ? req.resolvedAt.toDate().toLocaleDateString('pt-BR') : '—'}</span>`;
+
+      const tr = document.createElement('tr');
+      tr.dataset.reqId = req.id;
+      tr.innerHTML = `
+        <td style="font-size:0.875rem;">${req.userEmail || req.userId}</td>
+        <td><strong>${formattedDate}</strong></td>
+        <td><span class="badge ${req.type === 'Entrada' ? 'badge-entrada' : req.type.includes('Pausa') ? 'badge-pausa' : req.type.includes('Volta') ? 'badge-volta' : 'badge-saida'}">${req.type}</span></td>
+        <td><strong>${req.requestedTime}</strong></td>
+        <td style="font-size:0.8125rem; max-width:200px;">${req.justification}</td>
+        <td>${statusBadge}</td>
+        <td>${actions}</td>
+      `;
+      insertRequestsTableBody.appendChild(tr);
+    });
+
+    insertRequestsTableBody.querySelectorAll('.btn-approve-insert').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const reqId = btn.dataset.id;
+        const req   = requests.find(r => r.id === reqId);
+        if (req) approveInsertRequest(reqId, req, btn);
+      });
+    });
+
+    insertRequestsTableBody.querySelectorAll('.btn-reject-insert').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const reqId = btn.dataset.id;
+        const req   = requests.find(r => r.id === reqId);
+        if (req) openRejectModal(reqId, req, 'insert_requests');
+      });
+    });
+
+  } catch (err) {
+    console.error('Erro ao carregar solicitações de inserção:', err);
+    insertRequestsTableBody.innerHTML = '<tr><td colspan="7" class="text-center" style="color:var(--danger);">Erro ao carregar solicitações.</td></tr>';
+  }
+}
+
+async function approveInsertRequest(reqId, req, btn) {
+  if (!confirm(`Tem certeza que deseja aprovar a inserção de ${req.type} às ${req.requestedTime} para o dia ${req.requestedDateString}?`)) return;
+  
+  btn.disabled = true;
+  btn.innerText = '...';
+
+  try {
+    const [h, m] = req.requestedTime.split(':').map(Number);
+    const dateParts = req.requestedDateString.split('-');
+    const timestamp = new Date(dateParts[0], dateParts[1] - 1, dateParts[2], h, m, 0, 0);
+
+    await addDoc(collection(db, 'time_records'), {
+      userId: req.userId,
+      userEmail: req.userEmail,
+      timestamp: timestamp,
+      type: req.type,
+      dateString: req.requestedDateString,
+      latitude: null,
+      longitude: null,
+      accuracy: null,
+      insertedByAdmin: true,
+      insertedAt: new Date(),
+      insertNote: req.justification
+    });
+
+    await updateDoc(doc(db, 'insert_requests', reqId), {
+      status: 'approved',
+      resolvedAt: new Date(),
+      resolvedBy: currentUser.email
+    });
+
+    showToast(`Inserção aprovada! Ponto de "${req.type}" criado com sucesso.`, 'success');
+    await loadInsertRequests();
+    await loadRecords();
+  } catch (err) {
+    console.error('Erro ao aprovar inserção:', err);
+    showToast('Erro ao aprovar inserção. Verifique permissões.', 'error');
+    btn.disabled = false;
+    btn.innerHTML = '<span data-icon="check" class="icon-sm"></span> Aprovar';
+  }
+}
+
 async function approveEditRequest(reqId, req, btn) {
   // Open custom confirm modal instead of native confirm()
   pendingApproval = { reqId, req, btn };
@@ -397,8 +523,8 @@ btnConfirmApprove.addEventListener('click', async () => {
 
 });
 
-function openRejectModal(reqId, req) {
-  rejectingRequest = { id: reqId, data: req };
+function openRejectModal(reqId, req, collectionName = 'edit_requests') {
+  rejectingRequest = { id: reqId, data: req, collection: collectionName };
   rejectInfoUser.innerText = req.userEmail || req.userId;
   rejectInfoType.innerText = req.type;
   rejectInfoTime.innerText = req.requestedTime;
@@ -414,14 +540,14 @@ modalReject.addEventListener('click', e => { if (e.target === modalReject) modal
 
 btnConfirmReject.addEventListener('click', async () => {
   if (!rejectingRequest) return;
-  const { id: reqId, data: req } = rejectingRequest;
+  const { id: reqId, data: req, collection: collName } = rejectingRequest;
   const reason = rejectReason.value.trim();
 
   btnConfirmReject.disabled  = true;
   btnConfirmReject.innerText = 'Rejeitando...';
 
   try {
-    await updateDoc(doc(db, 'edit_requests', reqId), {
+    await updateDoc(doc(db, collName, reqId), {
       status:       'rejected',
       resolvedAt:   new Date(),
       resolvedBy:   currentUser.email,
@@ -431,7 +557,8 @@ btnConfirmReject.addEventListener('click', async () => {
     showToast('Solicitação rejeitada com sucesso.', 'success');
     setTimeout(async () => {
       modalReject.classList.remove('active');
-      await loadEditRequests();
+      if (collName === 'edit_requests') await loadEditRequests();
+      else if (collName === 'insert_requests') await loadInsertRequests();
     }, 1000);
 
   } catch (err) {

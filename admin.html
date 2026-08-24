@@ -235,6 +235,35 @@
           </div>
         </div>
       </div>
+
+      <div class="card" id="insert-requests-card" style="margin-top: 1.5rem;">
+        <div class="pending-requests-section" style="margin-top:0; border-top:none; padding-top:0;">
+          <h3>
+            <span data-icon="file-plus" class="icon-sm"></span> Solicitações de Inserção de Ponto
+            <span class="pending-dot" id="pending-dot-insert" style="display:none;"></span>
+          </h3>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Funcionário</th>
+                  <th>Data Pendente</th>
+                  <th>Tipo Solicitado</th>
+                  <th>Horário</th>
+                  <th>Justificativa</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="insert-requests-table-body">
+                <tr>
+                  <td colspan="7" class="text-center" style="color: var(--text-muted);">Carregando...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div id="tab-workspace" class="tab-panel">

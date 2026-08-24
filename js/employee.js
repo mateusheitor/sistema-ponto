@@ -20,6 +20,18 @@ const editJustification = document.getElementById('edit-justification');
 const btnSubmitEdit  = document.getElementById('btn-submit-edit');
 const msgEditModal   = document.getElementById('msg-edit-modal');
 
+const pendingAlert   = document.getElementById('pending-alert');
+const pendingAlertText = document.getElementById('pending-alert-text');
+const btnResolvePending = document.getElementById('btn-resolve-pending');
+
+const modalInsert    = document.getElementById('modal-insert-request');
+const btnCloseInsert = document.getElementById('btn-close-insert-modal');
+const insertDate     = document.getElementById('insert-date');
+const insertType     = document.getElementById('insert-type');
+const insertTime     = document.getElementById('insert-time');
+const insertJustification = document.getElementById('insert-justification');
+const btnSubmitInsert = document.getElementById('btn-submit-insert');
+
 const bhTableBody    = document.getElementById('bh-table-body');
 const bhTotalWorked  = document.getElementById('bh-total-worked');
 const bhTotalExpected = document.getElementById('bh-total-expected');
@@ -120,6 +132,7 @@ onAuthStateChanged(auth, async (user) => {
 
     await loadTodayRecords();
     await loadMyEditRequests();
+    await checkPendingRecords();
     initBancoDeHoras();
   } else {
     window.location.href = 'index.html';
@@ -331,22 +344,27 @@ async function loadTodayRecords() {
 async function loadMyEditRequests() {
   if (!currentUser || !editRequestsStatus) return;
   try {
-    const snap = await getDocs(query(
+    const snapEdit = await getDocs(query(
       collection(db, 'edit_requests'),
       where('userId', '==', currentUser.uid),
       where('status', '==', 'pending')
     ));
-    const count = snap.size;
+    const snapInsert = await getDocs(query(
+      collection(db, 'insert_requests'),
+      where('userId', '==', currentUser.uid),
+      where('status', '==', 'pending')
+    ));
+    const count = snapEdit.size + snapInsert.size;
     if (count > 0) {
       editRequestsStatus.innerHTML = `
         <div class="edit-info-box">
-          <span data-icon="ampulheta" class="icon-sm"></span> Você tem <strong>${count}</strong> solicitação(ões) de edição aguardando aprovação do administrador.
+          <span data-icon="ampulheta" class="icon-sm"></span> Você tem <strong>${count}</strong> solicitação(ões) (edição/inserção) aguardando aprovação do administrador.
         </div>`;
     } else {
       editRequestsStatus.innerHTML = '';
     }
   } catch (e) {
-    console.warn('Não foi possível carregar status de edições:', e);
+    console.warn('Não foi possível carregar status de solicitações:', e);
   }
 }
 
@@ -679,3 +697,164 @@ function initBancoDeHoras() {
   });
 }
 
+let pendingDaysData = {}; 
+
+async function checkPendingRecords() {
+  if (!currentUser) return;
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  
+  if (end < start) {
+    pendingAlert.style.display = 'none';
+    return; 
+  }
+
+  const startStr = toDateStr(start);
+  const endStr = toDateStr(end);
+
+  try {
+    const recordsSnap = await getDocs(query(
+      collection(db, 'time_records'),
+      where('userId', '==', currentUser.uid)
+    ));
+    const requestsSnap = await getDocs(query(
+      collection(db, 'insert_requests'),
+      where('userId', '==', currentUser.uid),
+      where('status', '==', 'pending')
+    ));
+
+    const recordsByDay = {};
+    recordsSnap.forEach(d => {
+      const data = d.data();
+      if (data.dateString >= startStr && data.dateString <= endStr) {
+        if (!recordsByDay[data.dateString]) recordsByDay[data.dateString] = new Set();
+        recordsByDay[data.dateString].add(data.type);
+      }
+    });
+
+    const pendingRequestsByDay = {};
+    requestsSnap.forEach(d => {
+      const data = d.data();
+      if (data.requestedDateString >= startStr && data.requestedDateString <= endStr) {
+        if (!pendingRequestsByDay[data.requestedDateString]) pendingRequestsByDay[data.requestedDateString] = new Set();
+        pendingRequestsByDay[data.requestedDateString].add(data.type);
+      }
+    });
+
+    pendingDaysData = {};
+    const ALL_TYPES = ['Entrada', 'Pausa para Almoço', 'Volta do Almoço', 'Saída'];
+
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      if (d.getDay() === 0 || d.getDay() === 6) continue;
+
+      const ds = toDateStr(d);
+      const existing = recordsByDay[ds] || new Set();
+      const requested = pendingRequestsByDay[ds] || new Set();
+
+      const missing = ALL_TYPES.filter(t => !existing.has(t) && !requested.has(t));
+      
+      if (missing.length > 0) {
+        pendingDaysData[ds] = missing;
+      }
+    }
+
+    const pendingDates = Object.keys(pendingDaysData).sort();
+    if (pendingDates.length > 0) {
+      const fmtDates = pendingDates.map(ds => {
+        const parts = ds.split('-');
+        return `${parts[2]}/${parts[1]}`;
+      }).join(', ');
+      
+      pendingAlertText.innerText = `Você possui marcações pendentes nos dias: ${fmtDates}.`;
+      pendingAlert.style.display = 'block';
+
+      insertDate.innerHTML = '<option value="">Selecione uma data</option>';
+      pendingDates.forEach(ds => {
+        const parts = ds.split('-');
+        const opt = document.createElement('option');
+        opt.value = ds;
+        opt.textContent = `${parts[2]}/${parts[1]}/${parts[0]}`;
+        insertDate.appendChild(opt);
+      });
+    } else {
+      pendingAlert.style.display = 'none';
+    }
+
+  } catch (error) {
+    console.error('Error checking pending records:', error);
+  }
+}
+
+if (btnResolvePending) {
+  btnResolvePending.addEventListener('click', () => {
+    modalInsert.classList.add('active');
+  });
+}
+
+if (btnCloseInsert) {
+  btnCloseInsert.addEventListener('click', () => {
+    modalInsert.classList.remove('active');
+  });
+}
+
+if (insertDate) {
+  insertDate.addEventListener('change', () => {
+    const ds = insertDate.value;
+    insertType.innerHTML = '<option value="">Selecione o tipo</option>';
+    if (ds && pendingDaysData[ds]) {
+      insertType.disabled = false;
+      pendingDaysData[ds].forEach(type => {
+        const opt = document.createElement('option');
+        opt.value = type;
+        opt.textContent = type;
+        insertType.appendChild(opt);
+      });
+    } else {
+      insertType.disabled = true;
+    }
+  });
+}
+
+if (document.getElementById('form-insert-request')) {
+  document.getElementById('form-insert-request').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const ds = insertDate.value;
+    const type = insertType.value;
+    const time = insertTime.value;
+    const just = insertJustification.value.trim();
+
+    if (!ds || !type || !time || !just) {
+      showToast('Preencha todos os campos obrigatórios.', 'warning');
+      return;
+    }
+
+    btnSubmitInsert.disabled = true;
+    btnSubmitInsert.innerHTML = '<span class="loader" style="width:16px;height:16px;border-width:2px;border-top-color:transparent;display:inline-block;vertical-align:middle;margin-right:8px;"></span> Enviando...';
+
+    try {
+      await addDoc(collection(db, 'insert_requests'), {
+        userId: currentUser.uid,
+        userEmail: currentUser.email,
+        type: type,
+        requestedDateString: ds,
+        requestedTime: time,
+        justification: just,
+        status: 'pending',
+        createdAt: serverTimestamp()
+      });
+      showToast('Solicitação de inserção enviada com sucesso.', 'success');
+      modalInsert.classList.remove('active');
+      document.getElementById('form-insert-request').reset();
+      insertType.disabled = true;
+      await checkPendingRecords();
+      await loadMyEditRequests();
+    } catch (error) {
+      console.error('Error submitting insert request:', error);
+      showToast('Erro ao enviar solicitação.', 'error');
+    } finally {
+      btnSubmitInsert.disabled = false;
+      btnSubmitInsert.innerText = 'Enviar Solicitação';
+    }
+  });
+}
