@@ -1,10 +1,25 @@
 import { auth, signInWithEmailAndPassword, db, doc, getDoc } from './firebase-config.js';
+import { insertSVGs } from './svg.js';
 
 const loginForm = document.getElementById('login-form');
 const emailInput = document.getElementById('email');
 const passwordInput = document.getElementById('password');
 const errorMessage = document.getElementById('error-message');
 const btnLogin = document.getElementById('btn-login');
+const btnTogglePassword = document.getElementById('btn-toggle-password');
+
+if (btnTogglePassword) {
+  btnTogglePassword.addEventListener('click', () => {
+    if (passwordInput.type === 'password') {
+      passwordInput.type = 'text';
+      btnTogglePassword.innerHTML = '<span data-icon="eye-off" class="icon-sm"></span>';
+    } else {
+      passwordInput.type = 'password';
+      btnTogglePassword.innerHTML = '<span data-icon="eye" class="icon-sm"></span>';
+    }
+    insertSVGs();
+  });
+}
 
 if (loginForm) {
   loginForm.addEventListener('submit', async (e) => {

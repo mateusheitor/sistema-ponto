@@ -23,7 +23,12 @@
         
         <div class="form-group">
           <label for="password" class="form-label">Senha</label>
-          <input type="password" id="password" class="form-input" placeholder="••••••••" required>
+          <div style="position: relative; display: flex; align-items: center;">
+            <input type="password" id="password" class="form-input" placeholder="••••••••" required style="padding-right: 40px; width: 100%;">
+            <button type="button" id="btn-toggle-password" style="position: absolute; right: 10px; background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 0; display: flex; align-items: center;">
+              <span data-icon="eye" class="icon-sm"></span>
+            </button>
+          </div>
         </div>
 
         <button type="submit" class="btn btn-primary btn-block" id="btn-login">
