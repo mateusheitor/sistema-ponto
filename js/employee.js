@@ -94,17 +94,16 @@ onAuthStateChanged(auth, async (user) => {
                 await updatePassword(auth.currentUser, p1);
                 await updateDoc(userDocRef, { firstLogin: false });
                 
-                showToast('Senha atualizada com sucesso!', 'success');
+                showToast('Senha atualizada com sucesso! Bem-vindo ao sistema.', 'success');
                 modalForcePassword.classList.remove('active');
               } catch (error) {
                 console.error('Erro ao atualizar senha:', error);
                 if (error.code === 'auth/requires-recent-login') {
-                  showToast('Sessão expirada. Faça login novamente para alterar a senha.', 'error', 6000);
-                  setTimeout(() => { signOut(auth); }, 3000);
+                  showToast('Por segurança, faça login novamente para alterar a senha.', 'error');
+                  setTimeout(() => { signOut(auth); window.location.href = 'index.html'; }, 3000);
                 } else {
-                  showToast('Erro ao atualizar senha. Tente novamente.', 'error');
+                  showToast(`Erro ao atualizar senha: ${error.message}`, 'error');
                 }
-              } finally {
                 btnSubmitFp.disabled = false;
                 btnSubmitFp.innerHTML = '<span data-icon="save" class="icon-sm"></span> Atualizar Senha';
               }
@@ -114,7 +113,10 @@ onAuthStateChanged(auth, async (user) => {
       } else {
         userNameSpan.innerText = user.email;
       }
-    } catch { userNameSpan.innerText = user.email; }
+    } catch (err) {
+      console.error('Erro ao carregar dados do usuário:', err);
+      userNameSpan.innerText = user.email;
+    }
 
     await loadTodayRecords();
     await loadMyEditRequests();
