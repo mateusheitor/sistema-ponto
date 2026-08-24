@@ -243,7 +243,7 @@ async function loadTodayRecords() {
       const isPending = pendingRecordIds.has(data.id);
       const editBtnOrBadge = isPending
         ? `<span class="badge badge-pending" style="font-size:0.7rem;"><span data-icon="ampulheta" class="icon-sm"></span> Aguardando</span>`
-        : `<button class="btn-edit-record" data-id="${data.id}" title="Solicitar edição deste registro">✏️ Editar</button>`;
+        : `<button class="btn-edit-record" data-id="${data.id}" title="Solicitar edição deste registro"><span data-icon="edit" class="icon-sm"></span> Editar</button>`;
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
