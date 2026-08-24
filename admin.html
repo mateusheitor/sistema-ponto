@@ -451,6 +451,31 @@
     </div>
   </div>
 
+  <!-- Modal: Confirmar Aprovação -->
+  <div class="modal-overlay" id="modal-confirm-approve">
+    <div class="modal-box" style="max-width: 420px;">
+      <div class="modal-header">
+        <h3><span data-icon="check" class="icon-sm"></span> Confirmar Aprovação</h3>
+        <button class="modal-close" id="btn-close-confirm-approve">&times;</button>
+      </div>
+      <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1rem;">
+        Deseja aprovar a alteração abaixo? O registro será atualizado imediatamente.
+      </p>
+      <div class="reject-detail-box">
+        <div>Funcionário: <strong id="approve-info-user">—</strong></div>
+        <div>Tipo: <strong id="approve-info-type">—</strong></div>
+        <div>Nova hora: <strong id="approve-info-time">—</strong></div>
+        <div>Justificativa: <em id="approve-info-just">—</em></div>
+      </div>
+      <div style="display:flex; gap:0.75rem; margin-top: 1.25rem;">
+        <button class="btn btn-outline" style="flex:1;" id="btn-cancel-approve">Cancelar</button>
+        <button class="btn btn-success" style="flex:1;" id="btn-confirm-approve">
+          <span data-icon="check" class="icon-sm"></span> Aprovar
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="js/firebase-config.js"></script>
   <script type="module" src="js/admin.js"></script>
   <script type="module">

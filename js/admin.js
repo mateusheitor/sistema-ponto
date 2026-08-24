@@ -37,6 +37,17 @@ const rejectInfoType   = document.getElementById('reject-info-type');
 const rejectInfoTime   = document.getElementById('reject-info-time');
 const rejectInfoJust   = document.getElementById('reject-info-just');
 
+const modalConfirmApprove  = document.getElementById('modal-confirm-approve');
+const btnCloseConfApprove  = document.getElementById('btn-close-confirm-approve');
+const btnCancelApprove     = document.getElementById('btn-cancel-approve');
+const btnConfirmApprove    = document.getElementById('btn-confirm-approve');
+const approveInfoUser      = document.getElementById('approve-info-user');
+const approveInfoType      = document.getElementById('approve-info-type');
+const approveInfoTime      = document.getElementById('approve-info-time');
+const approveInfoJust      = document.getElementById('approve-info-just');
+
+let pendingApproval = null; // { reqId, req, btn }
+
 const editRequestsTableBody = document.getElementById('edit-requests-table-body');
 const pendingDot            = document.getElementById('pending-dot');
 
@@ -331,7 +342,24 @@ async function loadEditRequests() {
 }
 
 async function approveEditRequest(reqId, req, btn) {
-  if (!confirm(`Aprovar a alteração de "${req.type}" para ${req.requestedTime}?\n\nFuncionário: ${req.userEmail}\nJustificativa: ${req.justification}`)) return;
+  // Open custom confirm modal instead of native confirm()
+  pendingApproval = { reqId, req, btn };
+  approveInfoUser.innerText = req.userEmail || req.userId;
+  approveInfoType.innerText = req.type;
+  approveInfoTime.innerText = req.requestedTime;
+  approveInfoJust.innerText = req.justification;
+  modalConfirmApprove.classList.add('active');
+}
+
+btnCloseConfApprove.addEventListener('click', () => modalConfirmApprove.classList.remove('active'));
+btnCancelApprove.addEventListener('click',    () => modalConfirmApprove.classList.remove('active'));
+modalConfirmApprove.addEventListener('click', e => { if (e.target === modalConfirmApprove) modalConfirmApprove.classList.remove('active'); });
+
+btnConfirmApprove.addEventListener('click', async () => {
+  if (!pendingApproval) return;
+  const { reqId, req, btn } = pendingApproval;
+  pendingApproval = null;
+  modalConfirmApprove.classList.remove('active');
 
   btn.disabled  = true;
   btn.innerText = '...';
@@ -366,7 +394,7 @@ async function approveEditRequest(reqId, req, btn) {
     btn.disabled  = false;
     btn.innerText = '<span data-icon="check" class="icon-sm"></span> Aprovar';
   }
-}
+});
 
 function openRejectModal(reqId, req) {
   rejectingRequest = { id: reqId, data: req };
