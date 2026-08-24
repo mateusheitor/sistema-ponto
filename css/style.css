@@ -65,7 +65,10 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 0.5rem;
   padding: 0.75rem 1.5rem;
+  background-color: var(--primary-color);
+  color: white;
   font-weight: 500;
   border-radius: var(--radius-md);
   border: none;
@@ -76,6 +79,11 @@ body {
 
 .btn:active {
   transform: translateY(1px);
+}
+
+.icon-sm {
+  display: inline-flex;
+  align-items: center;
 }
 
 .btn-primary {
@@ -243,6 +251,8 @@ tr:hover {
   font-size: 0.75rem;
   font-weight: 600;
   display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .badge-entrada { background-color: #d1fae5; color: #065f46; }

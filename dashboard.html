@@ -81,10 +81,10 @@
         <div class="card">
           <div class="employee-tab-nav">
             <button class="employee-tab-btn active" data-etab="tab-registros" id="etab-btn-registros">
-              📋 Registros de Hoje
+              <span data-icon="clipboard-list" class="icon-sm"></span> Registros de Hoje
             </button>
             <button class="employee-tab-btn" data-etab="tab-banco-horas" id="etab-btn-bh">
-              ⏱️ Banco de Horas
+              <span data-icon="folder-clock" class="icon-sm"></span> Banco de Horas
             </button>
           </div>
 
@@ -109,7 +109,7 @@
           </div>
 
           <div id="tab-banco-horas" class="employee-tab-panel" style="display:none;">
-            <h2 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1.25rem;">⏱️ Banco de Horas</h2>
+            <h2 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1.25rem;"><span data-icon="folder-clock" class="icon-sm"></span> Banco de Horas</h2>
 
             <div class="bh-period-selector">
               <button class="bh-period-btn active" data-period="week" id="bh-btn-week">📅 Esta Semana</button>
@@ -215,5 +215,17 @@
 
   <script type="module" src="js/firebase-config.js"></script>
   <script type="module" src="js/employee.js"></script>
+  <script type="module">
+    import { insertSVGs } from "./js/svg.js";
+    document.addEventListener("DOMContentLoaded", () => {
+      insertSVGs();
+      const observer = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+          if (mutation.addedNodes.length > 0) insertSVGs();
+        }
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    });
+  </script>
 </body>
 </html>

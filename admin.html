@@ -153,13 +153,13 @@
 
     <div class="tab-nav" role="tablist">
       <button class="tab-btn active" data-tab="tab-registros" role="tab" id="tab-btn-registros">
-        📋 Filtros e Relatórios / Registros de Ponto
+        <span data-icon="clipboard-list" class="icon-sm"></span> Filtros e Relatórios / Registros de Ponto
       </button>
       <button class="tab-btn" data-tab="tab-banco-horas" role="tab" id="tab-btn-bh">
-        ⏱️ Banco de Horas
+        <span data-icon="folder-clock" class="icon-sm"></span> Banco de Horas
       </button>
       <button class="tab-btn" data-tab="tab-workspace" role="tab" id="tab-btn-workspace">
-        📍 Local de Trabalho e Cerca Virtual
+        <span data-icon="map-pin" class="icon-sm"></span> Local de Trabalho e Cerca Virtual
       </button>
     </div>
 
@@ -238,7 +238,7 @@
 
     <div id="tab-workspace" class="tab-panel">
       <div class="card">
-        <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">📍 Local de Trabalho e Cerca Virtual
+        <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;"><span data-icon="map-pin" class="icon-sm"></span> Local de Trabalho e Cerca Virtual
         </h2>
         <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.5rem;">Defina o endereço da empresa e
           o raio máximo permitido. Funcionários fora do raio configurado terão o registro de ponto bloqueado.</p>
@@ -293,7 +293,7 @@
 
     <div id="tab-banco-horas" class="tab-panel">
       <div class="card">
-        <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1.5rem;">⏱️ Banco de Horas — Visão
+        <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1.5rem;"><span data-icon="folder-clock" class="icon-sm"></span> Banco de Horas — Visão
           Administrativa</h2>
 
         <div class="filter-form-grid" style="margin-bottom: 1.5rem;">
@@ -418,7 +418,7 @@
   <div class="modal-overlay" id="modal-reject">
     <div class="modal-box">
       <div class="modal-header">
-        <h3>❌ Rejeitar Solicitação</h3>
+        <h3><span data-icon="deni" class="icon-sm"></span> Rejeitar Solicitação</h3>
         <button class="modal-close" id="btn-close-reject-modal">&times;</button>
       </div>
       <div class="reject-detail-box" id="reject-detail-box">
@@ -444,6 +444,18 @@
 
   <script type="module" src="js/firebase-config.js"></script>
   <script type="module" src="js/admin.js"></script>
+  <script type="module">
+    import { insertSVGs } from "./js/svg.js";
+    document.addEventListener("DOMContentLoaded", () => {
+      insertSVGs();
+      const observer = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+          if (mutation.addedNodes.length > 0) insertSVGs();
+        }
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    });
+  </script>
 </body>
 
 </html>

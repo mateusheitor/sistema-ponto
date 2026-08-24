@@ -175,7 +175,7 @@ async function registerPunch(type) {
       latitude, longitude, accuracy
     });
 
-    alert(`✅ Ponto registrado: ${type}`);
+    alert(`<span data-icon="check" class="icon-sm"></span> Ponto registrado: ${type}`);
     await loadTodayRecords();
 
   } catch (error) {
@@ -242,7 +242,7 @@ async function loadTodayRecords() {
 
       const isPending = pendingRecordIds.has(data.id);
       const editBtnOrBadge = isPending
-        ? `<span class="badge badge-pending" style="font-size:0.7rem;">⏳ Aguardando</span>`
+        ? `<span class="badge badge-pending" style="font-size:0.7rem;"><span data-icon="ampulheta" class="icon-sm"></span> Aguardando</span>`
         : `<button class="btn-edit-record" data-id="${data.id}" title="Solicitar edição deste registro">✏️ Editar</button>`;
 
       const tr = document.createElement('tr');
@@ -281,7 +281,7 @@ async function loadMyEditRequests() {
     if (count > 0) {
       editRequestsStatus.innerHTML = `
         <div class="edit-info-box">
-          ⏳ Você tem <strong>${count}</strong> solicitação(ões) de edição aguardando aprovação do administrador.
+          <span data-icon="ampulheta" class="icon-sm"></span> Você tem <strong>${count}</strong> solicitação(ões) de edição aguardando aprovação do administrador.
         </div>`;
     } else {
       editRequestsStatus.innerHTML = '';
@@ -346,7 +346,7 @@ btnSubmitEdit.addEventListener('click', async () => {
     });
 
     msgEditModal.style.color = 'var(--success)';
-    msgEditModal.innerText   = '✅ Solicitação enviada! Aguarde aprovação do administrador.';
+    msgEditModal.innerText   = '<span data-icon="check" class="icon-sm"></span> Solicitação enviada! Aguarde aprovação do administrador.';
 
     setTimeout(async () => {
       modalEdit.classList.remove('active');

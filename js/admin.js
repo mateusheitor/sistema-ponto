@@ -148,7 +148,7 @@ btnCriarUser.addEventListener('click', async () => {
     await setDoc(doc(db, 'users', newUid), { name, email, role });
 
     msgNovoUser.style.color = 'var(--success)';
-    msgNovoUser.innerText   = `✅ Usuário "${name}" criado com sucesso!`;
+    msgNovoUser.innerText   = `<span data-icon="check" class="icon-sm"></span> Usuário "${name}" criado com sucesso!`;
 
     if (role === 'employee') {
       [filterEmployee, bhFilterEmployee].forEach(sel => {
@@ -285,16 +285,16 @@ async function loadEditRequests() {
         : '—';
 
       const statusMap = {
-        pending:  '<span class="badge badge-pending">⏳ Pendente</span>',
-        approved: '<span class="badge badge-approved">✅ Aprovado</span>',
-        rejected: '<span class="badge badge-rejected">❌ Rejeitado</span>'
+        pending:  '<span class="badge badge-pending"><span data-icon="ampulheta" class="icon-sm"></span> Pendente</span>',
+        approved: '<span class="badge badge-approved"><span data-icon="check" class="icon-sm"></span> Aprovado</span>',
+        rejected: '<span class="badge badge-rejected"><span data-icon="deni" class="icon-sm"></span> Rejeitado</span>'
       };
       const statusBadge = statusMap[req.status] || req.status;
 
       const actions = req.status === 'pending'
         ? `<div class="edit-action-btns">
-             <button class="btn btn-approve btn-sm" data-id="${req.id}">✅ Aprovar</button>
-             <button class="btn btn-reject  btn-sm" data-id="${req.id}">❌ Rejeitar</button>
+             <button class="btn btn-approve btn-sm" data-id="${req.id}"><span data-icon="check" class="icon-sm"></span> Aprovar</button>
+             <button class="btn btn-reject  btn-sm" data-id="${req.id}"><span data-icon="deni" class="icon-sm"></span> Rejeitar</button>
            </div>`
         : `<span style="font-size:0.8rem; color:var(--text-muted);">${req.resolvedAt?.toDate ? req.resolvedAt.toDate().toLocaleDateString('pt-BR') : '—'}</span>`;
 
@@ -360,7 +360,7 @@ async function approveEditRequest(reqId, req, btn) {
       resolvedBy: currentUser.email
     });
 
-    alert(`✅ Edição aprovada! Registro de "${req.type}" alterado para ${req.requestedTime}.`);
+    alert(`<span data-icon="check" class="icon-sm"></span> Edição aprovada! Registro de "${req.type}" alterado para ${req.requestedTime}.`);
     await loadEditRequests();
     await loadRecords();
 
@@ -368,7 +368,7 @@ async function approveEditRequest(reqId, req, btn) {
     console.error('Erro ao aprovar edição:', err);
     alert('Erro ao aprovar. Verifique as permissões do Firestore.');
     btn.disabled  = false;
-    btn.innerText = '✅ Aprovar';
+    btn.innerText = '<span data-icon="check" class="icon-sm"></span> Aprovar';
   }
 }
 
@@ -405,7 +405,7 @@ btnConfirmReject.addEventListener('click', async () => {
     });
 
     msgReject.style.color = 'var(--success)';
-    msgReject.innerText   = '✅ Solicitação rejeitada com sucesso.';
+    msgReject.innerText   = '<span data-icon="check" class="icon-sm"></span> Solicitação rejeitada com sucesso.';
     setTimeout(async () => {
       modalReject.classList.remove('active');
       await loadEditRequests();
@@ -525,7 +525,7 @@ async function searchAddress(address) {
     applyNewCoordinates(lat, lng, true);
     initOrUpdateMap(lat, lng, workspaceRadius.value);
     msgWorkspace.style.color = 'var(--success)';
-    msgWorkspace.innerText   = `✅ Coordenadas: ${lat}, ${lng}`;
+    msgWorkspace.innerText   = `<span data-icon="check" class="icon-sm"></span> Coordenadas: ${lat}, ${lng}`;
     return;
   }
 
@@ -546,7 +546,7 @@ async function searchAddress(address) {
       applyNewCoordinates(lat, lon, false);
       initOrUpdateMap(lat, lon, workspaceRadius.value);
       msgWorkspace.style.color = 'var(--success)';
-      msgWorkspace.innerText   = `✅ Encontrado: ${results[0].display_name}`;
+      msgWorkspace.innerText   = `<span data-icon="check" class="icon-sm"></span> Encontrado: ${results[0].display_name}`;
     } else {
       msgWorkspace.style.color = 'var(--danger)';
       msgWorkspace.innerText   = 'Endereço não encontrado. Tente incluir número, cidade ou CEP.';
@@ -588,7 +588,7 @@ btnSaveWorkspace.addEventListener('click', async () => {
   try {
     await setDoc(doc(db, 'settings', 'workspace'), { address: address || '', latitude: lat, longitude: lng, radius, updatedAt: new Date() });
     msgWorkspace.style.color = 'var(--success)';
-    msgWorkspace.innerText   = `✅ Localização salva! (Raio: ${radius}m)`;
+    msgWorkspace.innerText   = `<span data-icon="check" class="icon-sm"></span> Localização salva! (Raio: ${radius}m)`;
   } catch (err) {
     console.error('Erro ao salvar workspace:', err);
     msgWorkspace.style.color = 'var(--danger)';

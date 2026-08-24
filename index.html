@@ -40,5 +40,17 @@
   <!-- Firebase Setup -->
   <script type="module" src="js/firebase-config.js"></script>
   <script type="module" src="js/auth.js"></script>
+  <script type="module">
+    import { insertSVGs } from "./js/svg.js";
+    document.addEventListener("DOMContentLoaded", () => {
+      insertSVGs();
+      const observer = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+          if (mutation.addedNodes.length > 0) insertSVGs();
+        }
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    });
+  </script>
 </body>
 </html>
