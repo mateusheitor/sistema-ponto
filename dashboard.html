@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,36 +9,65 @@
   <link rel="stylesheet" href="css/style.css">
   <style>
     .modal-overlay {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.5);
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
       backdrop-filter: blur(4px);
-      display: flex; align-items: center; justify-content: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       z-index: 1000;
-      opacity: 0; pointer-events: none;
+      opacity: 0;
+      pointer-events: none;
       transition: opacity 0.25s ease;
     }
-    .modal-overlay.active { opacity: 1; pointer-events: all; }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
     .modal-box {
       background: white;
       border-radius: 1rem;
       padding: 2rem;
-      width: 100%; max-width: 460px;
-      box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+      width: 100%;
+      max-width: 460px;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
       transform: translateY(20px);
       transition: transform 0.25s ease;
     }
-    .modal-overlay.active .modal-box { transform: translateY(0); }
+
+    .modal-overlay.active .modal-box {
+      transform: translateY(0);
+    }
+
     .modal-header {
-      display: flex; justify-content: space-between; align-items: center;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 1.5rem;
     }
-    .modal-header h3 { font-size: 1.25rem; font-weight: 700; }
+
+    .modal-header h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
     .modal-close {
-      background: none; border: none; font-size: 1.5rem;
-      cursor: pointer; color: var(--text-muted); line-height: 1;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-muted);
+      line-height: 1;
       transition: color 0.2s;
     }
-    .modal-close:hover { color: var(--text-main); }
+
+    .modal-close:hover {
+      color: var(--text-main);
+    }
+
     .modal-original-info {
       background: var(--bg-color);
       border-radius: var(--radius-md);
@@ -46,14 +76,19 @@
       font-size: 0.875rem;
       color: var(--text-muted);
     }
-    .modal-original-info strong { color: var(--text-main); }
+
+    .modal-original-info strong {
+      color: var(--text-main);
+    }
   </style>
 </head>
+
 <body>
 
   <nav class="navbar">
     <div class="navbar-brand">PontoWeb</div>
-    <div class="navbar-user" style="display: flex; align-items: center; gap: 0.5rem;">`n      <span data-icon="employee-user" class="icon-sm"></span>
+    <div class="navbar-user" style="display: flex; align-items: center; gap: 0.5rem;"> <span data-icon="employee-user"
+        class="icon-sm"></span>
       <span id="user-name" style="font-weight: 500;">Carregando...</span>
       <button id="btn-logout" class="btn btn-outline" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Sair</button>
     </div>
@@ -61,13 +96,13 @@
 
   <main class="container">
     <div class="dashboard-grid">
-      
+
       <div>
         <div class="card text-center">
           <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">Registrar Ponto</h2>
           <div class="clock-display" id="clock">00:00:00</div>
           <div class="date-display" id="date">Carregando data...</div>
-          
+
           <div class="punch-buttons mt-4">
             <button class="btn btn-success" id="btn-entrada">Entrada</button>
             <button class="btn btn-warning" id="btn-pausa">Pausa Almoço</button>
@@ -109,12 +144,14 @@
           </div>
 
           <div id="tab-banco-horas" class="employee-tab-panel" style="display:none;">
-            <h2 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1.25rem;"><span data-icon="folder-clock" class="icon-sm"></span> Banco de Horas</h2>
+            <h2 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1.25rem;"><span data-icon="folder-clock"
+                class="icon-sm"></span> Banco de Horas</h2>
 
             <div class="bh-period-selector">
               <button class="bh-period-btn active" data-period="week" id="bh-btn-week">📅 Esta Semana</button>
-              <button class="bh-period-btn" data-period="month" id="bh-btn-month">📆 Este Mês</button>
-              <button class="bh-period-btn" data-period="custom-month" id="bh-btn-custom-month">🗓️ Mês Específico</button>
+              <button class="bh-period-btn" data-period="month" id="bh-btn-month"><span data-icon="calendario" class="icon-sm"></span> Este Mês</button>
+              <button class="bh-period-btn" data-period="custom-month" id="bh-btn-custom-month">🗓️ Mês
+                Específico</button>
               <button class="bh-period-btn" data-period="custom-range" id="bh-btn-range">📊 Período</button>
             </div>
 
@@ -165,13 +202,16 @@
                   </tr>
                 </thead>
                 <tbody id="bh-table-body">
-                  <tr><td colspan="7" class="text-center text-muted">Selecione um período.</td></tr>
+                  <tr>
+                    <td colspan="7" class="text-center text-muted">Selecione um período.</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
 
             <div style="margin-top: 0.75rem; font-size: 0.8125rem; color: var(--text-muted);">
-              <span data-icon="lightbulb" class="icon-sm"></span> Meta diária: <strong>8h00</strong>. O saldo considera horas extras ou faltantes por dia útil com registro.
+              <span data-icon="lightbulb" class="icon-sm"></span> Meta diária: <strong>8h00</strong>. O saldo considera
+              horas extras ou faltantes por dia útil com registro.
             </div>
           </div>
 
@@ -199,17 +239,21 @@
       </div>
 
       <div class="form-group">
-        <label class="form-label" for="edit-justification">Justificativa <span style="color:var(--danger)">*</span></label>
-        <textarea id="edit-justification" class="form-input" rows="3" placeholder="Descreva o motivo da correção..." style="resize: vertical;"></textarea>
+        <label class="form-label" for="edit-justification">Justificativa <span
+            style="color:var(--danger)">*</span></label>
+        <textarea id="edit-justification" class="form-input" rows="3" placeholder="Descreva o motivo da correção..."
+          style="resize: vertical;"></textarea>
       </div>
 
       <button class="btn btn-primary btn-block" id="btn-submit-edit">Enviar Solicitação</button>
 
       <div class="edit-info-box">
-        ℹ️ Sua solicitação ficará <strong>pendente</strong> até que o administrador aprove ou rejeite. O registro só será alterado após aprovação.
+        ℹ️ Sua solicitação ficará <strong>pendente</strong> até que o administrador aprove ou rejeite. O registro só
+        será alterado após aprovação.
       </div>
 
-      <div id="msg-edit-modal" style="font-size: 0.875rem; text-align: center; min-height: 1.25rem; margin-top: 0.75rem;"></div>
+      <div id="msg-edit-modal"
+        style="font-size: 0.875rem; text-align: center; min-height: 1.25rem; margin-top: 0.75rem;"></div>
     </div>
   </div>
 
@@ -228,4 +272,5 @@
     });
   </script>
 </body>
+
 </html>
