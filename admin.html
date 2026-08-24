@@ -283,7 +283,8 @@
           <div>
             <div id="workspace-map" class="workspace-map-container"></div>
             <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 0.4rem; display: block;">
-              <span data-icon="lightbulb" class="icon-sm"></span> Digite o endereço e clique em <strong>"Buscar"</strong>, arraste o pino azul ou clique direto no mapa
+              <span data-icon="lightbulb" class="icon-sm"></span> Digite o endereço e clique em
+              <strong>"Buscar"</strong>, arraste o pino azul ou clique direto no mapa
               para posicionar a empresa. O círculo indica o raio da cerca virtual.
             </small>
           </div>
@@ -309,10 +310,14 @@
         </div>
 
         <div class="bh-period-selector">
-          <button class="bh-period-btn active" data-period="week" id="admin-bh-btn-week">📅 Esta Semana</button>
-          <button class="bh-period-btn" data-period="month" id="admin-bh-btn-month"><span data-icon="calendario" class="icon-sm"></span> Este Mês</button>
-          <button class="bh-period-btn" data-period="custom-month" id="admin-bh-btn-cmonth">🗓️ Mês Específico</button>
-          <button class="bh-period-btn" data-period="custom-range" id="admin-bh-btn-range">📊 Período</button>
+          <button class="bh-period-btn active" data-period="week" id="admin-bh-btn-week"><span data-icon="calendario"
+              class="icon-sm"></span> Esta Semana</button>
+          <button class="bh-period-btn" data-period="month" id="admin-bh-btn-month"><span data-icon="calendario"
+              class="icon-sm"></span> Este Mês</button>
+          <button class="bh-period-btn" data-period="custom-month" id="admin-bh-btn-cmonth"><span data-icon="calendario"
+              class="icon-sm"></span> Mês Específico</button>
+          <button class="bh-period-btn" data-period="custom-range" id="admin-bh-btn-range"><span data-icon="calendario"
+              class="icon-sm"></span> Período</button>
         </div>
 
         <div class="bh-custom-range" id="admin-bh-range-month">
@@ -370,7 +375,8 @@
         </div>
 
         <div style="margin-top: 0.75rem; font-size: 0.8125rem; color: var(--text-muted);">
-          <span data-icon="lightbulb" class="icon-sm"></span> Meta diária: <strong>8h00</strong>. Saldo considera horas extras ou faltantes por dia com registro.
+          <span data-icon="lightbulb" class="icon-sm"></span> Meta diária: <strong>8h00</strong>. Saldo considera horas
+          extras ou faltantes por dia com registro.
         </div>
       </div>
     </div>
@@ -404,11 +410,11 @@
         <div class="role-selector">
           <div class="role-option">
             <input type="radio" name="role" id="role-employee" value="employee" checked>
-            <label for="role-employee"><span class="role-icon">👤</span> Funcionário</label>
+            <label for="role-employee"><span class="role-icon"><span data-icon="employee-user" class="icon-sm"></span></span> Funcionário</label>
           </div>
           <div class="role-option">
             <input type="radio" name="role" id="role-admin" value="admin">
-            <label for="role-admin"><span class="role-icon">🛡️</span> Administrador</label>
+            <label for="role-admin"><span class="role-icon"><span data-icon="user-shield" class="icon-sm"></span></span> Administrador</label>
           </div>
         </div>
       </div>
