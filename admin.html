@@ -141,7 +141,8 @@
   <nav class="navbar">
     <div class="navbar-brand">PontoWeb <span
         style="color: var(--text-muted); font-size: 1rem; font-weight: 400; margin-left: 0.5rem;">Admin</span></div>
-    <div class="navbar-user">
+    <div class="navbar-user" style="display: flex; align-items: center; gap: 0.5rem;">
+      <span data-icon="user-shield" class="icon-sm"></span>
       <span id="user-name" style="font-weight: 500;">Administrador</span>
       <button id="btn-novo-user" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">+ Novo
         Usuário</button>
@@ -274,7 +275,7 @@
             </div>
             <div>
               <button id="btn-save-workspace" class="btn btn-success" style="width: 100%; white-space: nowrap;">💾
-                Salvar Localização</button>
+                <span data-icon="save" class="icon-sm"></span> Salvar Localização</button>
             </div>
           </div>
 
