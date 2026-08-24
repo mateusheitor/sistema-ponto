@@ -3,6 +3,7 @@ import {
   db, collection, query, where, getDocs, orderBy,
   getDoc, doc, setDoc, addDoc, updateDoc, serverTimestamp
 } from './firebase-config.js';
+import { insertSVGs, showToast } from './svg.js';
 
 const userNameSpan   = document.getElementById('user-name');
 const btnLogout      = document.getElementById('btn-logout');
@@ -114,19 +115,16 @@ btnCriarUser.addEventListener('click', async () => {
   const role     = document.querySelector('input[name="role"]:checked').value;
 
   if (!name || !email || !password) {
-    msgNovoUser.style.color = 'var(--danger)';
-    msgNovoUser.innerText   = 'Preencha todos os campos.';
+    showToast('Preencha todos os campos obrigatórios.', 'warning');
     return;
   }
   if (password.length < 6) {
-    msgNovoUser.style.color = 'var(--danger)';
-    msgNovoUser.innerText   = 'A senha deve ter no mínimo 6 caracteres.';
+    showToast('A senha deve ter no mínimo 6 caracteres.', 'warning');
     return;
   }
 
   btnCriarUser.disabled  = true;
   btnCriarUser.innerText = 'Criando...';
-  msgNovoUser.innerText  = '';
 
   try {
     const authRes = await fetch(
@@ -147,8 +145,7 @@ btnCriarUser.addEventListener('click', async () => {
     const newUid = authData.localId;
     await setDoc(doc(db, 'users', newUid), { name, email, role });
 
-    msgNovoUser.style.color = 'var(--success)';
-    msgNovoUser.innerText   = `<span data-icon="check" class="icon-sm"></span> Usuário "${name}" criado com sucesso!`;
+    showToast(`Usuário "${name}" criado com sucesso!`, 'success');
 
     if (role === 'employee') {
       [filterEmployee, bhFilterEmployee].forEach(sel => {
@@ -159,11 +156,10 @@ btnCriarUser.addEventListener('click', async () => {
       });
     }
 
-    setTimeout(() => modalOverlay.classList.remove('active'), 2000);
+    setTimeout(() => modalOverlay.classList.remove('active'), 1500);
 
   } catch (error) {
-    msgNovoUser.style.color = 'var(--danger)';
-    msgNovoUser.innerText   = error.message;
+    showToast(error.message, 'error');
   } finally {
     btnCriarUser.disabled  = false;
     btnCriarUser.innerText = 'Criar Usuário';
@@ -360,13 +356,13 @@ async function approveEditRequest(reqId, req, btn) {
       resolvedBy: currentUser.email
     });
 
-    alert(`<span data-icon="check" class="icon-sm"></span> Edição aprovada! Registro de "${req.type}" alterado para ${req.requestedTime}.`);
+    showToast(`Edição aprovada! Registro de "${req.type}" alterado para ${req.requestedTime}.`, 'success');
     await loadEditRequests();
     await loadRecords();
 
   } catch (err) {
     console.error('Erro ao aprovar edição:', err);
-    alert('Erro ao aprovar. Verifique as permissões do Firestore.');
+    showToast('Erro ao aprovar. Verifique as permissões do Firestore.', 'error');
     btn.disabled  = false;
     btn.innerText = '<span data-icon="check" class="icon-sm"></span> Aprovar';
   }
@@ -394,7 +390,6 @@ btnConfirmReject.addEventListener('click', async () => {
 
   btnConfirmReject.disabled  = true;
   btnConfirmReject.innerText = 'Rejeitando...';
-  msgReject.innerText        = '';
 
   try {
     await updateDoc(doc(db, 'edit_requests', reqId), {
@@ -404,17 +399,15 @@ btnConfirmReject.addEventListener('click', async () => {
       rejectReason: reason
     });
 
-    msgReject.style.color = 'var(--success)';
-    msgReject.innerText   = '<span data-icon="check" class="icon-sm"></span> Solicitação rejeitada com sucesso.';
+    showToast('Solicitação rejeitada com sucesso.', 'success');
     setTimeout(async () => {
       modalReject.classList.remove('active');
       await loadEditRequests();
-    }, 1500);
+    }, 1000);
 
   } catch (err) {
     console.error('Erro ao rejeitar:', err);
-    msgReject.style.color = 'var(--danger)';
-    msgReject.innerText   = 'Erro ao rejeitar. Tente novamente.';
+    showToast('Erro ao rejeitar. Tente novamente.', 'error');
   } finally {
     btnConfirmReject.disabled  = false;
     btnConfirmReject.innerText = 'Confirmar Rejeição';
@@ -513,8 +506,7 @@ async function loadWorkspaceSettings() {
 
 async function searchAddress(address) {
   if (!address) {
-    msgWorkspace.style.color = 'var(--danger)';
-    msgWorkspace.innerText   = 'Digite um endereço para buscar.';
+    showToast('Digite um endereço para buscar.', 'warning');
     return;
   }
 
@@ -524,15 +516,12 @@ async function searchAddress(address) {
     const lat = parseFloat(match[1]), lng = parseFloat(match[2]);
     applyNewCoordinates(lat, lng, true);
     initOrUpdateMap(lat, lng, workspaceRadius.value);
-    msgWorkspace.style.color = 'var(--success)';
-    msgWorkspace.innerText   = `<span data-icon="check" class="icon-sm"></span> Coordenadas: ${lat}, ${lng}`;
+    showToast(`Coordenadas aplicadas: ${lat}, ${lng}`, 'success');
     return;
   }
 
   btnSearchAddress.disabled  = true;
   btnSearchAddress.innerText = 'Buscando...';
-  msgWorkspace.style.color   = 'var(--text-muted)';
-  msgWorkspace.innerText     = 'Consultando serviço de localização...';
 
   try {
     const res     = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(address)}`, {
@@ -545,19 +534,16 @@ async function searchAddress(address) {
       workspaceAddress.value   = results[0].display_name;
       applyNewCoordinates(lat, lon, false);
       initOrUpdateMap(lat, lon, workspaceRadius.value);
-      msgWorkspace.style.color = 'var(--success)';
-      msgWorkspace.innerText   = `<span data-icon="check" class="icon-sm"></span> Encontrado: ${results[0].display_name}`;
+      showToast(`Endereço encontrado: ${results[0].display_name}`, 'success');
     } else {
-      msgWorkspace.style.color = 'var(--danger)';
-      msgWorkspace.innerText   = 'Endereço não encontrado. Tente incluir número, cidade ou CEP.';
+      showToast('Endereço não encontrado. Tente incluir número, cidade ou CEP.', 'warning');
     }
   } catch (err) {
     console.error('Erro de geocodificação:', err);
-    msgWorkspace.style.color = 'var(--danger)';
-    msgWorkspace.innerText   = 'Erro ao consultar localização.';
+    showToast('Erro ao consultar localização. Tente novamente.', 'error');
   } finally {
     btnSearchAddress.disabled  = false;
-    btnSearchAddress.innerText = '🔍 Buscar Coordenadas';
+    btnSearchAddress.innerText = 'Buscar Coordenadas';
   }
 }
 
@@ -571,31 +557,26 @@ btnSaveWorkspace.addEventListener('click', async () => {
   const lng     = parseFloat(workspaceLng.value);
 
   if (isNaN(lat) || isNaN(lng)) {
-    msgWorkspace.style.color = 'var(--danger)';
-    msgWorkspace.innerText   = 'Busque ou clique no mapa para posicionar as coordenadas.';
+    showToast('Busque ou clique no mapa para posicionar as coordenadas.', 'warning');
     return;
   }
   if (isNaN(radius) || radius <= 0) {
-    msgWorkspace.style.color = 'var(--danger)';
-    msgWorkspace.innerText   = 'Informe um raio válido em metros.';
+    showToast('Informe um raio válido em metros.', 'warning');
     return;
   }
 
   btnSaveWorkspace.disabled  = true;
   btnSaveWorkspace.innerText = 'Salvando...';
-  msgWorkspace.innerText     = '';
 
   try {
     await setDoc(doc(db, 'settings', 'workspace'), { address: address || '', latitude: lat, longitude: lng, radius, updatedAt: new Date() });
-    msgWorkspace.style.color = 'var(--success)';
-    msgWorkspace.innerText   = `<span data-icon="check" class="icon-sm"></span> Localização salva! (Raio: ${radius}m)`;
+    showToast(`Localização salva com sucesso! Raio: ${radius}m`, 'success');
   } catch (err) {
     console.error('Erro ao salvar workspace:', err);
-    msgWorkspace.style.color = 'var(--danger)';
-    msgWorkspace.innerText   = 'Erro ao salvar. Verifique as permissões no Firebase.';
+    showToast('Erro ao salvar. Verifique as permissões no Firebase.', 'error');
   } finally {
     btnSaveWorkspace.disabled  = false;
-    btnSaveWorkspace.innerText = '💾 Salvar Localização';
+    btnSaveWorkspace.innerText = 'Salvar Localização';
   }
 });
 
@@ -777,7 +758,7 @@ function initAdminBancoDeHoras() {
     const ev = document.getElementById('admin-bh-date-end').value;
     if (!sv || !ev) return;
     const start = new Date(sv+'T00:00:00'), end = new Date(ev+'T23:59:59');
-    if (start > end) { alert('A data de início deve ser anterior à data de fim.'); return; }
+    if (start > end) { showToast('A data de início deve ser anterior à data de fim.', 'warning'); return; }
     currentPeriod = { start, end };
     loadAdminBancoDeHoras(getSelectedEmployee(), start, end);
   });

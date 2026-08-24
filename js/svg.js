@@ -54,3 +54,63 @@ export function insertSVGs() {
     }
   });
 }
+
+// ── Toast icons ────────────────────────────────────────────────
+const _toastIcons = {
+  success: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg>`,
+  error:   `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>`,
+  warning: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>`,
+  info:    `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>`,
+};
+
+const _toastTitles = {
+  success: 'Sucesso',
+  error:   'Erro',
+  warning: 'Atenção',
+  info:    'Informação',
+};
+
+function _getContainer() {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    document.body.appendChild(container);
+  }
+  return container;
+}
+
+/**
+ * Show a toast notification.
+ * @param {string} message  - The message text.
+ * @param {'success'|'error'|'warning'|'info'} type - Toast type (default: 'info').
+ * @param {number} duration - Duration in ms before auto-dismiss (default: 4000).
+ */
+export function showToast(message, type = 'info', duration = 4000) {
+  const container = _getContainer();
+
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.style.position = 'relative';
+  toast.innerHTML = `
+    <div class="toast-icon">${_toastIcons[type] ?? _toastIcons.info}</div>
+    <div class="toast-body">
+      <div class="toast-title">${_toastTitles[type] ?? 'Aviso'}</div>
+      <div class="toast-msg">${message}</div>
+    </div>
+    <button class="toast-close" aria-label="Fechar">&times;</button>
+    <div class="toast-progress"></div>
+  `;
+
+  container.appendChild(toast);
+  requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.add('show')));
+
+  const dismiss = () => {
+    toast.classList.remove('show');
+    toast.classList.add('hide');
+    toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+  };
+
+  const timer = setTimeout(dismiss, duration);
+  toast.querySelector('.toast-close').addEventListener('click', () => { clearTimeout(timer); dismiss(); });
+}

@@ -2,6 +2,7 @@ import {
   auth, onAuthStateChanged, signOut,
   db, collection, addDoc, query, where, getDocs, doc, getDoc, updateDoc, serverTimestamp
 } from './firebase-config.js';
+import { insertSVGs, showToast } from './svg.js';
 
 const userNameSpan   = document.getElementById('user-name');
 const btnLogout      = document.getElementById('btn-logout');
@@ -113,7 +114,7 @@ async function registerPunch(type) {
   const todayStr = new Date().toISOString().split('T')[0];
 
   if (todayRegisteredTypes.has(type)) {
-    alert(`⚠️ Você já registrou o ponto de "${type}" hoje.`);
+    showToast(`Você já registrou o ponto de "${type}" hoje.`, 'warning');
     return;
   }
 
@@ -128,7 +129,7 @@ async function registerPunch(type) {
       where('type', '==', type)
     ));
     if (!checkSnap.empty) {
-      alert(`⚠️ O ponto de "${type}" já foi registrado hoje.`);
+      showToast(`O ponto de "${type}" já foi registrado hoje.`, 'warning');
       await loadTodayRecords();
       return;
     }
@@ -140,11 +141,11 @@ async function registerPunch(type) {
       longitude = pos.coords.longitude;
       accuracy  = pos.coords.accuracy;
     } catch (geoError) {
-      let msg = '⚠️ É necessário permitir o acesso à localização.';
-      if (geoError.code === 1) msg = '⛔ Permissão de localização negada. Permita o acesso ao GPS e tente novamente.';
-      else if (geoError.code === 2) msg = '📡 Não foi possível obter localização. Verifique sua conexão.';
-      else if (geoError.code === 3) msg = '⏱️ Tempo esgotado ao obter localização. Tente novamente.';
-      alert(msg);
+      let msg = 'É necessário permitir o acesso à localização para registrar o ponto.';
+      if (geoError.code === 1) msg = 'Permissão de localização negada. Permita o acesso ao GPS nas configurações do navegador e tente novamente.';
+      else if (geoError.code === 2) msg = 'Não foi possível obter sua localização. Verifique sua conexão e tente novamente.';
+      else if (geoError.code === 3) msg = 'Tempo esgotado ao obter localização. Tente novamente.';
+      showToast(msg, 'error');
       return;
     }
 
@@ -155,8 +156,8 @@ async function registerPunch(type) {
         if (ws.latitude != null && ws.longitude != null && ws.radius) {
           const dist = calculateDistance(latitude, longitude, ws.latitude, ws.longitude);
           if (dist > ws.radius) {
-            const addr = ws.address ? `\n\n📍 Local configurado: ${ws.address}` : '';
-            alert(`⛔ Registro Bloqueado!\n\nVocê está fora da região do local de trabalho.\n\n• Sua distância: ${Math.round(dist)} metros\n• Raio permitido: ${ws.radius} metros${addr}\n\nAproxime-se do local de trabalho.`);
+            const addr = ws.address ? ` Local configurado: ${ws.address}.` : '';
+            showToast(`Registro bloqueado! Você está a ${Math.round(dist)}m do local de trabalho. Raio permitido: ${ws.radius}m.${addr}`, 'error', 7000);
             return;
           }
         }
@@ -175,12 +176,12 @@ async function registerPunch(type) {
       latitude, longitude, accuracy
     });
 
-    alert(`<span data-icon="check" class="icon-sm"></span> Ponto registrado: ${type}`);
+    showToast(`Ponto registrado: ${type}`, 'success');
     await loadTodayRecords();
 
   } catch (error) {
     console.error('Erro ao registrar ponto:', error);
-    alert('Erro ao registrar ponto. Tente novamente.');
+    showToast('Erro ao registrar ponto. Tente novamente.', 'error');
   } finally {
     updateButtonStates();
   }
@@ -319,11 +320,13 @@ btnSubmitEdit.addEventListener('click', async () => {
   if (!newTime) {
     msgEditModal.style.color = 'var(--danger)';
     msgEditModal.innerText   = 'Informe o horário desejado.';
+    showToast('Informe o horário desejado.', 'warning');
     return;
   }
   if (!justification || justification.length < 5) {
     msgEditModal.style.color = 'var(--danger)';
     msgEditModal.innerText   = 'A justificativa deve ter ao menos 5 caracteres.';
+    showToast('A justificativa deve ter ao menos 5 caracteres.', 'warning');
     return;
   }
 
@@ -346,7 +349,8 @@ btnSubmitEdit.addEventListener('click', async () => {
     });
 
     msgEditModal.style.color = 'var(--success)';
-    msgEditModal.innerText   = '<span data-icon="check" class="icon-sm"></span> Solicitação enviada! Aguarde aprovação do administrador.';
+    msgEditModal.innerText   = 'Solicitação enviada! Aguarde aprovação do administrador.';
+    showToast('Solicitação enviada! Aguarde a aprovação do administrador.', 'success');
 
     setTimeout(async () => {
       modalEdit.classList.remove('active');
@@ -358,6 +362,7 @@ btnSubmitEdit.addEventListener('click', async () => {
     console.error('Erro ao enviar solicitação:', err);
     msgEditModal.style.color = 'var(--danger)';
     msgEditModal.innerText   = 'Erro ao enviar solicitação. Tente novamente.';
+    showToast('Erro ao enviar solicitação. Tente novamente.', 'error');
   } finally {
     btnSubmitEdit.disabled  = false;
     btnSubmitEdit.innerText = 'Enviar Solicitação';
@@ -594,13 +599,12 @@ function initBancoDeHoras() {
   });
 
   document.getElementById('bh-apply-range').addEventListener('click', () => {
-    const startVal = document.getElementById('bh-date-start').value;
-    const endVal   = document.getElementById('bh-date-end').value;
-    if (!startVal || !endVal) return;
-    const start = new Date(startVal + 'T00:00:00');
-    const end   = new Date(endVal   + 'T23:59:59');
+    const sv = document.getElementById('bh-date-start').value;
+    const ev = document.getElementById('bh-date-end').value;
+    if (!sv || !ev) return;
+    const start = new Date(sv + 'T00:00:00'), end = new Date(ev + 'T23:59:59');
     if (start > end) {
-      alert('A data de início deve ser anterior à data de fim.');
+      showToast('A data de início deve ser anterior à data de fim.', 'warning');
       return;
     }
     loadBancoDeHoras(start, end);
