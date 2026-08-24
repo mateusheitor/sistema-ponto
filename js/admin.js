@@ -572,7 +572,7 @@ async function searchAddress(address) {
     showToast('Erro ao consultar localização. Tente novamente.', 'error');
   } finally {
     btnSearchAddress.disabled  = false;
-    btnSearchAddress.innerText = 'Buscar Coordenadas';
+    btnSearchAddress.innerHTML = '<span data-icon="search" class="icon-sm"></span> Buscar Coordenadas';
   }
 }
 
