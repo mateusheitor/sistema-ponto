@@ -695,3 +695,37 @@ tr:hover {
   from { width: 100%; }
   to   { width: 0%; }
 }
+
+/* ── Map link pill ── */
+.map-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #4f46e5;
+  background: rgba(79, 70, 229, 0.08);
+  border: 1px solid rgba(79, 70, 229, 0.2);
+  text-decoration: none;
+  transition: background 0.18s, color 0.18s, border-color 0.18s, transform 0.15s;
+  white-space: nowrap;
+}
+
+.map-link:hover {
+  background: rgba(79, 70, 229, 0.16);
+  border-color: rgba(79, 70, 229, 0.45);
+  color: #3730a3;
+  transform: translateY(-1px);
+}
+
+.map-link .map-pin {
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.map-empty {
+  color: var(--text-muted);
+  font-size: 1rem;
+}
