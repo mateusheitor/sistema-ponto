@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 
 <head>
@@ -111,11 +111,7 @@
       color: var(--primary-color);
     }
 
-    #msg-novo-user {
-      font-size: 0.875rem;
-      text-align: center;
-      min-height: 1.25rem;
-    }
+
 
     #modal-reject .modal-box {
       max-width: 400px;
@@ -179,8 +175,8 @@
               <option value="all">Todos os Funcionários</option>
             </select>
           </div>
-          <div>
-            <button id="btn-filter" class="btn btn-primary" style="width: 100%;">Aplicar Filtro</button>
+          <div style="margin-top: auto;">
+            <button id="btn-filter" class="btn btn-primary" style="width: 100%; height: 46px;">Aplicar Filtro</button>
           </div>
         </div>
       </div>
@@ -281,8 +277,8 @@
               <input type="text" id="workspace-address" class="form-input"
                 placeholder="Ex: Av. Paulista, 1000, São Paulo, SP">
             </div>
-            <div>
-              <button id="btn-search-address" class="btn btn-outline" style="width: 100%; white-space: nowrap;"><span
+            <div style="margin-top: auto;">
+              <button id="btn-search-address" class="btn btn-outline" style="width: 100%; white-space: nowrap; height: 46px;"><span
                   data-icon="search" class="icon-sm"></span> Buscar Coordenadas</button>
             </div>
           </div>
@@ -303,8 +299,8 @@
               <input type="text" id="workspace-lng" class="form-input" placeholder="Ex: -46.6565" readonly
                 style="background-color: var(--bg-color);">
             </div>
-            <div>
-              <button id="btn-save-workspace" class="btn btn-success" style="width: 100%; white-space: nowrap;">
+            <div style="margin-top: auto;">
+              <button id="btn-save-workspace" class="btn btn-success" style="width: 100%; white-space: nowrap; height: 46px;">
                 <span data-icon="save" class="icon-sm"></span> Salvar Localização</button>
             </div>
           </div>
@@ -318,7 +314,7 @@
             </small>
           </div>
 
-          <div id="msg-workspace" style="font-size: 0.875rem; min-height: 1.25rem;"></div>
+
         </div>
       </div>
     </div>
@@ -451,7 +447,7 @@
       </div>
 
       <button class="btn btn-primary btn-block" id="btn-criar-user">Criar Usuário</button>
-      <div id="msg-novo-user" class="mt-2"></div>
+
     </div>
   </div>
 
@@ -478,7 +474,7 @@
         <button class="btn btn-outline" style="flex:1;" id="btn-cancel-reject">Cancelar</button>
         <button class="btn btn-danger" style="flex:1;" id="btn-confirm-reject">Confirmar Rejeição</button>
       </div>
-      <div id="msg-reject" style="font-size:0.875rem; text-align:center; margin-top:0.75rem; min-height:1.25rem;"></div>
+
     </div>
   </div>
 
@@ -501,6 +497,31 @@
       <div style="display:flex; gap:0.75rem; margin-top: 1.25rem;">
         <button class="btn btn-outline" style="flex:1;" id="btn-cancel-approve">Cancelar</button>
         <button class="btn btn-success" style="flex:1;" id="btn-confirm-approve">
+          <span data-icon="check" class="icon-sm"></span> Aprovar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-confirm-approve-insert">
+    <div class="modal-box" style="max-width: 420px;">
+      <div class="modal-header">
+        <h3><span data-icon="file-plus" class="icon-sm"></span> Confirmar Inserção</h3>
+        <button class="modal-close" id="btn-close-confirm-approve-insert">&times;</button>
+      </div>
+      <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1rem;">
+        Deseja aprovar a inserção abaixo? Um novo registro de ponto será criado imediatamente.
+      </p>
+      <div class="reject-detail-box">
+        <div>Funcionário: <strong id="approve-insert-info-user">—</strong></div>
+        <div>Data: <strong id="approve-insert-info-date">—</strong></div>
+        <div>Tipo: <strong id="approve-insert-info-type">—</strong></div>
+        <div>Horário: <strong id="approve-insert-info-time">—</strong></div>
+        <div>Justificativa: <em id="approve-insert-info-just">—</em></div>
+      </div>
+      <div style="display:flex; gap:0.75rem; margin-top: 1.25rem;">
+        <button class="btn btn-outline" style="flex:1;" id="btn-cancel-approve-insert">Cancelar</button>
+        <button class="btn btn-success" style="flex:1;" id="btn-confirm-approve-insert">
           <span data-icon="check" class="icon-sm"></span> Aprovar
         </button>
       </div>

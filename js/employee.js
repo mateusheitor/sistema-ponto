@@ -18,7 +18,7 @@ const editInfoTime   = document.getElementById('edit-info-time');
 const editNewTime    = document.getElementById('edit-new-time');
 const editJustification = document.getElementById('edit-justification');
 const btnSubmitEdit  = document.getElementById('btn-submit-edit');
-const msgEditModal   = document.getElementById('msg-edit-modal');
+
 
 const pendingAlert   = document.getElementById('pending-alert');
 const pendingAlertText = document.getElementById('pending-alert-text');
@@ -378,8 +378,6 @@ function openEditModal(record) {
   const m = record.timestamp.toDate().getMinutes().toString().padStart(2, '0');
   editNewTime.value = `${h}:${m}`;
   editJustification.value = '';
-  msgEditModal.innerText  = '';
-  msgEditModal.style.color = '';
 
   modalEdit.classList.add('active');
 }
@@ -394,21 +392,16 @@ btnSubmitEdit.addEventListener('click', async () => {
   const justification = editJustification.value.trim();
 
   if (!newTime) {
-    msgEditModal.style.color = 'var(--danger)';
-    msgEditModal.innerText   = 'Informe o horário desejado.';
     showToast('Informe o horário desejado.', 'warning');
     return;
   }
   if (!justification || justification.length < 5) {
-    msgEditModal.style.color = 'var(--danger)';
-    msgEditModal.innerText   = 'A justificativa deve ter ao menos 5 caracteres.';
     showToast('A justificativa deve ter ao menos 5 caracteres.', 'warning');
     return;
   }
 
   btnSubmitEdit.disabled  = true;
   btnSubmitEdit.innerText = 'Enviando...';
-  msgEditModal.innerText  = '';
 
   try {
     await addDoc(collection(db, 'edit_requests'), {
@@ -424,8 +417,6 @@ btnSubmitEdit.addEventListener('click', async () => {
       createdAt:          new Date()
     });
 
-    msgEditModal.style.color = 'var(--success)';
-    msgEditModal.innerHTML   = '<span data-icon="check" class="icon-sm"></span> Solicitação enviada! Aguarde aprovação do administrador.';
     showToast('Solicitação enviada! Aguarde a aprovação do administrador.', 'success');
 
 
@@ -437,8 +428,6 @@ btnSubmitEdit.addEventListener('click', async () => {
 
   } catch (err) {
     console.error('Erro ao enviar solicitação:', err);
-    msgEditModal.style.color = 'var(--danger)';
-    msgEditModal.innerText   = 'Erro ao enviar solicitação. Tente novamente.';
     showToast('Erro ao enviar solicitação. Tente novamente.', 'error');
   } finally {
     btnSubmitEdit.disabled  = false;

@@ -18,20 +18,20 @@ const workspaceRadius  = document.getElementById('workspace-radius');
 const workspaceLat     = document.getElementById('workspace-lat');
 const workspaceLng     = document.getElementById('workspace-lng');
 const btnSaveWorkspace = document.getElementById('btn-save-workspace');
-const msgWorkspace     = document.getElementById('msg-workspace');
+
 
 const modalOverlay  = document.getElementById('modal-novo-user');
 const btnNovoUser   = document.getElementById('btn-novo-user');
 const btnCloseModal = document.getElementById('btn-close-modal');
 const btnCriarUser  = document.getElementById('btn-criar-user');
-const msgNovoUser   = document.getElementById('msg-novo-user');
+
 
 const modalReject      = document.getElementById('modal-reject');
 const btnCloseReject   = document.getElementById('btn-close-reject-modal');
 const btnCancelReject  = document.getElementById('btn-cancel-reject');
 const btnConfirmReject = document.getElementById('btn-confirm-reject');
 const rejectReason     = document.getElementById('reject-reason');
-const msgReject        = document.getElementById('msg-reject');
+
 const rejectInfoUser   = document.getElementById('reject-info-user');
 const rejectInfoType   = document.getElementById('reject-info-type');
 const rejectInfoTime   = document.getElementById('reject-info-time');
@@ -114,9 +114,6 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 
 btnNovoUser.addEventListener('click', () => {
-  modalOverlay.classList.add('active');
-  msgNovoUser.innerText  = '';
-  msgNovoUser.style.color = '';
   document.getElementById('new-name').value     = '';
   document.getElementById('new-email').value    = '';
   document.getElementById('new-password').value = '';
@@ -530,7 +527,6 @@ function openRejectModal(reqId, req, collectionName = 'edit_requests') {
   rejectInfoTime.innerText = req.requestedTime;
   rejectInfoJust.innerText = req.justification;
   rejectReason.value       = '';
-  msgReject.innerText      = '';
   modalReject.classList.add('active');
 }
 
@@ -629,8 +625,6 @@ async function reverseGeocode(lat, lng) {
     const data = await res.json();
     if (data?.display_name) {
       workspaceAddress.value     = data.display_name;
-      msgWorkspace.style.color   = 'var(--text-muted)';
-      msgWorkspace.innerText     = `📍 Posição definida: ${data.display_name}`;
     }
   } catch (err) {
     console.warn('Geocodificação reversa falhou:', err);
@@ -651,9 +645,6 @@ async function loadWorkspaceSettings() {
         lat = data.latitude;
         lng = data.longitude;
       }
-      msgWorkspace.style.color = 'var(--text-muted)';
-      msgWorkspace.innerText   = `Localização configurada: ${data.address || 'Coordenadas salvas'} (Raio: ${data.radius}m)`;
-    }
   } catch (err) {
     console.error('Erro ao carregar workspace:', err);
   }
