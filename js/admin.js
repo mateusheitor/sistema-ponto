@@ -762,7 +762,7 @@ btnSaveWorkspace.addEventListener('click', async () => {
 function formatMinutes(totalMinutes) {
   const sign = totalMinutes < 0 ? '-' : '';
   const abs = Math.abs(Math.round(totalMinutes));
-  return `${sign}${Math.floor(abs / 60)}h${String(abs % 60).padStart(2, '0')}`;
+  return `${sign}${String(Math.floor(abs / 60)).padStart(2, '0')}:${String(abs % 60).padStart(2, '0')}`;
 }
 
 function toDateStr(d) { return d.toISOString().split('T')[0]; }

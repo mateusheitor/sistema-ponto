@@ -447,11 +447,11 @@ employeeTabBtns.forEach(btn => {
 });
 
 function formatMinutes(totalMinutes) {
-  const sign    = totalMinutes < 0 ? '-' : '';
-  const abs     = Math.abs(Math.round(totalMinutes));
-  const hours   = Math.floor(abs / 60);
+  const sign = totalMinutes < 0 ? '-' : '';
+  const abs = Math.abs(Math.round(totalMinutes));
+  const hours = Math.floor(abs / 60);
   const minutes = abs % 60;
-  return `${sign}${hours}h${minutes.toString().padStart(2, '0')}`;
+  return `${sign}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 }
 
 function toDateStr(date) {
