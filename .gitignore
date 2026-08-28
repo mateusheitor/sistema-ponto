@@ -11,3 +11,8 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+
+# Firebase
+firestore.rules
+firebase.json
+.firebaserc
