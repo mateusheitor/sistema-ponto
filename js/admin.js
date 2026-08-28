@@ -5,46 +5,46 @@ import {
 } from './firebase-config.js';
 import { insertSVGs, showToast } from './svg.js';
 
-const userNameSpan   = document.getElementById('user-name');
-const btnLogout      = document.getElementById('btn-logout');
-const filterDate     = document.getElementById('filter-date');
+const userNameSpan = document.getElementById('user-name');
+const btnLogout = document.getElementById('btn-logout');
+const filterDate = document.getElementById('filter-date');
 const filterEmployee = document.getElementById('filter-employee');
-const btnFilter      = document.getElementById('btn-filter');
-const tableBody      = document.getElementById('admin-records-table-body');
+const btnFilter = document.getElementById('btn-filter');
+const tableBody = document.getElementById('admin-records-table-body');
 
 const workspaceAddress = document.getElementById('workspace-address');
 const btnSearchAddress = document.getElementById('btn-search-address');
-const workspaceRadius  = document.getElementById('workspace-radius');
-const workspaceLat     = document.getElementById('workspace-lat');
-const workspaceLng     = document.getElementById('workspace-lng');
+const workspaceRadius = document.getElementById('workspace-radius');
+const workspaceLat = document.getElementById('workspace-lat');
+const workspaceLng = document.getElementById('workspace-lng');
 const btnSaveWorkspace = document.getElementById('btn-save-workspace');
 
 
-const modalOverlay  = document.getElementById('modal-novo-user');
-const btnNovoUser   = document.getElementById('btn-novo-user');
+const modalOverlay = document.getElementById('modal-novo-user');
+const btnNovoUser = document.getElementById('btn-novo-user');
 const btnCloseModal = document.getElementById('btn-close-modal');
-const btnCriarUser  = document.getElementById('btn-criar-user');
+const btnCriarUser = document.getElementById('btn-criar-user');
 
 
-const modalReject      = document.getElementById('modal-reject');
-const btnCloseReject   = document.getElementById('btn-close-reject-modal');
-const btnCancelReject  = document.getElementById('btn-cancel-reject');
+const modalReject = document.getElementById('modal-reject');
+const btnCloseReject = document.getElementById('btn-close-reject-modal');
+const btnCancelReject = document.getElementById('btn-cancel-reject');
 const btnConfirmReject = document.getElementById('btn-confirm-reject');
-const rejectReason     = document.getElementById('reject-reason');
+const rejectReason = document.getElementById('reject-reason');
 
-const rejectInfoUser   = document.getElementById('reject-info-user');
-const rejectInfoType   = document.getElementById('reject-info-type');
-const rejectInfoTime   = document.getElementById('reject-info-time');
-const rejectInfoJust   = document.getElementById('reject-info-just');
+const rejectInfoUser = document.getElementById('reject-info-user');
+const rejectInfoType = document.getElementById('reject-info-type');
+const rejectInfoTime = document.getElementById('reject-info-time');
+const rejectInfoJust = document.getElementById('reject-info-just');
 
-const modalConfirmApprove  = document.getElementById('modal-confirm-approve');
-const btnCloseConfApprove  = document.getElementById('btn-close-confirm-approve');
-const btnCancelApprove     = document.getElementById('btn-cancel-approve');
-const btnConfirmApprove    = document.getElementById('btn-confirm-approve');
-const approveInfoUser      = document.getElementById('approve-info-user');
-const approveInfoType      = document.getElementById('approve-info-type');
-const approveInfoTime      = document.getElementById('approve-info-time');
-const approveInfoJust      = document.getElementById('approve-info-just');
+const modalConfirmApprove = document.getElementById('modal-confirm-approve');
+const btnCloseConfApprove = document.getElementById('btn-close-confirm-approve');
+const btnCancelApprove = document.getElementById('btn-cancel-approve');
+const btnConfirmApprove = document.getElementById('btn-confirm-approve');
+const approveInfoUser = document.getElementById('approve-info-user');
+const approveInfoType = document.getElementById('approve-info-type');
+const approveInfoTime = document.getElementById('approve-info-time');
+const approveInfoJust = document.getElementById('approve-info-just');
 
 const modalConfirmApproveInsert = document.getElementById('modal-confirm-approve-insert');
 const btnCloseConfApproveInsert = document.getElementById('btn-close-confirm-approve-insert');
@@ -60,23 +60,23 @@ let pendingApproval = null; // { reqId, req, btn }
 let pendingApprovalInsert = null;
 
 const editRequestsTableBody = document.getElementById('edit-requests-table-body');
-const pendingDot            = document.getElementById('pending-dot');
+const pendingDot = document.getElementById('pending-dot');
 
 const insertRequestsTableBody = document.getElementById('insert-requests-table-body');
-const pendingDotInsert        = document.getElementById('pending-dot-insert');
+const pendingDotInsert = document.getElementById('pending-dot-insert');
 
-const modalAction         = document.getElementById('modal-action-request');
-const btnCloseAction      = document.getElementById('btn-close-action-modal');
+const modalAction = document.getElementById('modal-action-request');
+const btnCloseAction = document.getElementById('btn-close-action-modal');
 
-const adminBhTableBody    = document.getElementById('admin-bh-table-body');
-const adminBhTotalWorked  = document.getElementById('admin-bh-total-worked');
+const adminBhTableBody = document.getElementById('admin-bh-table-body');
+const adminBhTotalWorked = document.getElementById('admin-bh-total-worked');
 const adminBhTotalExpected = document.getElementById('admin-bh-total-expected');
-const adminBhBalance      = document.getElementById('admin-bh-balance');
-const adminBhBalanceCard  = document.getElementById('admin-bh-balance-card');
-const adminBhDaysWorked   = document.getElementById('admin-bh-days-worked');
-const bhFilterEmployee    = document.getElementById('bh-filter-employee');
+const adminBhBalance = document.getElementById('admin-bh-balance');
+const adminBhBalanceCard = document.getElementById('admin-bh-balance-card');
+const adminBhDaysWorked = document.getElementById('admin-bh-days-worked');
+const bhFilterEmployee = document.getElementById('bh-filter-employee');
 
-let currentUser      = null;
+let currentUser = null;
 let rejectingRequest = null;
 const META_DIARIA_HORAS = 8;
 
@@ -85,7 +85,7 @@ filterDate.value = today;
 
 onAuthStateChanged(auth, async (user) => {
   if (user) {
-    const userDocRef  = doc(db, 'users', user.uid);
+    const userDocRef = doc(db, 'users', user.uid);
     const userDocSnap = await getDoc(userDocRef);
 
     if (userDocSnap.exists() && userDocSnap.data().role === 'admin') {
@@ -125,8 +125,8 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 
 btnNovoUser.addEventListener('click', () => {
-  document.getElementById('new-name').value     = '';
-  document.getElementById('new-email').value    = '';
+  document.getElementById('new-name').value = '';
+  document.getElementById('new-email').value = '';
   document.getElementById('new-password').value = '';
   document.getElementById('role-employee').checked = true;
 });
@@ -135,10 +135,10 @@ btnCloseModal.addEventListener('click', () => modalOverlay.classList.remove('act
 modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) modalOverlay.classList.remove('active'); });
 
 btnCriarUser.addEventListener('click', async () => {
-  const name     = document.getElementById('new-name').value.trim();
-  const email    = document.getElementById('new-email').value.trim();
+  const name = document.getElementById('new-name').value.trim();
+  const email = document.getElementById('new-email').value.trim();
   const password = document.getElementById('new-password').value;
-  const role     = document.querySelector('input[name="role"]:checked').value;
+  const role = document.querySelector('input[name="role"]:checked').value;
 
   if (!name || !email || !password) {
     showToast('Preencha todos os campos obrigatórios.', 'warning');
@@ -149,7 +149,7 @@ btnCriarUser.addEventListener('click', async () => {
     return;
   }
 
-  btnCriarUser.disabled  = true;
+  btnCriarUser.disabled = true;
   btnCriarUser.innerText = 'Criando...';
 
   try {
@@ -176,7 +176,7 @@ btnCriarUser.addEventListener('click', async () => {
     if (role === 'employee') {
       [filterEmployee, bhFilterEmployee].forEach(sel => {
         const opt = document.createElement('option');
-        opt.value       = newUid;
+        opt.value = newUid;
         opt.textContent = name || email;
         sel.appendChild(opt);
       });
@@ -187,7 +187,7 @@ btnCriarUser.addEventListener('click', async () => {
   } catch (error) {
     showToast(error.message, 'error');
   } finally {
-    btnCriarUser.disabled  = false;
+    btnCriarUser.disabled = false;
     btnCriarUser.innerText = 'Criar Usuário';
   }
 });
@@ -199,7 +199,7 @@ async function loadEmployees() {
       const data = d.data();
       [filterEmployee, bhFilterEmployee].forEach(sel => {
         const opt = document.createElement('option');
-        opt.value       = d.id;
+        opt.value = d.id;
         opt.textContent = data.name || data.email;
         sel.appendChild(opt);
       });
@@ -210,7 +210,7 @@ async function loadEmployees() {
 }
 
 async function loadRecords() {
-  const dateValue  = filterDate.value;
+  const dateValue = filterDate.value;
   const employeeId = filterEmployee.value;
 
   tableBody.innerHTML = '<tr><td colspan="5" class="text-center"><span class="loader"></span></td></tr>';
@@ -250,7 +250,7 @@ async function loadRecords() {
       else if (data.type === 'Saída') badgeClass = 'badge-saida';
 
       const locationCell = (data.latitude != null && data.longitude != null)
-        ? `<a href="https://www.google.com/maps?q=${data.latitude},${data.longitude}" target="_blank" rel="noopener noreferrer" title="Precisão: ±${Math.round(data.accuracy ?? 0)}m">📍 Ver no Mapa</a>`
+        ? `<a href="https://www.google.com/maps?q=${data.latitude},${data.longitude}" target="_blank" rel="noopener noreferrer" title="Precisão: ±${Math.round(data.accuracy ?? 0)}m">Ver no Mapa</a>`
         : '<span style="color: var(--text-muted);">—</span>';
 
       const editedBadge = data.edited
@@ -307,7 +307,7 @@ async function loadEditRequests() {
         : '—';
 
       const statusMap = {
-        pending:  '<span class="badge badge-pending"><span data-icon="ampulheta" class="icon-sm"></span> Pendente</span>',
+        pending: '<span class="badge badge-pending"><span data-icon="ampulheta" class="icon-sm"></span> Pendente</span>',
         approved: '<span class="badge badge-approved"><span data-icon="check" class="icon-sm"></span> Aprovado</span>',
         rejected: '<span class="badge badge-rejected"><span data-icon="deni" class="icon-sm"></span> Rejeitado</span>'
       };
@@ -337,7 +337,7 @@ async function loadEditRequests() {
     editRequestsTableBody.querySelectorAll('.btn-approve').forEach(btn => {
       btn.addEventListener('click', () => {
         const reqId = btn.dataset.id;
-        const req   = requests.find(r => r.id === reqId);
+        const req = requests.find(r => r.id === reqId);
         if (req) approveEditRequest(reqId, req, btn);
       });
     });
@@ -345,7 +345,7 @@ async function loadEditRequests() {
     editRequestsTableBody.querySelectorAll('.btn-reject').forEach(btn => {
       btn.addEventListener('click', () => {
         const reqId = btn.dataset.id;
-        const req   = requests.find(r => r.id === reqId);
+        const req = requests.find(r => r.id === reqId);
         if (req) openRejectModal(reqId, req);
       });
     });
@@ -382,9 +382,9 @@ async function loadInsertRequests() {
     requests.forEach(req => {
       const requestedDateParts = req.requestedDateString.split('-');
       const formattedDate = `${requestedDateParts[2]}/${requestedDateParts[1]}/${requestedDateParts[0]}`;
-      
+
       const statusMap = {
-        pending:  '<span class="badge badge-pending"><span data-icon="ampulheta" class="icon-sm"></span> Pendente</span>',
+        pending: '<span class="badge badge-pending"><span data-icon="ampulheta" class="icon-sm"></span> Pendente</span>',
         approved: '<span class="badge badge-approved"><span data-icon="check" class="icon-sm"></span> Aprovado</span>',
         rejected: '<span class="badge badge-rejected"><span data-icon="deni" class="icon-sm"></span> Rejeitado</span>'
       };
@@ -414,7 +414,7 @@ async function loadInsertRequests() {
     insertRequestsTableBody.querySelectorAll('.btn-approve-insert').forEach(btn => {
       btn.addEventListener('click', () => {
         const reqId = btn.dataset.id;
-        const req   = requests.find(r => r.id === reqId);
+        const req = requests.find(r => r.id === reqId);
         if (req) approveInsertRequest(reqId, req, btn);
       });
     });
@@ -422,7 +422,7 @@ async function loadInsertRequests() {
     insertRequestsTableBody.querySelectorAll('.btn-reject-insert').forEach(btn => {
       btn.addEventListener('click', () => {
         const reqId = btn.dataset.id;
-        const req   = requests.find(r => r.id === reqId);
+        const req = requests.find(r => r.id === reqId);
         if (req) openRejectModal(reqId, req, 'insert_requests');
       });
     });
@@ -447,7 +447,7 @@ async function approveInsertRequest(reqId, req, btn) {
 }
 
 btnCloseConfApproveInsert.addEventListener('click', () => modalConfirmApproveInsert.classList.remove('active'));
-btnCancelApproveInsert.addEventListener('click',    () => modalConfirmApproveInsert.classList.remove('active'));
+btnCancelApproveInsert.addEventListener('click', () => modalConfirmApproveInsert.classList.remove('active'));
 modalConfirmApproveInsert.addEventListener('click', e => { if (e.target === modalConfirmApproveInsert) modalConfirmApproveInsert.classList.remove('active'); });
 
 btnConfirmApproveInsert.addEventListener('click', async () => {
@@ -506,7 +506,7 @@ async function approveEditRequest(reqId, req, btn) {
 }
 
 btnCloseConfApprove.addEventListener('click', () => modalConfirmApprove.classList.remove('active'));
-btnCancelApprove.addEventListener('click',    () => modalConfirmApprove.classList.remove('active'));
+btnCancelApprove.addEventListener('click', () => modalConfirmApprove.classList.remove('active'));
 modalConfirmApprove.addEventListener('click', e => { if (e.target === modalConfirmApprove) modalConfirmApprove.classList.remove('active'); });
 
 btnConfirmApprove.addEventListener('click', async () => {
@@ -515,25 +515,25 @@ btnConfirmApprove.addEventListener('click', async () => {
   pendingApproval = null;
   modalConfirmApprove.classList.remove('active');
 
-  btn.disabled  = true;
+  btn.disabled = true;
   btn.innerText = '...';
 
   try {
 
-    const [h, m]        = req.requestedTime.split(':').map(Number);
-    const originalDate  = req.originalTimestamp.toDate();
-    const newTimestamp  = new Date(originalDate);
+    const [h, m] = req.requestedTime.split(':').map(Number);
+    const originalDate = req.originalTimestamp.toDate();
+    const newTimestamp = new Date(originalDate);
     newTimestamp.setHours(h, m, 0, 0);
 
     await updateDoc(doc(db, 'time_records', req.recordId), {
       timestamp: newTimestamp,
-      edited:    true,
-      editedAt:  new Date(),
-      editNote:  req.justification
+      edited: true,
+      editedAt: new Date(),
+      editNote: req.justification
     });
 
     await updateDoc(doc(db, 'edit_requests', reqId), {
-      status:     'approved',
+      status: 'approved',
       resolvedAt: new Date(),
       resolvedBy: currentUser.email
     });
@@ -545,7 +545,7 @@ btnConfirmApprove.addEventListener('click', async () => {
   } catch (err) {
     console.error('Erro ao aprovar edição:', err);
     showToast('Erro ao aprovar. Verifique as permissões do Firestore.', 'error');
-    btn.disabled  = false;
+    btn.disabled = false;
     btn.innerHTML = '<span data-icon="check" class="icon-sm"></span> Aprovar';
   }
 
@@ -557,11 +557,11 @@ function openRejectModal(reqId, req, collectionName = 'edit_requests') {
   rejectInfoType.innerText = req.type;
   rejectInfoTime.innerText = req.requestedTime;
   rejectInfoJust.innerText = req.justification;
-  rejectReason.value       = '';
+  rejectReason.value = '';
   modalReject.classList.add('active');
 }
 
-btnCloseReject.addEventListener('click',  () => modalReject.classList.remove('active'));
+btnCloseReject.addEventListener('click', () => modalReject.classList.remove('active'));
 btnCancelReject.addEventListener('click', () => modalReject.classList.remove('active'));
 modalReject.addEventListener('click', e => { if (e.target === modalReject) modalReject.classList.remove('active'); });
 
@@ -570,14 +570,14 @@ btnConfirmReject.addEventListener('click', async () => {
   const { id: reqId, data: req, collection: collName } = rejectingRequest;
   const reason = rejectReason.value.trim();
 
-  btnConfirmReject.disabled  = true;
+  btnConfirmReject.disabled = true;
   btnConfirmReject.innerText = 'Rejeitando...';
 
   try {
     await updateDoc(doc(db, collName, reqId), {
-      status:       'rejected',
-      resolvedAt:   new Date(),
-      resolvedBy:   currentUser.email,
+      status: 'rejected',
+      resolvedAt: new Date(),
+      resolvedBy: currentUser.email,
       rejectReason: reason
     });
 
@@ -592,12 +592,12 @@ btnConfirmReject.addEventListener('click', async () => {
     console.error('Erro ao rejeitar:', err);
     showToast('Erro ao rejeitar. Tente novamente.', 'error');
   } finally {
-    btnConfirmReject.disabled  = false;
+    btnConfirmReject.disabled = false;
     btnConfirmReject.innerText = 'Confirmar Rejeição';
   }
 });
 
-let leafletMap    = null;
+let leafletMap = null;
 let leafletMarker = null;
 let leafletCircle = null;
 
@@ -605,8 +605,8 @@ function initOrUpdateMap(lat, lng, radius) {
   const mapElement = document.getElementById('workspace-map');
   if (!mapElement || typeof L === 'undefined') return;
 
-  const latNum    = parseFloat(lat);
-  const lngNum    = parseFloat(lng);
+  const latNum = parseFloat(lat);
+  const lngNum = parseFloat(lng);
   const radiusNum = parseFloat(radius) || 100;
 
   if (!leafletMap) {
@@ -639,7 +639,7 @@ function applyNewCoordinates(lat, lng, doReverseGeocode = false) {
   workspaceLng.value = lngFixed;
   if (leafletMarker) leafletMarker.setLatLng([lat, lng]);
   if (leafletCircle) leafletCircle.setLatLng([lat, lng]);
-  if (leafletMap)    leafletMap.panTo([lat, lng]);
+  if (leafletMap) leafletMap.panTo([lat, lng]);
   if (doReverseGeocode) reverseGeocode(lat, lng);
 }
 
@@ -650,12 +650,12 @@ workspaceRadius.addEventListener('input', () => {
 
 async function reverseGeocode(lat, lng) {
   try {
-    const res  = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`, {
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`, {
       headers: { 'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8' }
     });
     const data = await res.json();
     if (data?.display_name) {
-      workspaceAddress.value     = data.display_name;
+      workspaceAddress.value = data.display_name;
     }
   } catch (err) {
     console.warn('Geocodificação reversa falhou:', err);
@@ -668,8 +668,8 @@ async function loadWorkspaceSettings() {
     const snap = await getDoc(doc(db, 'settings', 'workspace'));
     if (snap.exists()) {
       const data = snap.data();
-      if (data.address)  workspaceAddress.value = data.address;
-      if (data.radius)  { workspaceRadius.value = data.radius; radius = data.radius; }
+      if (data.address) workspaceAddress.value = data.address;
+      if (data.radius) { workspaceRadius.value = data.radius; radius = data.radius; }
       if (data.latitude != null && data.longitude != null) {
         workspaceLat.value = data.latitude;
         workspaceLng.value = data.longitude;
@@ -699,18 +699,18 @@ async function searchAddress(address) {
     return;
   }
 
-  btnSearchAddress.disabled  = true;
+  btnSearchAddress.disabled = true;
   btnSearchAddress.innerText = 'Buscando...';
 
   try {
-    const res     = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(address)}`, {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(address)}`, {
       headers: { 'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8' }
     });
     const results = await res.json();
 
     if (results?.length > 0) {
       const lat = parseFloat(results[0].lat), lon = parseFloat(results[0].lon);
-      workspaceAddress.value   = results[0].display_name;
+      workspaceAddress.value = results[0].display_name;
       applyNewCoordinates(lat, lon, false);
       initOrUpdateMap(lat, lon, workspaceRadius.value);
       showToast(`Endereço encontrado: ${results[0].display_name}`, 'success');
@@ -721,7 +721,7 @@ async function searchAddress(address) {
     console.error('Erro de geocodificação:', err);
     showToast('Erro ao consultar localização. Tente novamente.', 'error');
   } finally {
-    btnSearchAddress.disabled  = false;
+    btnSearchAddress.disabled = false;
     btnSearchAddress.innerHTML = '<span data-icon="search" class="icon-sm"></span> Buscar Coordenadas';
   }
 }
@@ -731,9 +731,9 @@ workspaceAddress.addEventListener('keydown', e => { if (e.key === 'Enter') { e.p
 
 btnSaveWorkspace.addEventListener('click', async () => {
   const address = workspaceAddress.value.trim();
-  const radius  = parseFloat(workspaceRadius.value);
-  const lat     = parseFloat(workspaceLat.value);
-  const lng     = parseFloat(workspaceLng.value);
+  const radius = parseFloat(workspaceRadius.value);
+  const lat = parseFloat(workspaceLat.value);
+  const lng = parseFloat(workspaceLng.value);
 
   if (isNaN(lat) || isNaN(lng)) {
     showToast('Busque ou clique no mapa para posicionar as coordenadas.', 'warning');
@@ -744,7 +744,7 @@ btnSaveWorkspace.addEventListener('click', async () => {
     return;
   }
 
-  btnSaveWorkspace.disabled  = true;
+  btnSaveWorkspace.disabled = true;
   btnSaveWorkspace.innerText = 'Salvando...';
 
   try {
@@ -754,35 +754,35 @@ btnSaveWorkspace.addEventListener('click', async () => {
     console.error('Erro ao salvar workspace:', err);
     showToast('Erro ao salvar. Verifique as permissões no Firebase.', 'error');
   } finally {
-    btnSaveWorkspace.disabled  = false;
+    btnSaveWorkspace.disabled = false;
     btnSaveWorkspace.innerText = 'Salvar Localização';
   }
 });
 
 function formatMinutes(totalMinutes) {
-  const sign  = totalMinutes < 0 ? '-' : '';
-  const abs   = Math.abs(Math.round(totalMinutes));
-  return `${sign}${Math.floor(abs/60)}h${String(abs%60).padStart(2,'0')}`;
+  const sign = totalMinutes < 0 ? '-' : '';
+  const abs = Math.abs(Math.round(totalMinutes));
+  return `${sign}${Math.floor(abs / 60)}h${String(abs % 60).padStart(2, '0')}`;
 }
 
 function toDateStr(d) { return d.toISOString().split('T')[0]; }
 
 function currentWeekRange() {
-  const now  = new Date();
+  const now = new Date();
   const diff = now.getDay() === 0 ? -6 : 1 - now.getDay();
-  const start = new Date(now); start.setDate(now.getDate()+diff); start.setHours(0,0,0,0);
-  const end   = new Date(start); end.setDate(start.getDate()+6); end.setHours(23,59,59,999);
+  const start = new Date(now); start.setDate(now.getDate() + diff); start.setHours(0, 0, 0, 0);
+  const end = new Date(start); end.setDate(start.getDate() + 6); end.setHours(23, 59, 59, 999);
   return { start, end };
 }
 function currentMonthRange() {
-  const now   = new Date();
+  const now = new Date();
   const start = new Date(now.getFullYear(), now.getMonth(), 1);
-  const end   = new Date(now.getFullYear(), now.getMonth()+1, 0, 23, 59, 59, 999);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
   return { start, end };
 }
 function monthRange(ym) {
-  const [y,m] = ym.split('-').map(Number);
-  return { start: new Date(y,m-1,1), end: new Date(y,m,0,23,59,59,999) };
+  const [y, m] = ym.split('-').map(Number);
+  return { start: new Date(y, m - 1, 1), end: new Date(y, m, 0, 23, 59, 59, 999) };
 }
 
 function calcBancoDeHoras(records) {
@@ -798,20 +798,20 @@ function calcBancoDeHoras(records) {
     const entrada = d['Entrada'], pausa = d['Pausa para Almoço'], volta = d['Volta do Almoço'], saida = d['Saída'];
     let workedMin = 0;
     if (entrada && saida) {
-      const total = (saida - entrada)/60000;
-      const pause = (pausa && volta) ? (volta - pausa)/60000 : 0;
-      workedMin   = total - pause;
+      const total = (saida - entrada) / 60000;
+      const pause = (pausa && volta) ? (volta - pausa) / 60000 : 0;
+      workedMin = total - pause;
     } else if (entrada && pausa) {
-      workedMin = (pausa - entrada)/60000;
+      workedMin = (pausa - entrada) / 60000;
     } else if (volta && saida) {
-      workedMin = (saida - volta)/60000;
+      workedMin = (saida - volta) / 60000;
     }
 
-    const metaMin    = META_DIARIA_HORAS * 60;
+    const metaMin = META_DIARIA_HORAS * 60;
     const balanceMin = workedMin - metaMin;
-    const fmt = t => t ? t.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }) : '—';
+    const fmt = t => t ? t.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
     return {
-      dateLabel: new Date(ds+'T12:00:00').toLocaleDateString('pt-BR', { weekday:'short', day:'2-digit', month:'2-digit' }),
+      dateLabel: new Date(ds + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }),
       entrada: fmt(entrada), pausa: fmt(pausa), volta: fmt(volta), saida: fmt(saida),
       workedMin, balanceMin, hasData: workedMin > 0
     };
@@ -825,10 +825,10 @@ async function loadAdminBancoDeHoras(userId, start, end) {
   }
 
   adminBhTableBody.innerHTML = '<tr><td colspan="7" class="text-center"><span class="loader"></span></td></tr>';
-  adminBhTotalWorked.innerText   = '--';
+  adminBhTotalWorked.innerText = '--';
   adminBhTotalExpected.innerText = '--';
-  adminBhBalance.innerText       = '--';
-  adminBhDaysWorked.innerText    = '--';
+  adminBhBalance.innerText = '--';
+  adminBhDaysWorked.innerText = '--';
 
   const startStr = toDateStr(start), endStr = toDateStr(end);
 
@@ -848,7 +848,7 @@ async function loadAdminBancoDeHoras(userId, start, end) {
 
     if (records.length === 0) {
       adminBhTableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">Nenhum registro neste período.</td></tr>`;
-      ['--','--','0h00','0'].forEach((v,i) => [adminBhTotalWorked,adminBhTotalExpected,adminBhBalance,adminBhDaysWorked][i].innerText = v);
+      ['--', '--', '0h00', '0'].forEach((v, i) => [adminBhTotalWorked, adminBhTotalExpected, adminBhBalance, adminBhDaysWorked][i].innerText = v);
       adminBhTotalWorked.innerText = '0h00'; adminBhTotalExpected.innerText = '0h00'; adminBhDaysWorked.innerText = '0';
       return;
     }
@@ -861,29 +861,29 @@ async function loadAdminBancoDeHoras(userId, start, end) {
       totalWorked += day.workedMin;
       if (day.hasData) daysWithData++;
       const balClass = day.balanceMin >= 0 ? '#065f46' : '#991b1b';
-      const balSign  = day.balanceMin >= 0 ? '+' : '';
+      const balSign = day.balanceMin >= 0 ? '+' : '';
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td style="font-weight:500; white-space:nowrap;">${day.dateLabel}</td>
         <td>${day.entrada}</td><td>${day.pausa}</td><td>${day.volta}</td><td>${day.saida}</td>
         <td><strong>${day.hasData ? formatMinutes(day.workedMin) : '—'}</strong></td>
-        <td style="color:${day.hasData ? balClass : 'var(--text-muted)'}; font-weight:600;">${day.hasData ? balSign+formatMinutes(day.balanceMin) : '—'}</td>
+        <td style="color:${day.hasData ? balClass : 'var(--text-muted)'}; font-weight:600;">${day.hasData ? balSign + formatMinutes(day.balanceMin) : '—'}</td>
       `;
       adminBhTableBody.appendChild(tr);
     });
 
     const totalExpected = daysWithData * META_DIARIA_HORAS * 60;
-    const totalBalance  = totalWorked - totalExpected;
+    const totalBalance = totalWorked - totalExpected;
 
-    adminBhTotalWorked.innerText   = formatMinutes(totalWorked);
+    adminBhTotalWorked.innerText = formatMinutes(totalWorked);
     adminBhTotalExpected.innerText = formatMinutes(totalExpected);
-    adminBhBalance.innerText       = (totalBalance >= 0 ? '+' : '') + formatMinutes(totalBalance);
-    adminBhDaysWorked.innerText    = daysWithData;
+    adminBhBalance.innerText = (totalBalance >= 0 ? '+' : '') + formatMinutes(totalBalance);
+    adminBhDaysWorked.innerText = daysWithData;
 
-    adminBhBalanceCard.classList.remove('positive','negative','neutral');
-    if (totalBalance > 0)      adminBhBalanceCard.classList.add('positive');
+    adminBhBalanceCard.classList.remove('positive', 'negative', 'neutral');
+    if (totalBalance > 0) adminBhBalanceCard.classList.add('positive');
     else if (totalBalance < 0) adminBhBalanceCard.classList.add('negative');
-    else                       adminBhBalanceCard.classList.add('neutral');
+    else adminBhBalanceCard.classList.add('neutral');
 
   } catch (err) {
     console.error('Erro no banco de horas admin:', err);
@@ -893,11 +893,11 @@ async function loadAdminBancoDeHoras(userId, start, end) {
 
 function initAdminBancoDeHoras() {
   const now = new Date();
-  const ymStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  document.getElementById('admin-bh-month-input').value  = ymStr;
-  document.getElementById('admin-bh-date-end').value    = toDateStr(now);
+  const ymStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  document.getElementById('admin-bh-month-input').value = ymStr;
+  document.getElementById('admin-bh-date-end').value = toDateStr(now);
   const { start: ws } = currentWeekRange();
-  document.getElementById('admin-bh-date-start').value  = toDateStr(ws);
+  document.getElementById('admin-bh-date-start').value = toDateStr(ws);
 
   let currentPeriod = { start: ws, end: new Date() };
 
@@ -936,7 +936,7 @@ function initAdminBancoDeHoras() {
     const sv = document.getElementById('admin-bh-date-start').value;
     const ev = document.getElementById('admin-bh-date-end').value;
     if (!sv || !ev) return;
-    const start = new Date(sv+'T00:00:00'), end = new Date(ev+'T23:59:59');
+    const start = new Date(sv + 'T00:00:00'), end = new Date(ev + 'T23:59:59');
     if (start > end) { showToast('A data de início deve ser anterior à data de fim.', 'warning'); return; }
     currentPeriod = { start, end };
     loadAdminBancoDeHoras(getSelectedEmployee(), start, end);
