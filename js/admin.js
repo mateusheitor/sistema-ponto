@@ -46,7 +46,18 @@ const approveInfoType      = document.getElementById('approve-info-type');
 const approveInfoTime      = document.getElementById('approve-info-time');
 const approveInfoJust      = document.getElementById('approve-info-just');
 
+const modalConfirmApproveInsert = document.getElementById('modal-confirm-approve-insert');
+const btnCloseConfApproveInsert = document.getElementById('btn-close-confirm-approve-insert');
+const btnCancelApproveInsert = document.getElementById('btn-cancel-approve-insert');
+const btnConfirmApproveInsert = document.getElementById('btn-confirm-approve-insert');
+const approveInsertInfoUser = document.getElementById('approve-insert-info-user');
+const approveInsertInfoDate = document.getElementById('approve-insert-info-date');
+const approveInsertInfoType = document.getElementById('approve-insert-info-type');
+const approveInsertInfoTime = document.getElementById('approve-insert-info-time');
+const approveInsertInfoJust = document.getElementById('approve-insert-info-just');
+
 let pendingApproval = null; // { reqId, req, btn }
+let pendingApprovalInsert = null;
 
 const editRequestsTableBody = document.getElementById('edit-requests-table-body');
 const pendingDot            = document.getElementById('pending-dot');
@@ -381,8 +392,8 @@ async function loadInsertRequests() {
 
       const actions = req.status === 'pending'
         ? `<div class="edit-action-btns">
-             <button class="btn btn-approve-insert btn-sm" data-id="${req.id}"><span data-icon="check" class="icon-sm"></span> Aprovar</button>
-             <button class="btn btn-reject-insert btn-sm" data-id="${req.id}"><span data-icon="deni" class="icon-sm"></span> Rejeitar</button>
+             <button class="btn btn-approve btn-approve-insert btn-sm" data-id="${req.id}"><span data-icon="check" class="icon-sm"></span> Aprovar</button>
+             <button class="btn btn-reject btn-reject-insert btn-sm" data-id="${req.id}"><span data-icon="deni" class="icon-sm"></span> Rejeitar</button>
            </div>`
         : `<span style="font-size:0.8rem; color:var(--text-muted);">${req.resolvedAt?.toDate ? req.resolvedAt.toDate().toLocaleDateString('pt-BR') : '—'}</span>`;
 
@@ -423,8 +434,28 @@ async function loadInsertRequests() {
 }
 
 async function approveInsertRequest(reqId, req, btn) {
-  if (!confirm(`Tem certeza que deseja aprovar a inserção de ${req.type} às ${req.requestedTime} para o dia ${req.requestedDateString}?`)) return;
-  
+  pendingApprovalInsert = { reqId, req, btn };
+  const requestedDateParts = req.requestedDateString.split('-');
+  const formattedDate = `${requestedDateParts[2]}/${requestedDateParts[1]}/${requestedDateParts[0]}`;
+
+  approveInsertInfoUser.innerText = req.userEmail || req.userId;
+  approveInsertInfoDate.innerText = formattedDate;
+  approveInsertInfoType.innerText = req.type;
+  approveInsertInfoTime.innerText = req.requestedTime;
+  approveInsertInfoJust.innerText = req.justification;
+  modalConfirmApproveInsert.classList.add('active');
+}
+
+btnCloseConfApproveInsert.addEventListener('click', () => modalConfirmApproveInsert.classList.remove('active'));
+btnCancelApproveInsert.addEventListener('click',    () => modalConfirmApproveInsert.classList.remove('active'));
+modalConfirmApproveInsert.addEventListener('click', e => { if (e.target === modalConfirmApproveInsert) modalConfirmApproveInsert.classList.remove('active'); });
+
+btnConfirmApproveInsert.addEventListener('click', async () => {
+  if (!pendingApprovalInsert) return;
+  const { reqId, req, btn } = pendingApprovalInsert;
+  pendingApprovalInsert = null;
+  modalConfirmApproveInsert.classList.remove('active');
+
   btn.disabled = true;
   btn.innerText = '...';
 
@@ -462,7 +493,7 @@ async function approveInsertRequest(reqId, req, btn) {
     btn.disabled = false;
     btn.innerHTML = '<span data-icon="check" class="icon-sm"></span> Aprovar';
   }
-}
+});
 
 async function approveEditRequest(reqId, req, btn) {
   // Open custom confirm modal instead of native confirm()
