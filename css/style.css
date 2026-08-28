@@ -48,6 +48,21 @@ body {
 .mb-4 { margin-bottom: 2rem; }
 .hidden { display: none !important; }
 
+/* ── SVG icon alignment ── */
+.icon-sm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  line-height: 1;
+  position: relative;
+  top: -1px;
+}
+
+.icon-sm svg {
+  display: block;
+}
+
 .card {
   background: var(--card-bg);
   border-radius: var(--radius-lg);
@@ -366,8 +381,11 @@ tr:hover {
   font-weight: 500;
   color: var(--text-muted);
   transition: all 0.2s ease;
-  text-align: center;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
 }
 
 .tab-btn:hover {
