@@ -336,12 +336,22 @@
             class="icon-sm"></span> Banco de Horas — Visão
           Administrativa</h2>
 
-        <div class="filter-form-grid" style="margin-bottom: 1.5rem;">
-          <div class="form-group" style="margin-bottom: 0;">
-            <label for="bh-filter-employee" class="form-label">Funcionário</label>
-            <select id="bh-filter-employee" class="form-input">
-              <option value="">Selecione um funcionário</option>
-            </select>
+        <div class="filter-card" style="margin-bottom: 1.5rem;">
+          <div class="filter-card-header">
+            <span data-icon="employee-user" class="icon-sm"></span>
+            <h2>Selecionar Funcionário</h2>
+          </div>
+          <div class="filter-field">
+            <label for="bh-filter-employee-search" class="filter-label">
+              <span data-icon="employee-user" class="icon-sm"></span> Funcionário
+            </label>
+            <div class="filter-combobox" id="bh-filter-combobox-wrapper">
+              <input type="text" id="bh-filter-employee-search" class="filter-input" placeholder="Digite para buscar um funcionário..." autocomplete="off">
+              <select id="bh-filter-employee" style="display:none;">
+                <option value="">Selecione um funcionário</option>
+              </select>
+              <div class="filter-dropdown" id="bh-filter-dropdown"></div>
+            </div>
           </div>
         </div>
 

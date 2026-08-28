@@ -77,6 +77,8 @@ const adminBhBalance = document.getElementById('admin-bh-balance');
 const adminBhBalanceCard = document.getElementById('admin-bh-balance-card');
 const adminBhDaysWorked = document.getElementById('admin-bh-days-worked');
 const bhFilterEmployee = document.getElementById('bh-filter-employee');
+const bhFilterEmployeeSearch = document.getElementById('bh-filter-employee-search');
+const bhFilterDropdown = document.getElementById('bh-filter-dropdown');
 
 let currentUser = null;
 let rejectingRequest = null;
@@ -216,11 +218,41 @@ function buildDropdown(filter = '') {
   });
 }
 
+function buildBhDropdown(filter = '') {
+  if (!bhFilterDropdown) return;
+  const q = filter.toLowerCase();
+  // Para o BH, não queremos "Todos os Funcionários" se o valor for obrigatório, mas vamos manter a lista
+  // Vamos filtrar a opção "all" do BH, já que no BH escolhe um de cada vez.
+  const items = _employeeList.filter(e => e.id !== 'all' && e.name.toLowerCase().includes(q));
+  
+  bhFilterDropdown.innerHTML = '';
+  items.forEach(emp => {
+    const item = document.createElement('div');
+    item.className = 'filter-dropdown-item' + (emp.id === bhFilterEmployee.value ? ' selected' : '');
+    item.textContent = emp.name;
+    item.addEventListener('mousedown', e => {
+      e.preventDefault();
+      bhFilterEmployee.value = emp.id;
+      bhFilterEmployeeSearch.value = emp.name;
+      bhFilterDropdown.classList.remove('open');
+      bhFilterEmployee.dispatchEvent(new Event('change')); // dispara a atualização do BH
+    });
+    bhFilterDropdown.appendChild(item);
+  });
+}
+
 if (filterEmployeeSearch) {
   filterEmployeeSearch.addEventListener('focus', () => { buildDropdown(filterEmployeeSearch.value); filterDropdown.classList.add('open'); });
   filterEmployeeSearch.addEventListener('input', () => { filterEmployee.value = 'all'; buildDropdown(filterEmployeeSearch.value); filterDropdown.classList.add('open'); });
   filterEmployeeSearch.addEventListener('blur', () => setTimeout(() => filterDropdown.classList.remove('open'), 150));
 }
+
+if (bhFilterEmployeeSearch) {
+  bhFilterEmployeeSearch.addEventListener('focus', () => { buildBhDropdown(bhFilterEmployeeSearch.value); bhFilterDropdown.classList.add('open'); });
+  bhFilterEmployeeSearch.addEventListener('input', () => { bhFilterEmployee.value = ''; buildBhDropdown(bhFilterEmployeeSearch.value); bhFilterDropdown.classList.add('open'); });
+  bhFilterEmployeeSearch.addEventListener('blur', () => setTimeout(() => bhFilterDropdown.classList.remove('open'), 150));
+}
+
 
 async function loadEmployees() {
   try {
@@ -229,13 +261,9 @@ async function loadEmployees() {
       const data = d.data();
       const name = data.name || data.email;
       _employeeList.push({ id: d.id, name });
-      // also populate BH filter select
-      const opt = document.createElement('option');
-      opt.value = d.id;
-      opt.textContent = name;
-      bhFilterEmployee.appendChild(opt);
     });
     buildDropdown();
+    buildBhDropdown();
   } catch (err) {
     console.error('Erro ao carregar funcionários', err);
   }
