@@ -250,7 +250,7 @@ async function loadRecords() {
       else if (data.type === 'Saída') badgeClass = 'badge-saida';
 
       const locationCell = (data.latitude != null && data.longitude != null)
-        ? `<a href="https://www.google.com/maps?q=${data.latitude},${data.longitude}" target="_blank" rel="noopener noreferrer" class="map-link" title="Precisão: ±${Math.round(data.accuracy ?? 0)}m"><span class="map-pin">📍</span> Ver no Mapa</a>`
+        ? `<a href="https://www.google.com/maps?q=${data.latitude},${data.longitude}" target="_blank" rel="noopener noreferrer" class="map-link" title="Precisão: ±${Math.round(data.accuracy ?? 0)}m"><span data-icon="map-pinned" class="icon-sm"></span> Ver no Mapa</a>`
         : '<span class="map-empty">—</span>';
 
       const editedBadge = data.edited
