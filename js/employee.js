@@ -36,8 +36,22 @@ const bhTableBody    = document.getElementById('bh-table-body');
 const bhTotalWorked  = document.getElementById('bh-total-worked');
 const bhTotalExpected = document.getElementById('bh-total-expected');
 const bhBalance      = document.getElementById('bh-balance');
+const bhDateStart    = document.getElementById('bh-date-start');
+const bhDateEnd      = document.getElementById('bh-date-end');
 const bhBalanceCard  = document.getElementById('bh-balance-card');
 const bhDaysWorked   = document.getElementById('bh-days-worked');
+
+const employeeRecordsPaginationControls = document.getElementById('employee-records-pagination');
+const employeeRecordsLimitSelect = document.getElementById('employee-records-limit');
+const employeeRecordsBtnPrev = document.getElementById('employee-records-prev');
+const employeeRecordsBtnNext = document.getElementById('employee-records-next');
+const employeeRecordsInfo = document.getElementById('employee-records-info');
+
+const employeeBhPaginationControls = document.getElementById('employee-bh-pagination');
+const employeeBhLimitSelect = document.getElementById('employee-bh-limit');
+const employeeBhBtnPrev = document.getElementById('employee-bh-prev');
+const employeeBhBtnNext = document.getElementById('employee-bh-next');
+const employeeBhInfo = document.getElementById('employee-bh-info');
 
 const employeeTabBtns = document.querySelectorAll('.employee-tab-btn');
 const bhPanelBtns    = document.querySelectorAll('.bh-period-btn');
@@ -276,15 +290,7 @@ async function loadTodayRecords() {
       where('dateString', '==', todayStr)
     ));
 
-    tableBody.innerHTML = '';
     todayRegisteredTypes.clear();
-
-    if (snap.empty) {
-      tableBody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Nenhum registro encontrado hoje.</td></tr>';
-      updateButtonStates();
-      return;
-    }
-
     const records = [];
     snap.forEach(d => {
       const data = d.data();
@@ -293,6 +299,10 @@ async function loadTodayRecords() {
     });
     records.sort((a, b) => a.timestamp.toDate() - b.timestamp.toDate());
     updateButtonStates();
+
+    let _employeeRecordsData = records;
+    let _employeeRecordsCurrentPage = 1;
+    let _employeeRecordsPerPage = 5;
 
     const pendingSnap = await getDocs(query(
       collection(db, 'edit_requests'),
@@ -303,36 +313,87 @@ async function loadTodayRecords() {
     const pendingRecordIds = new Set();
     pendingSnap.forEach(d => pendingRecordIds.add(d.data().recordId));
 
-    records.forEach(data => {
-      const timeStr = data.timestamp.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    function renderEmployeeRecordsTable() {
+      tableBody.innerHTML = '';
+      if (_employeeRecordsData.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Nenhum registro encontrado hoje.</td></tr>';
+        if (employeeRecordsPaginationControls) employeeRecordsPaginationControls.style.display = 'none';
+        return;
+      }
 
-      let badgeClass = '';
-      if (data.type === 'Entrada') badgeClass = 'badge-entrada';
-      else if (data.type.includes('Pausa')) badgeClass = 'badge-pausa';
-      else if (data.type.includes('Volta')) badgeClass = 'badge-volta';
-      else if (data.type === 'Saída') badgeClass = 'badge-saida';
+      const totalPages = Math.ceil(_employeeRecordsData.length / _employeeRecordsPerPage);
+      if (_employeeRecordsCurrentPage > totalPages) _employeeRecordsCurrentPage = totalPages;
+      if (_employeeRecordsCurrentPage < 1) _employeeRecordsCurrentPage = 1;
 
-      const isPending = pendingRecordIds.has(data.id);
-      const editBtnOrBadge = isPending
-        ? `<span class="badge badge-pending" style="font-size:0.7rem;"><span data-icon="ampulheta" class="icon-sm"></span> Aguardando</span>`
-        : `<button class="btn-edit-record" data-id="${data.id}" title="Solicitar edição deste registro"><span data-icon="edit" class="icon-sm"></span> Editar</button>`;
+      const startIndex = (_employeeRecordsCurrentPage - 1) * _employeeRecordsPerPage;
+      const endIndex = Math.min(startIndex + _employeeRecordsPerPage, _employeeRecordsData.length);
+      const pageData = _employeeRecordsData.slice(startIndex, endIndex);
 
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td><span class="badge ${badgeClass}">${data.type}</span></td>
-        <td><strong>${timeStr}</strong>${data.edited ? ' <span class="badge badge-edited" style="font-size:0.7rem; margin-left:4px;">Editado</span>' : ''}</td>
-        <td>${editBtnOrBadge}</td>
-      `;
-      tableBody.appendChild(tr);
-    });
+      pageData.forEach(data => {
+        const timeStr = data.timestamp.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
-    tableBody.querySelectorAll('.btn-edit-record').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const recId  = btn.dataset.id;
-        const record = records.find(r => r.id === recId);
-        if (record) openEditModal(record);
+        let badgeClass = '';
+        if (data.type === 'Entrada') badgeClass = 'badge-entrada';
+        else if (data.type.includes('Pausa')) badgeClass = 'badge-pausa';
+        else if (data.type.includes('Volta')) badgeClass = 'badge-volta';
+        else if (data.type === 'Saída') badgeClass = 'badge-saida';
+
+        const isPending = pendingRecordIds.has(data.id);
+        const editBtnOrBadge = isPending
+          ? `<span class="badge badge-pending" style="font-size:0.7rem;"><span data-icon="ampulheta" class="icon-sm"></span> Aguardando</span>`
+          : `<button class="btn-edit-record" data-id="${data.id}" title="Solicitar edição deste registro"><span data-icon="edit" class="icon-sm"></span> Editar</button>`;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><span class="badge ${badgeClass}">${data.type}</span></td>
+          <td><strong>${timeStr}</strong>${data.edited ? ' <span class="badge badge-edited" style="font-size:0.7rem; margin-left:4px;">Editado</span>' : ''}</td>
+          <td>${editBtnOrBadge}</td>
+        `;
+        tableBody.appendChild(tr);
       });
-    });
+      
+      insertSVGs();
+
+      tableBody.querySelectorAll('.btn-edit-record').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const recId  = btn.dataset.id;
+          const record = _employeeRecordsData.find(r => r.id === recId);
+          if (record) openEditModal(record);
+        });
+      });
+
+      if (employeeRecordsPaginationControls) {
+        employeeRecordsPaginationControls.style.display = 'flex';
+        employeeRecordsInfo.innerText = `Página ${_employeeRecordsCurrentPage} de ${totalPages} (${_employeeRecordsData.length} registros)`;
+        employeeRecordsBtnPrev.disabled = _employeeRecordsCurrentPage === 1;
+        employeeRecordsBtnNext.disabled = _employeeRecordsCurrentPage === totalPages;
+      }
+    }
+    
+    if (employeeRecordsLimitSelect) {
+      const novoSelect = employeeRecordsLimitSelect.cloneNode(true);
+      employeeRecordsLimitSelect.parentNode.replaceChild(novoSelect, employeeRecordsLimitSelect);
+      novoSelect.addEventListener('change', e => {
+        _employeeRecordsPerPage = parseInt(e.target.value, 10);
+        _employeeRecordsCurrentPage = 1;
+        renderEmployeeRecordsTable();
+      });
+
+      const novoPrev = employeeRecordsBtnPrev.cloneNode(true);
+      employeeRecordsBtnPrev.parentNode.replaceChild(novoPrev, employeeRecordsBtnPrev);
+      novoPrev.addEventListener('click', () => {
+        if (_employeeRecordsCurrentPage > 1) { _employeeRecordsCurrentPage--; renderEmployeeRecordsTable(); }
+      });
+
+      const novoNext = employeeRecordsBtnNext.cloneNode(true);
+      employeeRecordsBtnNext.parentNode.replaceChild(novoNext, employeeRecordsBtnNext);
+      novoNext.addEventListener('click', () => {
+        const totalPages = Math.ceil(_employeeRecordsData.length / _employeeRecordsPerPage);
+        if (_employeeRecordsCurrentPage < totalPages) { _employeeRecordsCurrentPage++; renderEmployeeRecordsTable(); }
+      });
+    }
+
+    renderEmployeeRecordsTable();
 
   } catch (error) {
     console.error('Erro ao buscar registros:', error);
@@ -572,33 +633,16 @@ async function loadBancoDeHoras(start, end) {
       return;
     }
 
-    const days = calcBancoDeHoras(records);
+    let _employeeBhData = calcBancoDeHoras(records);
+    let _employeeBhCurrentPage = 1;
+    let _employeeBhPerPage = 5;
 
     let totalWorkedMin   = 0;
     let daysWithData     = 0;
 
-    bhTableBody.innerHTML = '';
-
-    days.forEach(day => {
+    _employeeBhData.forEach(day => {
       totalWorkedMin += day.workedMin;
       if (day.hasData) daysWithData++;
-
-      const balClass = day.balanceMin >= 0 ? '#065f46' : '#991b1b';
-      const balSign  = day.balanceMin >= 0 ? '+' : '';
-
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td style="font-weight:500; white-space:nowrap;">${day.dateLabel}</td>
-        <td>${day.entrada}</td>
-        <td>${day.pausa}</td>
-        <td>${day.volta}</td>
-        <td>${day.saida}</td>
-        <td><strong>${day.hasData ? formatMinutes(day.workedMin) : '—'}</strong></td>
-        <td style="color:${day.hasData ? balClass : 'var(--text-muted)'}; font-weight:600;">
-          ${day.hasData ? balSign + formatMinutes(day.balanceMin) : '—'}
-        </td>
-      `;
-      bhTableBody.appendChild(tr);
     });
 
     const totalExpectedMin  = daysWithData * META_DIARIA_HORAS * 60;

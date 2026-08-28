@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 
 <head>
@@ -213,7 +213,25 @@
             </tbody>
           </table>
         </div>
+        
+        <div class="pagination-controls" id="admin-records-pagination" style="display: none;">
+          <div class="pagination-limit">
+            <label>Mostrar</label>
+            <select id="admin-records-limit">
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="30">30</option>
+            </select>
+          </div>
+          <div class="pagination-buttons">
+            <button class="pagination-btn" id="admin-records-prev" disabled><span data-icon="chevron-left" class="icon-sm"></span> Anterior</button>
+            <span class="pagination-info" id="admin-records-info">Página 1</span>
+            <button class="pagination-btn" id="admin-records-next" disabled>Próximo <span data-icon="chevron-right" class="icon-sm"></span></button>
+          </div>
+        </div>
       </div>
+
 
       <div class="card" id="edit-requests-card">
         <div class="pending-requests-section" style="margin-top:0; border-top:none; padding-top:0;">
@@ -419,6 +437,23 @@
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <div class="pagination-controls" id="admin-bh-pagination" style="display: none;">
+          <div class="pagination-limit">
+            <label>Mostrar</label>
+            <select id="admin-bh-limit">
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="30">30</option>
+            </select>
+          </div>
+          <div class="pagination-buttons">
+            <button class="pagination-btn" id="admin-bh-prev" disabled><span data-icon="chevron-left" class="icon-sm"></span> Anterior</button>
+            <span class="pagination-info" id="admin-bh-info">Página 1</span>
+            <button class="pagination-btn" id="admin-bh-next" disabled>Próximo <span data-icon="chevron-right" class="icon-sm"></span></button>
+          </div>
         </div>
 
         <div style="margin-top: 0.75rem; font-size: 0.8125rem; color: var(--text-muted);">

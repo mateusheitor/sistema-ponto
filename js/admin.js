@@ -13,6 +13,12 @@ const filterEmployeeSearch = document.getElementById('filter-employee-search');
 const filterDropdown = document.getElementById('filter-dropdown');
 const btnFilter = document.getElementById('btn-filter');
 const tableBody = document.getElementById('admin-records-table-body');
+const recordsPaginationControls = document.getElementById('admin-records-pagination');
+const recordsLimitSelect = document.getElementById('admin-records-limit');
+const recordsBtnPrev = document.getElementById('admin-records-prev');
+const recordsBtnNext = document.getElementById('admin-records-next');
+const recordsInfo = document.getElementById('admin-records-info');
+
 
 const workspaceAddress = document.getElementById('workspace-address');
 const btnSearchAddress = document.getElementById('btn-search-address');
@@ -20,6 +26,13 @@ const workspaceRadius = document.getElementById('workspace-radius');
 const workspaceLat = document.getElementById('workspace-lat');
 const workspaceLng = document.getElementById('workspace-lng');
 const btnSaveWorkspace = document.getElementById('btn-save-workspace');
+
+const adminBhPaginationControls = document.getElementById('admin-bh-pagination');
+const adminBhLimitSelect = document.getElementById('admin-bh-limit');
+const adminBhBtnPrev = document.getElementById('admin-bh-prev');
+const adminBhBtnNext = document.getElementById('admin-bh-next');
+const adminBhInfo = document.getElementById('admin-bh-info');
+
 
 
 const modalOverlay = document.getElementById('modal-novo-user');
@@ -269,11 +282,84 @@ async function loadEmployees() {
   }
 }
 
+let _adminRecordsData = [];
+let _adminRecordsCurrentPage = 1;
+let _adminRecordsPerPage = 5;
+
+function renderAdminRecordsTable() {
+  tableBody.innerHTML = '';
+  if (_adminRecordsData.length === 0) {
+    tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Nenhum registro encontrado para estes filtros.</td></tr>';
+    recordsPaginationControls.style.display = 'none';
+    return;
+  }
+
+  const totalPages = Math.ceil(_adminRecordsData.length / _adminRecordsPerPage);
+  if (_adminRecordsCurrentPage > totalPages) _adminRecordsCurrentPage = totalPages;
+  if (_adminRecordsCurrentPage < 1) _adminRecordsCurrentPage = 1;
+
+  const startIndex = (_adminRecordsCurrentPage - 1) * _adminRecordsPerPage;
+  const endIndex = Math.min(startIndex + _adminRecordsPerPage, _adminRecordsData.length);
+  const pageData = _adminRecordsData.slice(startIndex, endIndex);
+
+  pageData.forEach(data => {
+    const dateStr = data.timestamp.toDate().toLocaleDateString('pt-BR');
+    const timeStr = data.timestamp.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+    let badgeClass = '';
+    if (data.type === 'Entrada') badgeClass = 'badge-entrada';
+    else if (data.type.includes('Pausa')) badgeClass = 'badge-pausa';
+    else if (data.type.includes('Volta')) badgeClass = 'badge-volta';
+    else if (data.type === 'Saída') badgeClass = 'badge-saida';
+
+    const locationCell = (data.latitude != null && data.longitude != null)
+      ? `<a href="https://www.google.com/maps?q=${data.latitude},${data.longitude}" target="_blank" rel="noopener noreferrer" class="map-link" title="Precisão: ±${Math.round(data.accuracy ?? 0)}m"><span data-icon="map-pinned" class="icon-sm"></span> Ver no Mapa</a>`
+      : '<span class="map-empty">—</span>';
+
+    const editedBadge = data.edited
+      ? ` <span class="badge badge-edited" style="font-size:0.7rem; margin-left:4px;">Editado</span>` : '';
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${dateStr}</td>
+      <td><strong>${data.userEmail || data.userId}</strong></td>
+      <td><span class="badge ${badgeClass}">${data.type}</span>${editedBadge}</td>
+      <td>${timeStr}</td>
+      <td>${locationCell}</td>
+    `;
+    tableBody.appendChild(tr);
+  });
+  
+  insertSVGs();
+
+  // Update pagination UI
+  recordsPaginationControls.style.display = 'flex';
+  recordsInfo.innerText = `Página ${_adminRecordsCurrentPage} de ${totalPages} (${_adminRecordsData.length} registros)`;
+  recordsBtnPrev.disabled = _adminRecordsCurrentPage === 1;
+  recordsBtnNext.disabled = _adminRecordsCurrentPage === totalPages;
+}
+
+if (recordsLimitSelect) {
+  recordsLimitSelect.addEventListener('change', e => {
+    _adminRecordsPerPage = parseInt(e.target.value, 10);
+    _adminRecordsCurrentPage = 1;
+    renderAdminRecordsTable();
+  });
+  recordsBtnPrev.addEventListener('click', () => {
+    if (_adminRecordsCurrentPage > 1) { _adminRecordsCurrentPage--; renderAdminRecordsTable(); }
+  });
+  recordsBtnNext.addEventListener('click', () => {
+    const totalPages = Math.ceil(_adminRecordsData.length / _adminRecordsPerPage);
+    if (_adminRecordsCurrentPage < totalPages) { _adminRecordsCurrentPage++; renderAdminRecordsTable(); }
+  });
+}
+
 async function loadRecords() {
   const dateValue = filterDate.value;
   const employeeId = filterEmployee.value;
 
   tableBody.innerHTML = '<tr><td colspan="5" class="text-center"><span class="loader"></span></td></tr>';
+  recordsPaginationControls.style.display = 'none';
 
   try {
     let q;
@@ -288,44 +374,13 @@ async function loadRecords() {
     }
 
     const snapshot = await getDocs(q);
-    tableBody.innerHTML = '';
 
-    if (snapshot.empty) {
-      tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Nenhum registro encontrado para estes filtros.</td></tr>';
-      return;
-    }
+    _adminRecordsData = [];
+    snapshot.forEach(d => _adminRecordsData.push({ id: d.id, ...d.data() }));
+    _adminRecordsData.sort((a, b) => b.timestamp.toDate() - a.timestamp.toDate()); // Ordem descendente faz mais sentido
 
-    const records = [];
-    snapshot.forEach(d => records.push({ id: d.id, ...d.data() }));
-    records.sort((a, b) => a.timestamp.toDate() - b.timestamp.toDate());
-
-    records.forEach(data => {
-      const dateStr = data.timestamp.toDate().toLocaleDateString('pt-BR');
-      const timeStr = data.timestamp.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-
-      let badgeClass = '';
-      if (data.type === 'Entrada') badgeClass = 'badge-entrada';
-      else if (data.type.includes('Pausa')) badgeClass = 'badge-pausa';
-      else if (data.type.includes('Volta')) badgeClass = 'badge-volta';
-      else if (data.type === 'Saída') badgeClass = 'badge-saida';
-
-      const locationCell = (data.latitude != null && data.longitude != null)
-        ? `<a href="https://www.google.com/maps?q=${data.latitude},${data.longitude}" target="_blank" rel="noopener noreferrer" class="map-link" title="Precisão: ±${Math.round(data.accuracy ?? 0)}m"><span data-icon="map-pinned" class="icon-sm"></span> Ver no Mapa</a>`
-        : '<span class="map-empty">—</span>';
-
-      const editedBadge = data.edited
-        ? ` <span class="badge badge-edited" style="font-size:0.7rem; margin-left:4px;">Editado</span>` : '';
-
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${dateStr}</td>
-        <td><strong>${data.userEmail || data.userId}</strong></td>
-        <td><span class="badge ${badgeClass}">${data.type}</span>${editedBadge}</td>
-        <td>${timeStr}</td>
-        <td>${locationCell}</td>
-      `;
-      tableBody.appendChild(tr);
-    });
+    _adminRecordsCurrentPage = 1;
+    renderAdminRecordsTable();
 
   } catch (error) {
     console.error('Erro ao buscar registros:', error);
@@ -881,6 +936,7 @@ function calcBancoDeHoras(records) {
 async function loadAdminBancoDeHoras(userId, start, end) {
   if (!userId) {
     adminBhTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Selecione um funcionário.</td></tr>';
+    adminBhPaginationControls.style.display = 'none';
     return;
   }
 
@@ -910,26 +966,16 @@ async function loadAdminBancoDeHoras(userId, start, end) {
       adminBhTableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">Nenhum registro neste período.</td></tr>`;
       ['--', '--', '0h00', '0'].forEach((v, i) => [adminBhTotalWorked, adminBhTotalExpected, adminBhBalance, adminBhDaysWorked][i].innerText = v);
       adminBhTotalWorked.innerText = '0h00'; adminBhTotalExpected.innerText = '0h00'; adminBhDaysWorked.innerText = '0';
+      adminBhPaginationControls.style.display = 'none';
       return;
     }
 
-    const days = calcBancoDeHoras(records);
+    _adminBhData = calcBancoDeHoras(records);
+    
     let totalWorked = 0, daysWithData = 0;
-    adminBhTableBody.innerHTML = '';
-
-    days.forEach(day => {
+    _adminBhData.forEach(day => {
       totalWorked += day.workedMin;
       if (day.hasData) daysWithData++;
-      const balClass = day.balanceMin >= 0 ? '#065f46' : '#991b1b';
-      const balSign = day.balanceMin >= 0 ? '+' : '';
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td style="font-weight:500; white-space:nowrap;">${day.dateLabel}</td>
-        <td>${day.entrada}</td><td>${day.pausa}</td><td>${day.volta}</td><td>${day.saida}</td>
-        <td><strong>${day.hasData ? formatMinutes(day.workedMin) : '—'}</strong></td>
-        <td style="color:${day.hasData ? balClass : 'var(--text-muted)'}; font-weight:600;">${day.hasData ? balSign + formatMinutes(day.balanceMin) : '—'}</td>
-      `;
-      adminBhTableBody.appendChild(tr);
     });
 
     const totalExpected = daysWithData * META_DIARIA_HORAS * 60;
@@ -944,11 +990,68 @@ async function loadAdminBancoDeHoras(userId, start, end) {
     if (totalBalance > 0) adminBhBalanceCard.classList.add('positive');
     else if (totalBalance < 0) adminBhBalanceCard.classList.add('negative');
     else adminBhBalanceCard.classList.add('neutral');
+    
+    _adminBhCurrentPage = 1;
+    renderAdminBhTable();
 
   } catch (err) {
     console.error('Erro no banco de horas admin:', err);
     adminBhTableBody.innerHTML = '<tr><td colspan="7" class="text-center" style="color:var(--danger);">Erro ao carregar dados.</td></tr>';
+    adminBhPaginationControls.style.display = 'none';
   }
+}
+
+let _adminBhData = [];
+let _adminBhCurrentPage = 1;
+let _adminBhPerPage = 5;
+
+function renderAdminBhTable() {
+  adminBhTableBody.innerHTML = '';
+  if (_adminBhData.length === 0) {
+    adminBhPaginationControls.style.display = 'none';
+    return;
+  }
+
+  const totalPages = Math.ceil(_adminBhData.length / _adminBhPerPage);
+  if (_adminBhCurrentPage > totalPages) _adminBhCurrentPage = totalPages;
+  if (_adminBhCurrentPage < 1) _adminBhCurrentPage = 1;
+
+  const startIndex = (_adminBhCurrentPage - 1) * _adminBhPerPage;
+  const endIndex = Math.min(startIndex + _adminBhPerPage, _adminBhData.length);
+  const pageData = _adminBhData.slice(startIndex, endIndex);
+
+  pageData.forEach(day => {
+    const balClass = day.balanceMin >= 0 ? '#065f46' : '#991b1b';
+    const balSign = day.balanceMin >= 0 ? '+' : '';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-weight:500; white-space:nowrap;">${day.dateLabel}</td>
+      <td>${day.entrada}</td><td>${day.pausa}</td><td>${day.volta}</td><td>${day.saida}</td>
+      <td><strong>${day.hasData ? formatMinutes(day.workedMin) : '—'}</strong></td>
+      <td style="color:${day.hasData ? balClass : 'var(--text-muted)'}; font-weight:600;">${day.hasData ? balSign + formatMinutes(day.balanceMin) : '—'}</td>
+    `;
+    adminBhTableBody.appendChild(tr);
+  });
+
+  adminBhPaginationControls.style.display = 'flex';
+  adminBhInfo.innerText = `Página ${_adminBhCurrentPage} de ${totalPages} (${_adminBhData.length} dias)`;
+  adminBhBtnPrev.disabled = _adminBhCurrentPage === 1;
+  adminBhBtnNext.disabled = _adminBhCurrentPage === totalPages;
+}
+
+if (adminBhLimitSelect) {
+  adminBhLimitSelect.addEventListener('change', e => {
+    _adminBhPerPage = parseInt(e.target.value, 10);
+    _adminBhCurrentPage = 1;
+    renderAdminBhTable();
+  });
+  adminBhBtnPrev.addEventListener('click', () => {
+    if (_adminBhCurrentPage > 1) { _adminBhCurrentPage--; renderAdminBhTable(); }
+  });
+  adminBhBtnNext.addEventListener('click', () => {
+    const totalPages = Math.ceil(_adminBhData.length / _adminBhPerPage);
+    if (_adminBhCurrentPage < totalPages) { _adminBhCurrentPage++; renderAdminBhTable(); }
+  });
 }
 
 function initAdminBancoDeHoras() {
