@@ -645,6 +645,7 @@ async function loadWorkspaceSettings() {
         lat = data.latitude;
         lng = data.longitude;
       }
+    }
   } catch (err) {
     console.error('Erro ao carregar workspace:', err);
   }
