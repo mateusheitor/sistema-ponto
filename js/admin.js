@@ -9,6 +9,8 @@ const userNameSpan = document.getElementById('user-name');
 const btnLogout = document.getElementById('btn-logout');
 const filterDate = document.getElementById('filter-date');
 const filterEmployee = document.getElementById('filter-employee');
+const filterEmployeeSearch = document.getElementById('filter-employee-search');
+const filterDropdown = document.getElementById('filter-dropdown');
 const btnFilter = document.getElementById('btn-filter');
 const tableBody = document.getElementById('admin-records-table-body');
 
@@ -192,18 +194,48 @@ btnCriarUser.addEventListener('click', async () => {
   }
 });
 
+// ── Employee combobox data ──
+let _employeeList = [{ id: 'all', name: 'Todos os Funcionários' }];
+
+function buildDropdown(filter = '') {
+  const q = filter.toLowerCase();
+  const items = _employeeList.filter(e => e.name.toLowerCase().includes(q));
+  filterDropdown.innerHTML = '';
+  items.forEach(emp => {
+    const item = document.createElement('div');
+    item.className = 'filter-dropdown-item' + (emp.id === filterEmployee.value ? ' selected' : '');
+    item.textContent = emp.name;
+    item.addEventListener('mousedown', e => {
+      e.preventDefault();
+      filterEmployee.value = emp.id;
+      filterEmployeeSearch.value = emp.id === 'all' ? '' : emp.name;
+      filterEmployeeSearch.placeholder = emp.id === 'all' ? 'Todos os Funcionários' : '';
+      filterDropdown.classList.remove('open');
+    });
+    filterDropdown.appendChild(item);
+  });
+}
+
+if (filterEmployeeSearch) {
+  filterEmployeeSearch.addEventListener('focus', () => { buildDropdown(filterEmployeeSearch.value); filterDropdown.classList.add('open'); });
+  filterEmployeeSearch.addEventListener('input', () => { filterEmployee.value = 'all'; buildDropdown(filterEmployeeSearch.value); filterDropdown.classList.add('open'); });
+  filterEmployeeSearch.addEventListener('blur', () => setTimeout(() => filterDropdown.classList.remove('open'), 150));
+}
+
 async function loadEmployees() {
   try {
     const snap = await getDocs(query(collection(db, 'users'), where('role', '==', 'employee')));
     snap.forEach(d => {
       const data = d.data();
-      [filterEmployee, bhFilterEmployee].forEach(sel => {
-        const opt = document.createElement('option');
-        opt.value = d.id;
-        opt.textContent = data.name || data.email;
-        sel.appendChild(opt);
-      });
+      const name = data.name || data.email;
+      _employeeList.push({ id: d.id, name });
+      // also populate BH filter select
+      const opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = name;
+      bhFilterEmployee.appendChild(opt);
     });
+    buildDropdown();
   } catch (err) {
     console.error('Erro ao carregar funcionários', err);
   }
