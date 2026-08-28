@@ -12,7 +12,10 @@ service cloud.firestore {
         resource.data.userId == request.auth.uid ||
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
       );
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && (
+        request.resource.data.userId == request.auth.uid ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
       allow update: if request.auth != null &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
