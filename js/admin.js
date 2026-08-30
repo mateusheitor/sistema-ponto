@@ -200,12 +200,9 @@ btnCriarUser.addEventListener('click', async () => {
     showToast(`Usuário "${name}" criado com sucesso!`, 'success');
 
     if (role === 'employee') {
-      [filterEmployee, bhFilterEmployee].forEach(sel => {
-        const opt = document.createElement('option');
-        opt.value = newUid;
-        opt.textContent = name || email;
-        sel.appendChild(opt);
-      });
+      _employeeList.push({ id: newUid, name: name || email });
+      if (filterEmployeeSearch) buildDropdown(filterEmployeeSearch.value);
+      if (bhFilterEmployeeSearch) buildBhDropdown(bhFilterEmployeeSearch.value);
     }
 
     setTimeout(() => modalOverlay.classList.remove('active'), 1500);
