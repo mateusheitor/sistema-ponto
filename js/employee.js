@@ -633,9 +633,9 @@ async function loadBancoDeHoras(start, end) {
       return;
     }
 
-    let _employeeBhData = calcBancoDeHoras(records);
-    let _employeeBhCurrentPage = 1;
-    let _employeeBhPerPage = 5;
+    _employeeBhData = calcBancoDeHoras(records);
+    _employeeBhCurrentPage = 1;
+    _employeeBhPerPage = 5;
 
     let totalWorkedMin   = 0;
     let daysWithData     = 0;
@@ -658,6 +658,7 @@ async function loadBancoDeHoras(start, end) {
     else if (totalBalanceMin < 0)  bhBalanceCard.classList.add('negative');
     else                           bhBalanceCard.classList.add('neutral');
 
+    renderEmployeeBhTable();
   } catch (err) {
     console.error('Erro ao carregar banco de horas:', err);
     bhTableBody.innerHTML = '<tr><td colspan="7" class="text-center" style="color:var(--danger);">Erro ao carregar dados. Verifique as permissões no Firebase.</td></tr>';
@@ -889,5 +890,58 @@ if (document.getElementById('form-insert-request')) {
       btnSubmitInsert.disabled = false;
       btnSubmitInsert.innerText = 'Enviar Solicitação';
     }
+  });
+}
+
+let _employeeBhData = [];
+let _employeeBhCurrentPage = 1;
+let _employeeBhPerPage = 5;
+
+function renderEmployeeBhTable() {
+  bhTableBody.innerHTML = '';
+  if (_employeeBhData.length === 0) {
+    employeeBhPaginationControls.style.display = 'none';
+    return;
+  }
+
+  const totalPages = Math.ceil(_employeeBhData.length / _employeeBhPerPage);
+  if (_employeeBhCurrentPage > totalPages) _employeeBhCurrentPage = totalPages;
+  if (_employeeBhCurrentPage < 1) _employeeBhCurrentPage = 1;
+
+  const startIndex = (_employeeBhCurrentPage - 1) * _employeeBhPerPage;
+  const endIndex = Math.min(startIndex + _employeeBhPerPage, _employeeBhData.length);
+  const pageData = _employeeBhData.slice(startIndex, endIndex);
+
+  pageData.forEach(day => {
+    const balClass = day.balanceMin >= 0 ? '#065f46' : '#991b1b';
+    const balSign = day.balanceMin >= 0 ? '+' : '';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-weight:500; white-space:nowrap;">${day.dateLabel}</td>
+      <td>${day.entrada}</td><td>${day.pausa}</td><td>${day.volta}</td><td>${day.saida}</td>
+      <td><strong>${day.hasData ? formatMinutes(day.workedMin) : '—'}</strong></td>
+      <td style="color:${day.hasData ? balClass : 'var(--text-muted)'}; font-weight:600;">${day.hasData ? balSign + formatMinutes(day.balanceMin) : '—'}</td>
+    `;
+    bhTableBody.appendChild(tr);
+  });
+
+  employeeBhPaginationControls.style.display = 'flex';
+  employeeBhInfo.innerText = `Página ${_employeeBhCurrentPage} de ${totalPages} (${_employeeBhData.length} dias)`;
+  employeeBhBtnPrev.disabled = _employeeBhCurrentPage === 1;
+  employeeBhBtnNext.disabled = _employeeBhCurrentPage === totalPages;
+}
+
+if (employeeBhLimitSelect) {
+  employeeBhLimitSelect.addEventListener('change', e => {
+    _employeeBhPerPage = parseInt(e.target.value, 10);
+    _employeeBhCurrentPage = 1;
+    renderEmployeeBhTable();
+  });
+  employeeBhBtnPrev.addEventListener('click', () => {
+    if (_employeeBhCurrentPage > 1) { _employeeBhCurrentPage--; renderEmployeeBhTable(); }
+  });
+  employeeBhBtnNext.addEventListener('click', () => {
+    const totalPages = Math.ceil(_employeeBhData.length / _employeeBhPerPage);
+    if (_employeeBhCurrentPage < totalPages) { _employeeBhCurrentPage++; renderEmployeeBhTable(); }
   });
 }
