@@ -33,8 +33,17 @@ const adminBhBtnPrev = document.getElementById('admin-bh-prev');
 const adminBhBtnNext = document.getElementById('admin-bh-next');
 const adminBhInfo = document.getElementById('admin-bh-info');
 
+const editPaginationControls = document.getElementById('edit-requests-pagination');
+const editLimitSelect = document.getElementById('edit-requests-limit');
+const editBtnPrev = document.getElementById('edit-requests-prev');
+const editBtnNext = document.getElementById('edit-requests-next');
+const editInfo = document.getElementById('edit-requests-info');
 
-
+const insertPaginationControls = document.getElementById('insert-requests-pagination');
+const insertLimitSelect = document.getElementById('insert-requests-limit');
+const insertBtnPrev = document.getElementById('insert-requests-prev');
+const insertBtnNext = document.getElementById('insert-requests-next');
+const insertInfo = document.getElementById('insert-requests-info');
 const modalOverlay = document.getElementById('modal-novo-user');
 const btnNovoUser = document.getElementById('btn-novo-user');
 const btnCloseModal = document.getElementById('btn-close-modal');
@@ -234,9 +243,7 @@ function buildDropdown(filter = '') {
 function buildBhDropdown(filter = '') {
   if (!bhFilterDropdown) return;
   const q = filter.toLowerCase();
-  // Para o BH, não queremos "Todos os Funcionários" se o valor for obrigatório, mas vamos manter a lista
-  // Vamos filtrar a opção "all" do BH, já que no BH escolhe um de cada vez.
-  const items = _employeeList.filter(e => e.id !== 'all' && e.name.toLowerCase().includes(q));
+  const items = _employeeList.filter(e => e.name.toLowerCase().includes(q));
   
   bhFilterDropdown.innerHTML = '';
   items.forEach(emp => {
@@ -246,9 +253,10 @@ function buildBhDropdown(filter = '') {
     item.addEventListener('mousedown', e => {
       e.preventDefault();
       bhFilterEmployee.value = emp.id;
-      bhFilterEmployeeSearch.value = emp.name;
+      bhFilterEmployeeSearch.value = emp.id === 'all' ? '' : emp.name;
+      bhFilterEmployeeSearch.placeholder = emp.id === 'all' ? 'Selecione um funcionário...' : '';
       bhFilterDropdown.classList.remove('open');
-      bhFilterEmployee.dispatchEvent(new Event('change')); // dispara a atualização do BH
+      bhFilterEmployee.dispatchEvent(new Event('change'));
     });
     bhFilterDropdown.appendChild(item);
   });
@@ -390,8 +398,101 @@ async function loadRecords() {
 
 btnFilter.addEventListener('click', loadRecords);
 
+let _editRequestsData = [];
+let _editRequestsCurrentPage = 1;
+let _editRequestsPerPage = 10;
+
+function renderEditRequestsTable() {
+  editRequestsTableBody.innerHTML = '';
+  if (_editRequestsData.length === 0) {
+    editRequestsTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Nenhuma solicitação encontrada.</td></tr>';
+    editPaginationControls.style.display = 'none';
+    return;
+  }
+
+  const totalPages = Math.ceil(_editRequestsData.length / _editRequestsPerPage);
+  if (_editRequestsCurrentPage > totalPages) _editRequestsCurrentPage = totalPages;
+  if (_editRequestsCurrentPage < 1) _editRequestsCurrentPage = 1;
+
+  const startIndex = (_editRequestsCurrentPage - 1) * _editRequestsPerPage;
+  const endIndex = Math.min(startIndex + _editRequestsPerPage, _editRequestsData.length);
+  const pageData = _editRequestsData.slice(startIndex, endIndex);
+
+  pageData.forEach(req => {
+    const origTime = req.originalTimestamp?.toDate
+      ? req.originalTimestamp.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      : '—';
+
+    const statusMap = {
+      pending: '<span class="badge badge-pending"><span data-icon="ampulheta" class="icon-sm"></span> Pendente</span>',
+      approved: '<span class="badge badge-approved"><span data-icon="check" class="icon-sm"></span> Aprovado</span>',
+      rejected: '<span class="badge badge-rejected"><span data-icon="deni" class="icon-sm"></span> Rejeitado</span>'
+    };
+    const statusBadge = statusMap[req.status] || req.status;
+
+    const actions = req.status === 'pending'
+      ? `<div class="edit-action-btns">
+           <button class="btn btn-approve btn-sm" data-id="${req.id}"><span data-icon="check" class="icon-sm"></span> Aprovar</button>
+           <button class="btn btn-reject  btn-sm" data-id="${req.id}"><span data-icon="deni" class="icon-sm"></span> Rejeitar</button>
+         </div>`
+      : `<span style="font-size:0.8rem; color:var(--text-muted);">${req.resolvedAt?.toDate ? req.resolvedAt.toDate().toLocaleDateString('pt-BR') : '—'}</span>`;
+
+    const tr = document.createElement('tr');
+    tr.dataset.reqId = req.id;
+    tr.innerHTML = `
+      <td style="font-size:0.875rem;">${req.userEmail || req.userId}</td>
+      <td><span class="badge ${req.type === 'Entrada' ? 'badge-entrada' : req.type.includes('Pausa') ? 'badge-pausa' : req.type.includes('Volta') ? 'badge-volta' : 'badge-saida'}">${req.type}</span></td>
+      <td>${origTime}<br><small style="color:var(--text-muted);">${req.originalDateString || ''}</small></td>
+      <td><strong>${req.requestedTime}</strong></td>
+      <td style="font-size:0.8125rem; max-width:200px;">${req.justification}</td>
+      <td>${statusBadge}</td>
+      <td>${actions}</td>
+    `;
+    editRequestsTableBody.appendChild(tr);
+  });
+  
+  insertSVGs();
+
+  editRequestsTableBody.querySelectorAll('.btn-approve').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const reqId = btn.dataset.id;
+      const req = _editRequestsData.find(r => r.id === reqId);
+      if (req) approveEditRequest(reqId, req, btn);
+    });
+  });
+
+  editRequestsTableBody.querySelectorAll('.btn-reject').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const reqId = btn.dataset.id;
+      const req = _editRequestsData.find(r => r.id === reqId);
+      if (req) openRejectModal(reqId, req);
+    });
+  });
+
+  editPaginationControls.style.display = 'flex';
+  editInfo.innerText = `Página ${_editRequestsCurrentPage} de ${totalPages} (${_editRequestsData.length} registros)`;
+  editBtnPrev.disabled = _editRequestsCurrentPage === 1;
+  editBtnNext.disabled = _editRequestsCurrentPage === totalPages;
+}
+
+if (editLimitSelect) {
+  editLimitSelect.addEventListener('change', e => {
+    _editRequestsPerPage = parseInt(e.target.value, 10);
+    _editRequestsCurrentPage = 1;
+    renderEditRequestsTable();
+  });
+  editBtnPrev.addEventListener('click', () => {
+    if (_editRequestsCurrentPage > 1) { _editRequestsCurrentPage--; renderEditRequestsTable(); }
+  });
+  editBtnNext.addEventListener('click', () => {
+    const totalPages = Math.ceil(_editRequestsData.length / _editRequestsPerPage);
+    if (_editRequestsCurrentPage < totalPages) { _editRequestsCurrentPage++; renderEditRequestsTable(); }
+  });
+}
+
 async function loadEditRequests() {
   editRequestsTableBody.innerHTML = '<tr><td colspan="7" class="text-center"><span class="loader"></span></td></tr>';
+  editPaginationControls.style.display = 'none';
 
   try {
     const snap = await getDocs(query(collection(db, 'edit_requests')));
@@ -406,73 +507,109 @@ async function loadEditRequests() {
     const pendingCount = requests.filter(r => r.status === 'pending').length;
     if (pendingDot) pendingDot.style.display = pendingCount > 0 ? 'inline-block' : 'none';
 
-    editRequestsTableBody.innerHTML = '';
-
-    if (requests.length === 0) {
-      editRequestsTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Nenhuma solicitação encontrada.</td></tr>';
-      return;
-    }
-
-    requests.forEach(req => {
-      const origTime = req.originalTimestamp?.toDate
-        ? req.originalTimestamp.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-        : '—';
-      const createdAt = req.createdAt?.toDate
-        ? req.createdAt.toDate().toLocaleString('pt-BR')
-        : '—';
-
-      const statusMap = {
-        pending: '<span class="badge badge-pending"><span data-icon="ampulheta" class="icon-sm"></span> Pendente</span>',
-        approved: '<span class="badge badge-approved"><span data-icon="check" class="icon-sm"></span> Aprovado</span>',
-        rejected: '<span class="badge badge-rejected"><span data-icon="deni" class="icon-sm"></span> Rejeitado</span>'
-      };
-      const statusBadge = statusMap[req.status] || req.status;
-
-      const actions = req.status === 'pending'
-        ? `<div class="edit-action-btns">
-             <button class="btn btn-approve btn-sm" data-id="${req.id}"><span data-icon="check" class="icon-sm"></span> Aprovar</button>
-             <button class="btn btn-reject  btn-sm" data-id="${req.id}"><span data-icon="deni" class="icon-sm"></span> Rejeitar</button>
-           </div>`
-        : `<span style="font-size:0.8rem; color:var(--text-muted);">${req.resolvedAt?.toDate ? req.resolvedAt.toDate().toLocaleDateString('pt-BR') : '—'}</span>`;
-
-      const tr = document.createElement('tr');
-      tr.dataset.reqId = req.id;
-      tr.innerHTML = `
-        <td style="font-size:0.875rem;">${req.userEmail || req.userId}</td>
-        <td><span class="badge ${req.type === 'Entrada' ? 'badge-entrada' : req.type.includes('Pausa') ? 'badge-pausa' : req.type.includes('Volta') ? 'badge-volta' : 'badge-saida'}">${req.type}</span></td>
-        <td>${origTime}<br><small style="color:var(--text-muted);">${req.originalDateString || ''}</small></td>
-        <td><strong>${req.requestedTime}</strong></td>
-        <td style="font-size:0.8125rem; max-width:200px;">${req.justification}</td>
-        <td>${statusBadge}</td>
-        <td>${actions}</td>
-      `;
-      editRequestsTableBody.appendChild(tr);
-    });
-
-    editRequestsTableBody.querySelectorAll('.btn-approve').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const reqId = btn.dataset.id;
-        const req = requests.find(r => r.id === reqId);
-        if (req) approveEditRequest(reqId, req, btn);
-      });
-    });
-
-    editRequestsTableBody.querySelectorAll('.btn-reject').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const reqId = btn.dataset.id;
-        const req = requests.find(r => r.id === reqId);
-        if (req) openRejectModal(reqId, req);
-      });
-    });
-
+    _editRequestsData = requests;
+    _editRequestsCurrentPage = 1;
+    renderEditRequestsTable();
   } catch (err) {
     console.error('Erro ao carregar solicitações:', err);
     editRequestsTableBody.innerHTML = '<tr><td colspan="7" class="text-center" style="color:var(--danger);">Erro ao carregar solicitações.</td></tr>';
   }
 }
 
+let _insertRequestsData = [];
+let _insertRequestsCurrentPage = 1;
+let _insertRequestsPerPage = 10;
+
+function renderInsertRequestsTable() {
+  insertRequestsTableBody.innerHTML = '';
+  if (_insertRequestsData.length === 0) {
+    insertRequestsTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Nenhuma solicitação encontrada.</td></tr>';
+    insertPaginationControls.style.display = 'none';
+    return;
+  }
+
+  const totalPages = Math.ceil(_insertRequestsData.length / _insertRequestsPerPage);
+  if (_insertRequestsCurrentPage > totalPages) _insertRequestsCurrentPage = totalPages;
+  if (_insertRequestsCurrentPage < 1) _insertRequestsCurrentPage = 1;
+
+  const startIndex = (_insertRequestsCurrentPage - 1) * _insertRequestsPerPage;
+  const endIndex = Math.min(startIndex + _insertRequestsPerPage, _insertRequestsData.length);
+  const pageData = _insertRequestsData.slice(startIndex, endIndex);
+
+  pageData.forEach(req => {
+    const requestedDateParts = req.requestedDateString.split('-');
+    const formattedDate = `${requestedDateParts[2]}/${requestedDateParts[1]}/${requestedDateParts[0]}`;
+
+    const statusMap = {
+      pending: '<span class="badge badge-pending"><span data-icon="ampulheta" class="icon-sm"></span> Pendente</span>',
+      approved: '<span class="badge badge-approved"><span data-icon="check" class="icon-sm"></span> Aprovado</span>',
+      rejected: '<span class="badge badge-rejected"><span data-icon="deni" class="icon-sm"></span> Rejeitado</span>'
+    };
+    const statusBadge = statusMap[req.status] || req.status;
+
+    const actions = req.status === 'pending'
+      ? `<div class="edit-action-btns">
+           <button class="btn btn-approve btn-approve-insert btn-sm" data-id="${req.id}"><span data-icon="check" class="icon-sm"></span> Aprovar</button>
+           <button class="btn btn-reject btn-reject-insert btn-sm" data-id="${req.id}"><span data-icon="deni" class="icon-sm"></span> Rejeitar</button>
+         </div>`
+      : `<span style="font-size:0.8rem; color:var(--text-muted);">${req.resolvedAt?.toDate ? req.resolvedAt.toDate().toLocaleDateString('pt-BR') : '—'}</span>`;
+
+    const tr = document.createElement('tr');
+    tr.dataset.reqId = req.id;
+    tr.innerHTML = `
+      <td style="font-size:0.875rem;">${req.userEmail || req.userId}</td>
+      <td><strong>${formattedDate}</strong></td>
+      <td><span class="badge ${req.type === 'Entrada' ? 'badge-entrada' : req.type.includes('Pausa') ? 'badge-pausa' : req.type.includes('Volta') ? 'badge-volta' : 'badge-saida'}">${req.type}</span></td>
+      <td><strong>${req.requestedTime}</strong></td>
+      <td style="font-size:0.8125rem; max-width:200px;">${req.justification}</td>
+      <td>${statusBadge}</td>
+      <td>${actions}</td>
+    `;
+    insertRequestsTableBody.appendChild(tr);
+  });
+  
+  insertSVGs();
+
+  insertRequestsTableBody.querySelectorAll('.btn-approve-insert').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const reqId = btn.dataset.id;
+      const req = _insertRequestsData.find(r => r.id === reqId);
+      if (req) approveInsertRequest(reqId, req, btn);
+    });
+  });
+
+  insertRequestsTableBody.querySelectorAll('.btn-reject-insert').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const reqId = btn.dataset.id;
+      const req = _insertRequestsData.find(r => r.id === reqId);
+      if (req) openRejectModal(reqId, req, 'insert_requests');
+    });
+  });
+
+  insertPaginationControls.style.display = 'flex';
+  insertInfo.innerText = `Página ${_insertRequestsCurrentPage} de ${totalPages} (${_insertRequestsData.length} registros)`;
+  insertBtnPrev.disabled = _insertRequestsCurrentPage === 1;
+  insertBtnNext.disabled = _insertRequestsCurrentPage === totalPages;
+}
+
+if (insertLimitSelect) {
+  insertLimitSelect.addEventListener('change', e => {
+    _insertRequestsPerPage = parseInt(e.target.value, 10);
+    _insertRequestsCurrentPage = 1;
+    renderInsertRequestsTable();
+  });
+  insertBtnPrev.addEventListener('click', () => {
+    if (_insertRequestsCurrentPage > 1) { _insertRequestsCurrentPage--; renderInsertRequestsTable(); }
+  });
+  insertBtnNext.addEventListener('click', () => {
+    const totalPages = Math.ceil(_insertRequestsData.length / _insertRequestsPerPage);
+    if (_insertRequestsCurrentPage < totalPages) { _insertRequestsCurrentPage++; renderInsertRequestsTable(); }
+  });
+}
+
 async function loadInsertRequests() {
   insertRequestsTableBody.innerHTML = '<tr><td colspan="7" class="text-center"><span class="loader"></span></td></tr>';
+  insertPaginationControls.style.display = 'none';
 
   try {
     const snap = await getDocs(query(collection(db, 'insert_requests')));
@@ -487,60 +624,9 @@ async function loadInsertRequests() {
     const pendingCount = requests.filter(r => r.status === 'pending').length;
     if (pendingDotInsert) pendingDotInsert.style.display = pendingCount > 0 ? 'inline-block' : 'none';
 
-    insertRequestsTableBody.innerHTML = '';
-
-    if (requests.length === 0) {
-      insertRequestsTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Nenhuma solicitação encontrada.</td></tr>';
-      return;
-    }
-
-    requests.forEach(req => {
-      const requestedDateParts = req.requestedDateString.split('-');
-      const formattedDate = `${requestedDateParts[2]}/${requestedDateParts[1]}/${requestedDateParts[0]}`;
-
-      const statusMap = {
-        pending: '<span class="badge badge-pending"><span data-icon="ampulheta" class="icon-sm"></span> Pendente</span>',
-        approved: '<span class="badge badge-approved"><span data-icon="check" class="icon-sm"></span> Aprovado</span>',
-        rejected: '<span class="badge badge-rejected"><span data-icon="deni" class="icon-sm"></span> Rejeitado</span>'
-      };
-      const statusBadge = statusMap[req.status] || req.status;
-
-      const actions = req.status === 'pending'
-        ? `<div class="edit-action-btns">
-             <button class="btn btn-approve btn-approve-insert btn-sm" data-id="${req.id}"><span data-icon="check" class="icon-sm"></span> Aprovar</button>
-             <button class="btn btn-reject btn-reject-insert btn-sm" data-id="${req.id}"><span data-icon="deni" class="icon-sm"></span> Rejeitar</button>
-           </div>`
-        : `<span style="font-size:0.8rem; color:var(--text-muted);">${req.resolvedAt?.toDate ? req.resolvedAt.toDate().toLocaleDateString('pt-BR') : '—'}</span>`;
-
-      const tr = document.createElement('tr');
-      tr.dataset.reqId = req.id;
-      tr.innerHTML = `
-        <td style="font-size:0.875rem;">${req.userEmail || req.userId}</td>
-        <td><strong>${formattedDate}</strong></td>
-        <td><span class="badge ${req.type === 'Entrada' ? 'badge-entrada' : req.type.includes('Pausa') ? 'badge-pausa' : req.type.includes('Volta') ? 'badge-volta' : 'badge-saida'}">${req.type}</span></td>
-        <td><strong>${req.requestedTime}</strong></td>
-        <td style="font-size:0.8125rem; max-width:200px;">${req.justification}</td>
-        <td>${statusBadge}</td>
-        <td>${actions}</td>
-      `;
-      insertRequestsTableBody.appendChild(tr);
-    });
-
-    insertRequestsTableBody.querySelectorAll('.btn-approve-insert').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const reqId = btn.dataset.id;
-        const req = requests.find(r => r.id === reqId);
-        if (req) approveInsertRequest(reqId, req, btn);
-      });
-    });
-
-    insertRequestsTableBody.querySelectorAll('.btn-reject-insert').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const reqId = btn.dataset.id;
-        const req = requests.find(r => r.id === reqId);
-        if (req) openRejectModal(reqId, req, 'insert_requests');
-      });
-    });
+    _insertRequestsData = requests;
+    _insertRequestsCurrentPage = 1;
+    renderInsertRequestsTable();
 
   } catch (err) {
     console.error('Erro ao carregar solicitações de inserção:', err);
