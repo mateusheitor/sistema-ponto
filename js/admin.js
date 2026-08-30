@@ -155,6 +155,7 @@ btnNovoUser.addEventListener('click', () => {
   document.getElementById('new-email').value = '';
   document.getElementById('new-password').value = '';
   document.getElementById('role-employee').checked = true;
+  modalOverlay.classList.add('active');
 });
 
 btnCloseModal.addEventListener('click', () => modalOverlay.classList.remove('active'));
