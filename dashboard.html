@@ -36,6 +36,15 @@
       box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
       transform: translateY(20px);
       transition: transform 0.25s ease;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    @media (max-width: 480px) {
+      .modal-box {
+        padding: 1.25rem;
+        border-radius: 0.75rem;
+      }
     }
 
     .modal-overlay.active .modal-box {
