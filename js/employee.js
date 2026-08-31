@@ -510,9 +510,7 @@ employeeTabBtns.forEach(btn => {
 function formatMinutes(totalMinutes) {
   const sign = totalMinutes < 0 ? '-' : '';
   const abs = Math.abs(Math.round(totalMinutes));
-  const hours = Math.floor(abs / 60);
-  const minutes = abs % 60;
-  return `${sign}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  return `${sign}${String(Math.floor(abs / 60)).padStart(2, '0')}:${String(abs % 60).padStart(2, '0')}`;
 }
 
 function toDateStr(date) {
@@ -628,9 +626,9 @@ async function loadBancoDeHoras(start, end) {
       const startDisplay = startStr.split('-').reverse().join('/');
       const endDisplay = endStr.split('-').reverse().join('/');
       bhTableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">Nenhum registro neste período (${startDisplay} a ${endDisplay}).</td></tr>`;
-      bhTotalWorked.innerText = '0:00';
-      bhTotalExpected.innerText = '0:00';
-      bhBalance.innerText = '0:00';
+      bhTotalWorked.innerText   = '00:00';
+      bhTotalExpected.innerText = '00:00';
+      bhBalance.innerText       = '00:00';
       bhDaysWorked.innerText = '0';
       return;
     }

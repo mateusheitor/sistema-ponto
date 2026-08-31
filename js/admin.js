@@ -1074,8 +1074,8 @@ async function loadAdminBancoDeHoras(userId, start, end) {
       const startDisplay = startStr.split('-').reverse().join('/');
       const endDisplay = endStr.split('-').reverse().join('/');
       adminBhTableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">Nenhum registro neste período (${startDisplay} a ${endDisplay}).</td></tr>`;
-      ['--', '--', '0h00', '0'].forEach((v, i) => [adminBhTotalWorked, adminBhTotalExpected, adminBhBalance, adminBhDaysWorked][i].innerText = v);
-      adminBhTotalWorked.innerText = '0h00'; adminBhTotalExpected.innerText = '0h00'; adminBhDaysWorked.innerText = '0';
+      ['--', '--', '00:00', '0'].forEach((v, i) => [adminBhTotalWorked, adminBhTotalExpected, adminBhBalance, adminBhDaysWorked][i].innerText = v);
+      adminBhTotalWorked.innerText = '00:00'; adminBhTotalExpected.innerText = '00:00'; adminBhDaysWorked.innerText = '0';
       adminBhPaginationControls.style.display = 'none';
       return;
     }
