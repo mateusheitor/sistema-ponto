@@ -270,7 +270,7 @@ async function registerPunch(type) {
     await addDoc(collection(db, 'time_records'), {
       userId: currentUser.uid,
       userEmail: currentUser.email,
-      timestamp: serverTimestamp(),
+      timestamp: new Date(),
       type,
       dateString: todayStr,
       latitude, longitude, accuracy
@@ -356,7 +356,8 @@ async function loadTodayRecords() {
       const pageData = _employeeRecordsData.slice(startIndex, endIndex);
 
       pageData.forEach(data => {
-        const timeStr = data.timestamp.toDate().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        const ts = data.timestamp?.toDate?.() ?? new Date();
+        const timeStr = ts.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
         let badgeClass = '';
         if (data.type === 'Entrada') badgeClass = 'badge-entrada';
