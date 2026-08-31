@@ -459,6 +459,9 @@ function renderEditRequestsTable() {
       : `<span style="font-size:0.8rem; color:var(--text-muted);">${req.resolvedAt?.toDate ? req.resolvedAt.toDate().toLocaleDateString('pt-BR') : '—'}</span>`;
 
     const origDateDisplay = req.originalDateString ? req.originalDateString.split('-').reverse().join('/') : '';
+    const attachmentHtml = req.attachmentUrl
+      ? `<br><a class="attachment-link" href="${req.attachmentUrl}" target="_blank" rel="noopener noreferrer">📎 ${req.attachmentName || 'Ver Anexo'}</a>`
+      : '';
     const tr = document.createElement('tr');
     tr.dataset.reqId = req.id;
     tr.innerHTML = `
@@ -466,7 +469,7 @@ function renderEditRequestsTable() {
       <td><span class="badge ${req.type === 'Entrada' ? 'badge-entrada' : req.type.includes('Pausa') ? 'badge-pausa' : req.type.includes('Volta') ? 'badge-volta' : 'badge-saida'}">${req.type}</span></td>
       <td>${origTime}<br><small style="color:var(--text-muted);">${origDateDisplay}</small></td>
       <td><strong>${req.requestedTime}</strong></td>
-      <td style="font-size:0.8125rem; max-width:200px;">${req.justification}</td>
+      <td style="font-size:0.8125rem; max-width:200px;">${req.justification}${attachmentHtml}</td>
       <td>${statusBadge}</td>
       <td>${actions}</td>
     `;
@@ -576,6 +579,9 @@ function renderInsertRequestsTable() {
          </div>`
       : `<span style="font-size:0.8rem; color:var(--text-muted);">${req.resolvedAt?.toDate ? req.resolvedAt.toDate().toLocaleDateString('pt-BR') : '—'}</span>`;
 
+    const attachmentHtml = req.attachmentUrl
+      ? `<br><a class="attachment-link" href="${req.attachmentUrl}" target="_blank" rel="noopener noreferrer">📎 ${req.attachmentName || 'Ver Anexo'}</a>`
+      : '';
     const tr = document.createElement('tr');
     tr.dataset.reqId = req.id;
     tr.innerHTML = `
@@ -583,7 +589,7 @@ function renderInsertRequestsTable() {
       <td><strong>${formattedDate}</strong></td>
       <td><span class="badge ${req.type === 'Entrada' ? 'badge-entrada' : req.type.includes('Pausa') ? 'badge-pausa' : req.type.includes('Volta') ? 'badge-volta' : 'badge-saida'}">${req.type}</span></td>
       <td><strong>${req.requestedTime}</strong></td>
-      <td style="font-size:0.8125rem; max-width:200px;">${req.justification}</td>
+      <td style="font-size:0.8125rem; max-width:200px;">${req.justification}${attachmentHtml}</td>
       <td>${statusBadge}</td>
       <td>${actions}</td>
     `;

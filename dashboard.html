@@ -299,6 +299,20 @@
           style="resize: vertical;"></textarea>
       </div>
 
+      <div class="form-group">
+        <label class="form-label">Anexo <span style="color:var(--text-muted); font-weight:400;">(opcional — ex: atestado médico)</span></label>
+        <div class="file-upload-area" id="edit-file-area">
+          <input type="file" id="edit-attachment" accept="image/*,.pdf,.doc,.docx" title="Selecionar arquivo">
+          <span class="file-upload-icon">📎</span>
+          <div class="file-upload-text"><strong>Clique para selecionar</strong> ou arraste o arquivo aqui<br>Imagens, PDF, DOC — máx. 10MB</div>
+        </div>
+        <div class="file-upload-preview" id="edit-file-preview">
+          <span style="font-size:1rem;">📄</span>
+          <span class="file-upload-preview-name" id="edit-file-name"></span>
+          <button type="button" class="file-upload-clear" id="edit-file-clear" title="Remover arquivo">&times;</button>
+        </div>
+      </div>
+
       <button class="btn btn-primary btn-block" id="btn-submit-edit">Enviar Solicitação</button>
 
       <div class="edit-info-box">
@@ -348,6 +362,20 @@
               style="color:var(--danger)">*</span></label>
           <textarea id="insert-justification" class="form-input" rows="3"
             placeholder="Descreva por que esqueceu de bater o ponto..." style="resize: vertical;" required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Anexo <span style="color:var(--text-muted); font-weight:400;">(opcional — ex: atestado médico)</span></label>
+          <div class="file-upload-area" id="insert-file-area">
+            <input type="file" id="insert-attachment" accept="image/*,.pdf,.doc,.docx" title="Selecionar arquivo">
+            <span class="file-upload-icon">📎</span>
+            <div class="file-upload-text"><strong>Clique para selecionar</strong> ou arraste o arquivo aqui<br>Imagens, PDF, DOC — máx. 10MB</div>
+          </div>
+          <div class="file-upload-preview" id="insert-file-preview">
+            <span style="font-size:1rem;">📄</span>
+            <span class="file-upload-preview-name" id="insert-file-name"></span>
+            <button type="button" class="file-upload-clear" id="insert-file-clear" title="Remover arquivo">&times;</button>
+          </div>
         </div>
 
         <button type="submit" class="btn btn-primary btn-block" id="btn-submit-insert">Enviar Solicitação</button>

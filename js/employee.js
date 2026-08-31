@@ -1,6 +1,7 @@
 import {
   auth, onAuthStateChanged, signOut, updatePassword,
-  db, collection, addDoc, query, where, getDocs, doc, getDoc, updateDoc, serverTimestamp
+  db, collection, addDoc, query, where, getDocs, doc, getDoc, updateDoc, serverTimestamp,
+  storage, ref, uploadBytes, getDownloadURL
 } from './firebase-config.js';
 import { insertSVGs, showToast } from './svg.js';
 
@@ -31,6 +32,20 @@ const insertType = document.getElementById('insert-type');
 const insertTime = document.getElementById('insert-time');
 const insertJustification = document.getElementById('insert-justification');
 const btnSubmitInsert = document.getElementById('btn-submit-insert');
+
+// File upload: edit modal
+const editAttachmentInput = document.getElementById('edit-attachment');
+const editFileArea        = document.getElementById('edit-file-area');
+const editFilePreview     = document.getElementById('edit-file-preview');
+const editFileName        = document.getElementById('edit-file-name');
+const editFileClear       = document.getElementById('edit-file-clear');
+
+// File upload: insert modal
+const insertAttachmentInput = document.getElementById('insert-attachment');
+const insertFileArea        = document.getElementById('insert-file-area');
+const insertFilePreview     = document.getElementById('insert-file-preview');
+const insertFileName        = document.getElementById('insert-file-name');
+const insertFileClear       = document.getElementById('insert-file-clear');
 
 const bhTableBody = document.getElementById('bh-table-body');
 const bhTotalWorked = document.getElementById('bh-total-worked');
@@ -443,8 +458,36 @@ function openEditModal(record) {
   modalEdit.classList.add('active');
 }
 
-btnCloseEdit.addEventListener('click', () => modalEdit.classList.remove('active'));
-modalEdit.addEventListener('click', e => { if (e.target === modalEdit) modalEdit.classList.remove('active'); });
+function clearEditFile() {
+  editAttachmentInput.value = '';
+  editFilePreview.classList.remove('visible');
+  editFileName.innerText = '';
+}
+
+btnCloseEdit.addEventListener('click', () => { modalEdit.classList.remove('active'); clearEditFile(); });
+modalEdit.addEventListener('click', e => { if (e.target === modalEdit) { modalEdit.classList.remove('active'); clearEditFile(); } });
+
+// File upload UI — edit
+if (editAttachmentInput) {
+  editAttachmentInput.addEventListener('change', () => {
+    const file = editAttachmentInput.files[0];
+    if (file) {
+      editFileName.innerText = file.name;
+      editFilePreview.classList.add('visible');
+    }
+  });
+  editFileArea.addEventListener('dragover', e => { e.preventDefault(); editFileArea.classList.add('drag-over'); });
+  editFileArea.addEventListener('dragleave', () => editFileArea.classList.remove('drag-over'));
+  editFileArea.addEventListener('drop', e => {
+    e.preventDefault(); editFileArea.classList.remove('drag-over');
+    if (e.dataTransfer.files[0]) {
+      editAttachmentInput.files = e.dataTransfer.files;
+      editFileName.innerText = e.dataTransfer.files[0].name;
+      editFilePreview.classList.add('visible');
+    }
+  });
+  editFileClear.addEventListener('click', clearEditFile);
+}
 
 btnSubmitEdit.addEventListener('click', async () => {
   if (!editingRecord) return;
@@ -461,10 +504,27 @@ btnSubmitEdit.addEventListener('click', async () => {
     return;
   }
 
+  const file = editAttachmentInput?.files[0];
+  if (file && file.size > 10 * 1024 * 1024) {
+    showToast('O arquivo deve ter no máximo 10MB.', 'warning');
+    return;
+  }
+
   btnSubmitEdit.disabled = true;
-  btnSubmitEdit.innerText = 'Enviando...';
+  btnSubmitEdit.innerText = file ? 'Enviando arquivo...' : 'Enviando...';
 
   try {
+    let attachmentUrl = null;
+    let attachmentName = null;
+
+    if (file) {
+      const path = `attachments/edit/${currentUser.uid}/${Date.now()}_${file.name}`;
+      const storageRef = ref(storage, path);
+      await uploadBytes(storageRef, file);
+      attachmentUrl  = await getDownloadURL(storageRef);
+      attachmentName = file.name;
+    }
+
     await addDoc(collection(db, 'edit_requests'), {
       recordId: editingRecord.id,
       userId: currentUser.uid,
@@ -474,12 +534,13 @@ btnSubmitEdit.addEventListener('click', async () => {
       originalDateString: editingRecord.dateString,
       requestedTime: newTime,
       justification,
+      ...(attachmentUrl ? { attachmentUrl, attachmentName } : {}),
       status: 'pending',
       createdAt: new Date()
     });
 
     showToast('Solicitação enviada! Aguarde a aprovação do administrador.', 'success');
-
+    clearEditFile();
 
     setTimeout(async () => {
       modalEdit.classList.remove('active');
@@ -850,10 +911,45 @@ if (insertDate) {
   });
 }
 
+function clearInsertFile() {
+  insertAttachmentInput.value = '';
+  insertFilePreview.classList.remove('visible');
+  insertFileName.innerText = '';
+}
+
+// File upload UI — insert
+if (insertAttachmentInput) {
+  insertAttachmentInput.addEventListener('change', () => {
+    const file = insertAttachmentInput.files[0];
+    if (file) {
+      insertFileName.innerText = file.name;
+      insertFilePreview.classList.add('visible');
+    }
+  });
+  insertFileArea.addEventListener('dragover', e => { e.preventDefault(); insertFileArea.classList.add('drag-over'); });
+  insertFileArea.addEventListener('dragleave', () => insertFileArea.classList.remove('drag-over'));
+  insertFileArea.addEventListener('drop', e => {
+    e.preventDefault(); insertFileArea.classList.remove('drag-over');
+    if (e.dataTransfer.files[0]) {
+      insertAttachmentInput.files = e.dataTransfer.files;
+      insertFileName.innerText = e.dataTransfer.files[0].name;
+      insertFilePreview.classList.add('visible');
+    }
+  });
+  insertFileClear.addEventListener('click', clearInsertFile);
+}
+
+if (btnCloseInsert) {
+  btnCloseInsert.addEventListener('click', () => {
+    modalInsert.classList.remove('active');
+    clearInsertFile();
+  });
+}
+
 if (document.getElementById('form-insert-request')) {
   document.getElementById('form-insert-request').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const ds = insertDate.value;
+    const ds   = insertDate.value;
     const type = insertType.value;
     const time = insertTime.value;
     const just = insertJustification.value.trim();
@@ -863,24 +959,46 @@ if (document.getElementById('form-insert-request')) {
       return;
     }
 
+    const file = insertAttachmentInput?.files[0];
+    if (file && file.size > 10 * 1024 * 1024) {
+      showToast('O arquivo deve ter no máximo 10MB.', 'warning');
+      return;
+    }
+
     btnSubmitInsert.disabled = true;
-    btnSubmitInsert.innerHTML = '<span class="loader" style="width:16px;height:16px;border-width:2px;border-top-color:transparent;display:inline-block;vertical-align:middle;margin-right:8px;"></span> Enviando...';
+    btnSubmitInsert.innerHTML = file
+      ? '<span class="loader" style="width:16px;height:16px;border-width:2px;border-top-color:transparent;display:inline-block;vertical-align:middle;margin-right:8px;"></span> Enviando arquivo...'
+      : '<span class="loader" style="width:16px;height:16px;border-width:2px;border-top-color:transparent;display:inline-block;vertical-align:middle;margin-right:8px;"></span> Enviando...';
 
     try {
+      let attachmentUrl  = null;
+      let attachmentName = null;
+
+      if (file) {
+        const path = `attachments/insert/${currentUser.uid}/${Date.now()}_${file.name}`;
+        const storageRef = ref(storage, path);
+        await uploadBytes(storageRef, file);
+        attachmentUrl  = await getDownloadURL(storageRef);
+        attachmentName = file.name;
+      }
+
       await addDoc(collection(db, 'insert_requests'), {
         userId: currentUser.uid,
         userEmail: currentUser.email,
-        type: type,
+        type,
         requestedDateString: ds,
         requestedTime: time,
         justification: just,
+        ...(attachmentUrl ? { attachmentUrl, attachmentName } : {}),
         status: 'pending',
         createdAt: serverTimestamp()
       });
+
       showToast('Solicitação de inserção enviada com sucesso.', 'success');
       modalInsert.classList.remove('active');
       document.getElementById('form-insert-request').reset();
       insertType.disabled = true;
+      clearInsertFile();
       await checkPendingRecords();
       await loadMyEditRequests();
     } catch (error) {
