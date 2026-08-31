@@ -292,9 +292,103 @@ PUNCH_CONFIG['Pausa para Almoço'].btn?.addEventListener('click', () => register
 PUNCH_CONFIG['Volta do Almoço'].btn?.addEventListener('click', () => registerPunch('Volta do Almoço'));
 PUNCH_CONFIG['Saída'].btn?.addEventListener('click', () => registerPunch('Saída'));
 
+// ── Today's records state (module-level so subsequent loadTodayRecords calls reuse it) ──
+let _todayRecordsData = [];
+let _todayRecordsPage = 1;
+let _todayRecordsPerPage = 5;
+let _todayPendingIds = new Set();
+let _todayListenersReady = false;
+
+function renderTodayRecordsTable() {
+  const tbody = document.getElementById('records-table-body');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  if (_todayRecordsData.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Nenhum registro encontrado hoje.</td></tr>';
+    if (employeeRecordsPaginationControls) employeeRecordsPaginationControls.style.display = 'none';
+    return;
+  }
+
+  const totalPages = Math.max(1, Math.ceil(_todayRecordsData.length / _todayRecordsPerPage));
+  if (_todayRecordsPage > totalPages) _todayRecordsPage = totalPages;
+  if (_todayRecordsPage < 1) _todayRecordsPage = 1;
+
+  const start = (_todayRecordsPage - 1) * _todayRecordsPerPage;
+  const pageData = _todayRecordsData.slice(start, start + _todayRecordsPerPage);
+
+  pageData.forEach(data => {
+    const ts = data.timestamp?.toDate?.() ?? new Date();
+    const timeStr = ts.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+    let badgeClass = '';
+    if (data.type === 'Entrada') badgeClass = 'badge-entrada';
+    else if (data.type?.includes('Pausa')) badgeClass = 'badge-pausa';
+    else if (data.type?.includes('Volta')) badgeClass = 'badge-volta';
+    else if (data.type === 'Saída') badgeClass = 'badge-saida';
+
+    const isPending = _todayPendingIds.has(data.id);
+    const editBtnOrBadge = isPending
+      ? `<span class="badge badge-pending" style="font-size:0.7rem;"><span data-icon="ampulheta" class="icon-sm"></span> Aguardando</span>`
+      : `<button class="btn-edit-record" data-id="${data.id}" title="Solicitar edição deste registro"><span data-icon="edit" class="icon-sm"></span> Editar</button>`;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="badge ${badgeClass}">${data.type}</span></td>
+      <td><strong>${timeStr}</strong>${data.edited ? ' <span class="badge badge-edited" style="font-size:0.7rem; margin-left:4px;">Editado</span>' : ''}</td>
+      <td>${editBtnOrBadge}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  insertSVGs();
+
+  tbody.querySelectorAll('.btn-edit-record').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const record = _todayRecordsData.find(r => r.id === btn.dataset.id);
+      if (record) openEditModal(record);
+    });
+  });
+
+  if (employeeRecordsPaginationControls) {
+    employeeRecordsPaginationControls.style.display = 'flex';
+    if (employeeRecordsInfo) employeeRecordsInfo.innerText = `Página ${_todayRecordsPage} de ${totalPages} (${_todayRecordsData.length} registros)`;
+    if (employeeRecordsBtnPrev) employeeRecordsBtnPrev.disabled = _todayRecordsPage === 1;
+    if (employeeRecordsBtnNext) employeeRecordsBtnNext.disabled = _todayRecordsPage === totalPages;
+  }
+}
+
+function initTodayRecordsPaginationListeners() {
+  if (_todayListenersReady) return;
+  _todayListenersReady = true;
+
+  if (employeeRecordsLimitSelect) {
+    employeeRecordsLimitSelect.addEventListener('change', e => {
+      _todayRecordsPerPage = parseInt(e.target.value, 10);
+      _todayRecordsPage = 1;
+      renderTodayRecordsTable();
+    });
+  }
+  if (employeeRecordsBtnPrev) {
+    employeeRecordsBtnPrev.addEventListener('click', () => {
+      if (_todayRecordsPage > 1) { _todayRecordsPage--; renderTodayRecordsTable(); }
+    });
+  }
+  if (employeeRecordsBtnNext) {
+    employeeRecordsBtnNext.addEventListener('click', () => {
+      const totalPages = Math.ceil(_todayRecordsData.length / _todayRecordsPerPage);
+      if (_todayRecordsPage < totalPages) { _todayRecordsPage++; renderTodayRecordsTable(); }
+    });
+  }
+}
+
 async function loadTodayRecords() {
   if (!currentUser) return;
-  tableBody.innerHTML = '<tr><td colspan="3" class="text-center"><span class="loader"></span></td></tr>';
+
+  const tbody = document.getElementById('records-table-body');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="3" class="text-center"><span class="loader"></span></td></tr>';
+
+  initTodayRecordsPaginationListeners();
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -306,15 +400,14 @@ async function loadTodayRecords() {
     ));
 
     todayRegisteredTypes.clear();
-    const records = [];
+    _todayRecordsData = [];
     snap.forEach(d => {
       const data = d.data();
-      records.push({ id: d.id, ...data });
+      _todayRecordsData.push({ id: d.id, ...data });
       if (data.type) todayRegisteredTypes.add(data.type);
     });
 
-    // Sort client-side — avoids Firestore composite index requirement
-    records.sort((a, b) => {
+    _todayRecordsData.sort((a, b) => {
       const ta = a.timestamp?.toDate?.() ?? new Date(0);
       const tb = b.timestamp?.toDate?.() ?? new Date(0);
       return ta - tb;
@@ -322,111 +415,28 @@ async function loadTodayRecords() {
 
     updateButtonStates();
 
-    let _employeeRecordsData = records;
-    let _employeeRecordsCurrentPage = 1;
-    let _employeeRecordsPerPage = parseInt(employeeRecordsLimitSelect?.value ?? '5', 10);
-
-    let pendingRecordIds = new Set();
-    try {
-      const pendingSnap = await getDocs(query(
-        collection(db, 'edit_requests'),
-        where('userId', '==', currentUser.uid),
-        where('originalDateString', '==', todayStr),
-        where('status', '==', 'pending')
-      ));
-      pendingSnap.forEach(d => pendingRecordIds.add(d.data().recordId));
-    } catch (pendingErr) {
-      console.warn('Não foi possível carregar solicitações pendentes (índice ausente?):', pendingErr);
-    }
-
-    function renderEmployeeRecordsTable() {
-      tableBody.innerHTML = '';
-      if (_employeeRecordsData.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Nenhum registro encontrado hoje.</td></tr>';
-        if (employeeRecordsPaginationControls) employeeRecordsPaginationControls.style.display = 'none';
-        return;
-      }
-
-      const totalPages = Math.ceil(_employeeRecordsData.length / _employeeRecordsPerPage);
-      if (_employeeRecordsCurrentPage > totalPages) _employeeRecordsCurrentPage = totalPages;
-      if (_employeeRecordsCurrentPage < 1) _employeeRecordsCurrentPage = 1;
-
-      const startIndex = (_employeeRecordsCurrentPage - 1) * _employeeRecordsPerPage;
-      const endIndex = Math.min(startIndex + _employeeRecordsPerPage, _employeeRecordsData.length);
-      const pageData = _employeeRecordsData.slice(startIndex, endIndex);
-
-      pageData.forEach(data => {
-        const ts = data.timestamp?.toDate?.() ?? new Date();
-        const timeStr = ts.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-
-        let badgeClass = '';
-        if (data.type === 'Entrada') badgeClass = 'badge-entrada';
-        else if (data.type.includes('Pausa')) badgeClass = 'badge-pausa';
-        else if (data.type.includes('Volta')) badgeClass = 'badge-volta';
-        else if (data.type === 'Saída') badgeClass = 'badge-saida';
-
-        const isPending = pendingRecordIds.has(data.id);
-        const editBtnOrBadge = isPending
-          ? `<span class="badge badge-pending" style="font-size:0.7rem;"><span data-icon="ampulheta" class="icon-sm"></span> Aguardando</span>`
-          : `<button class="btn-edit-record" data-id="${data.id}" title="Solicitar edição deste registro"><span data-icon="edit" class="icon-sm"></span> Editar</button>`;
-
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><span class="badge ${badgeClass}">${data.type}</span></td>
-          <td><strong>${timeStr}</strong>${data.edited ? ' <span class="badge badge-edited" style="font-size:0.7rem; margin-left:4px;">Editado</span>' : ''}</td>
-          <td>${editBtnOrBadge}</td>
-        `;
-        tableBody.appendChild(tr);
-      });
-
-      insertSVGs();
-
-      tableBody.querySelectorAll('.btn-edit-record').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const recId = btn.dataset.id;
-          const record = _employeeRecordsData.find(r => r.id === recId);
-          if (record) openEditModal(record);
-        });
-      });
-
-      if (employeeRecordsPaginationControls) {
-        employeeRecordsPaginationControls.style.display = 'flex';
-        employeeRecordsInfo.innerText = `Página ${_employeeRecordsCurrentPage} de ${totalPages} (${_employeeRecordsData.length} registros)`;
-        employeeRecordsBtnPrev.disabled = _employeeRecordsCurrentPage === 1;
-        employeeRecordsBtnNext.disabled = _employeeRecordsCurrentPage === totalPages;
-      }
-    }
-
-    if (employeeRecordsLimitSelect) {
-      const novoSelect = employeeRecordsLimitSelect.cloneNode(true);
-      employeeRecordsLimitSelect.parentNode.replaceChild(novoSelect, employeeRecordsLimitSelect);
-      novoSelect.addEventListener('change', e => {
-        _employeeRecordsPerPage = parseInt(e.target.value, 10);
-        _employeeRecordsCurrentPage = 1;
-        renderEmployeeRecordsTable();
-      });
-
-      const novoPrev = employeeRecordsBtnPrev.cloneNode(true);
-      employeeRecordsBtnPrev.parentNode.replaceChild(novoPrev, employeeRecordsBtnPrev);
-      novoPrev.addEventListener('click', () => {
-        if (_employeeRecordsCurrentPage > 1) { _employeeRecordsCurrentPage--; renderEmployeeRecordsTable(); }
-      });
-
-      const novoNext = employeeRecordsBtnNext.cloneNode(true);
-      employeeRecordsBtnNext.parentNode.replaceChild(novoNext, employeeRecordsBtnNext);
-      novoNext.addEventListener('click', () => {
-        const totalPages = Math.ceil(_employeeRecordsData.length / _employeeRecordsPerPage);
-        if (_employeeRecordsCurrentPage < totalPages) { _employeeRecordsCurrentPage++; renderEmployeeRecordsTable(); }
-      });
-    }
-
-    renderEmployeeRecordsTable();
-
   } catch (error) {
-    console.error('Erro ao buscar registros:', error);
-    tableBody.innerHTML = '<tr><td colspan="3" class="text-center" style="color:var(--danger);">Erro ao carregar dados.</td></tr>';
+    console.error('Erro ao buscar registros de ponto:', error);
+    if (tbody) tbody.innerHTML = '<tr><td colspan="3" class="text-center" style="color:var(--danger);">Erro ao carregar dados.</td></tr>';
     updateButtonStates();
+    return;
   }
+
+  // Load pending edit requests (separate try so a missing index doesn't break the table)
+  _todayPendingIds = new Set();
+  try {
+    const pendingSnap = await getDocs(query(
+      collection(db, 'edit_requests'),
+      where('userId', '==', currentUser.uid),
+      where('originalDateString', '==', todayStr),
+      where('status', '==', 'pending')
+    ));
+    pendingSnap.forEach(d => _todayPendingIds.add(d.data().recordId));
+  } catch (pendingErr) {
+    console.warn('Solicitações pendentes indisponíveis (índice ausente?):', pendingErr);
+  }
+
+  renderTodayRecordsTable();
 }
 
 async function loadMyEditRequests() {
