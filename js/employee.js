@@ -4,42 +4,42 @@ import {
 } from './firebase-config.js';
 import { insertSVGs, showToast } from './svg.js';
 
-const userNameSpan   = document.getElementById('user-name');
-const btnLogout      = document.getElementById('btn-logout');
-const clockDisplay   = document.getElementById('clock');
-const dateDisplay    = document.getElementById('date');
-const tableBody      = document.getElementById('records-table-body');
+const userNameSpan = document.getElementById('user-name');
+const btnLogout = document.getElementById('btn-logout');
+const clockDisplay = document.getElementById('clock');
+const dateDisplay = document.getElementById('date');
+const tableBody = document.getElementById('records-table-body');
 const editRequestsStatus = document.getElementById('edit-requests-status');
 
-const modalEdit      = document.getElementById('modal-edit-record');
-const btnCloseEdit   = document.getElementById('btn-close-edit-modal');
-const editInfoType   = document.getElementById('edit-info-type');
-const editInfoTime   = document.getElementById('edit-info-time');
-const editNewTime    = document.getElementById('edit-new-time');
+const modalEdit = document.getElementById('modal-edit-record');
+const btnCloseEdit = document.getElementById('btn-close-edit-modal');
+const editInfoType = document.getElementById('edit-info-type');
+const editInfoTime = document.getElementById('edit-info-time');
+const editNewTime = document.getElementById('edit-new-time');
 const editJustification = document.getElementById('edit-justification');
-const btnSubmitEdit  = document.getElementById('btn-submit-edit');
+const btnSubmitEdit = document.getElementById('btn-submit-edit');
 
 
-const pendingAlert   = document.getElementById('pending-alert');
+const pendingAlert = document.getElementById('pending-alert');
 const pendingAlertText = document.getElementById('pending-alert-text');
 const btnResolvePending = document.getElementById('btn-resolve-pending');
 
-const modalInsert    = document.getElementById('modal-insert-request');
+const modalInsert = document.getElementById('modal-insert-request');
 const btnCloseInsert = document.getElementById('btn-close-insert-modal');
-const insertDate     = document.getElementById('insert-date');
-const insertType     = document.getElementById('insert-type');
-const insertTime     = document.getElementById('insert-time');
+const insertDate = document.getElementById('insert-date');
+const insertType = document.getElementById('insert-type');
+const insertTime = document.getElementById('insert-time');
 const insertJustification = document.getElementById('insert-justification');
 const btnSubmitInsert = document.getElementById('btn-submit-insert');
 
-const bhTableBody    = document.getElementById('bh-table-body');
-const bhTotalWorked  = document.getElementById('bh-total-worked');
+const bhTableBody = document.getElementById('bh-table-body');
+const bhTotalWorked = document.getElementById('bh-total-worked');
 const bhTotalExpected = document.getElementById('bh-total-expected');
-const bhBalance      = document.getElementById('bh-balance');
-const bhDateStart    = document.getElementById('bh-date-start');
-const bhDateEnd      = document.getElementById('bh-date-end');
-const bhBalanceCard  = document.getElementById('bh-balance-card');
-const bhDaysWorked   = document.getElementById('bh-days-worked');
+const bhBalance = document.getElementById('bh-balance');
+const bhDateStart = document.getElementById('bh-date-start');
+const bhDateEnd = document.getElementById('bh-date-end');
+const bhBalanceCard = document.getElementById('bh-balance-card');
+const bhDaysWorked = document.getElementById('bh-days-worked');
 
 const employeeRecordsPaginationControls = document.getElementById('employee-records-pagination');
 const employeeRecordsLimitSelect = document.getElementById('employee-records-limit');
@@ -54,25 +54,25 @@ const employeeBhBtnNext = document.getElementById('employee-bh-next');
 const employeeBhInfo = document.getElementById('employee-bh-info');
 
 const employeeTabBtns = document.querySelectorAll('.employee-tab-btn');
-const bhPanelBtns    = document.querySelectorAll('.bh-period-btn');
+const bhPanelBtns = document.querySelectorAll('.bh-period-btn');
 
 const PUNCH_CONFIG = {
-  'Entrada':           { btn: document.getElementById('btn-entrada'), label: 'Entrada',        registeredLabel: '✓ Entrada (Feito)' },
-  'Pausa para Almoço': { btn: document.getElementById('btn-pausa'),   label: 'Pausa Almoço',   registeredLabel: '✓ Pausa (Feita)'   },
-  'Volta do Almoço':   { btn: document.getElementById('btn-volta'),   label: 'Volta Almoço',   registeredLabel: '✓ Volta (Feita)'   },
-  'Saída':             { btn: document.getElementById('btn-saida'),   label: 'Saída',           registeredLabel: '✓ Saída (Feita)'   }
+  'Entrada': { btn: document.getElementById('btn-entrada'), label: 'Entrada', registeredLabel: '✓ Entrada (Feito)' },
+  'Pausa para Almoço': { btn: document.getElementById('btn-pausa'), label: 'Pausa Almoço', registeredLabel: '✓ Pausa (Feita)' },
+  'Volta do Almoço': { btn: document.getElementById('btn-volta'), label: 'Volta Almoço', registeredLabel: '✓ Volta (Feita)' },
+  'Saída': { btn: document.getElementById('btn-saida'), label: 'Saída', registeredLabel: '✓ Saída (Feita)' }
 };
 
 const META_DIARIA_HORAS = 8;
 
-let currentUser     = null;
+let currentUser = null;
 let todayRegisteredTypes = new Set();
-let editingRecord   = null;
+let editingRecord = null;
 
 function updateClock() {
   const now = new Date();
   clockDisplay.innerText = now.toLocaleTimeString('pt-BR');
-  dateDisplay.innerText  = now.toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  dateDisplay.innerText = now.toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 }
 setInterval(updateClock, 1000);
 updateClock();
@@ -84,11 +84,11 @@ onAuthStateChanged(auth, async (user) => {
     try {
       const userDocRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
-      
+
       if (userDoc.exists()) {
         const userData = userDoc.data();
         userNameSpan.innerText = userData.name || user.email;
-        
+
         if (userData.firstLogin === true) {
           const modalForcePassword = document.getElementById('modal-force-password');
           const formForcePassword = document.getElementById('form-force-password');
@@ -98,7 +98,7 @@ onAuthStateChanged(auth, async (user) => {
 
           if (modalForcePassword) {
             modalForcePassword.classList.add('active');
-            
+
             formForcePassword.addEventListener('submit', async (e) => {
               e.preventDefault();
               const p1 = fpNewPassword.value;
@@ -119,7 +119,7 @@ onAuthStateChanged(auth, async (user) => {
               try {
                 await updatePassword(auth.currentUser, p1);
                 await updateDoc(userDocRef, { firstLogin: false });
-                
+
                 showToast('Senha atualizada com sucesso! Bem-vindo ao sistema.', 'success');
                 modalForcePassword.classList.remove('active');
               } catch (error) {
@@ -190,8 +190,8 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   const phi1 = lat1 * Math.PI / 180, phi2 = lat2 * Math.PI / 180;
   const dPhi = (lat2 - lat1) * Math.PI / 180;
   const dLam = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dPhi/2)**2 + Math.cos(phi1)*Math.cos(phi2)*Math.sin(dLam/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const a = Math.sin(dPhi / 2) ** 2 + Math.cos(phi1) * Math.cos(phi2) * Math.sin(dLam / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 async function registerPunch(type) {
@@ -222,9 +222,9 @@ async function registerPunch(type) {
     let latitude, longitude, accuracy;
     try {
       const pos = await getCurrentPosition();
-      latitude  = pos.coords.latitude;
+      latitude = pos.coords.latitude;
       longitude = pos.coords.longitude;
-      accuracy  = pos.coords.accuracy;
+      accuracy = pos.coords.accuracy;
     } catch (geoError) {
       let msg = 'É necessário permitir o acesso à localização para registrar o ponto.';
       if (geoError.code === 1) msg = 'Permissão de localização negada. Permita o acesso ao GPS nas configurações do navegador e tente novamente.';
@@ -253,9 +253,9 @@ async function registerPunch(type) {
 
     const now = new Date();
     await addDoc(collection(db, 'time_records'), {
-      userId:     currentUser.uid,
-      userEmail:  currentUser.email,
-      timestamp:  now,
+      userId: currentUser.uid,
+      userEmail: currentUser.email,
+      timestamp: now,
       type,
       dateString: todayStr,
       latitude, longitude, accuracy
@@ -272,10 +272,10 @@ async function registerPunch(type) {
   }
 }
 
-PUNCH_CONFIG['Entrada'].btn?.addEventListener('click',           () => registerPunch('Entrada'));
+PUNCH_CONFIG['Entrada'].btn?.addEventListener('click', () => registerPunch('Entrada'));
 PUNCH_CONFIG['Pausa para Almoço'].btn?.addEventListener('click', () => registerPunch('Pausa para Almoço'));
-PUNCH_CONFIG['Volta do Almoço'].btn?.addEventListener('click',   () => registerPunch('Volta do Almoço'));
-PUNCH_CONFIG['Saída'].btn?.addEventListener('click',             () => registerPunch('Saída'));
+PUNCH_CONFIG['Volta do Almoço'].btn?.addEventListener('click', () => registerPunch('Volta do Almoço'));
+PUNCH_CONFIG['Saída'].btn?.addEventListener('click', () => registerPunch('Saída'));
 
 async function loadTodayRecords() {
   if (!currentUser) return;
@@ -351,12 +351,12 @@ async function loadTodayRecords() {
         `;
         tableBody.appendChild(tr);
       });
-      
+
       insertSVGs();
 
       tableBody.querySelectorAll('.btn-edit-record').forEach(btn => {
         btn.addEventListener('click', () => {
-          const recId  = btn.dataset.id;
+          const recId = btn.dataset.id;
           const record = _employeeRecordsData.find(r => r.id === recId);
           if (record) openEditModal(record);
         });
@@ -369,7 +369,7 @@ async function loadTodayRecords() {
         employeeRecordsBtnNext.disabled = _employeeRecordsCurrentPage === totalPages;
       }
     }
-    
+
     if (employeeRecordsLimitSelect) {
       const novoSelect = employeeRecordsLimitSelect.cloneNode(true);
       employeeRecordsLimitSelect.parentNode.replaceChild(novoSelect, employeeRecordsLimitSelect);
@@ -449,7 +449,7 @@ modalEdit.addEventListener('click', e => { if (e.target === modalEdit) modalEdit
 btnSubmitEdit.addEventListener('click', async () => {
   if (!editingRecord) return;
 
-  const newTime     = editNewTime.value.trim();
+  const newTime = editNewTime.value.trim();
   const justification = editJustification.value.trim();
 
   if (!newTime) {
@@ -461,21 +461,21 @@ btnSubmitEdit.addEventListener('click', async () => {
     return;
   }
 
-  btnSubmitEdit.disabled  = true;
+  btnSubmitEdit.disabled = true;
   btnSubmitEdit.innerText = 'Enviando...';
 
   try {
     await addDoc(collection(db, 'edit_requests'), {
-      recordId:           editingRecord.id,
-      userId:             currentUser.uid,
-      userEmail:          currentUser.email,
-      type:               editingRecord.type,
-      originalTimestamp:  editingRecord.timestamp,
+      recordId: editingRecord.id,
+      userId: currentUser.uid,
+      userEmail: currentUser.email,
+      type: editingRecord.type,
+      originalTimestamp: editingRecord.timestamp,
       originalDateString: editingRecord.dateString,
-      requestedTime:      newTime,
+      requestedTime: newTime,
       justification,
-      status:             'pending',
-      createdAt:          new Date()
+      status: 'pending',
+      createdAt: new Date()
     });
 
     showToast('Solicitação enviada! Aguarde a aprovação do administrador.', 'success');
@@ -491,7 +491,7 @@ btnSubmitEdit.addEventListener('click', async () => {
     console.error('Erro ao enviar solicitação:', err);
     showToast('Erro ao enviar solicitação. Tente novamente.', 'error');
   } finally {
-    btnSubmitEdit.disabled  = false;
+    btnSubmitEdit.disabled = false;
     btnSubmitEdit.innerText = 'Enviar Solicitação';
   }
 });
@@ -520,29 +520,29 @@ function toDateStr(date) {
 }
 
 function currentWeekRange() {
-  const now   = new Date();
-  const day   = now.getDay();
+  const now = new Date();
+  const day = now.getDay();
   const diffStart = (day === 0) ? -6 : 1 - day;
   const start = new Date(now);
   start.setDate(now.getDate() + diffStart);
   start.setHours(0, 0, 0, 0);
-  const end   = new Date(start);
+  const end = new Date(start);
   end.setDate(start.getDate() + 6);
   end.setHours(23, 59, 59, 999);
   return { start, end };
 }
 
 function currentMonthRange() {
-  const now   = new Date();
+  const now = new Date();
   const start = new Date(now.getFullYear(), now.getMonth(), 1);
-  const end   = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
   return { start, end };
 }
 
 function monthRange(yearMonthStr) {
   const [y, m] = yearMonthStr.split('-').map(Number);
-  const start  = new Date(y, m - 1, 1);
-  const end    = new Date(y, m, 0, 23, 59, 59, 999);
+  const start = new Date(y, m - 1, 1);
+  const end = new Date(y, m, 0, 23, 59, 59, 999);
   return { start, end };
 }
 
@@ -558,11 +558,11 @@ function calcBancoDeHoras(records) {
   const days = Object.keys(byDay).sort();
 
   return days.map(ds => {
-    const d      = byDay[ds];
+    const d = byDay[ds];
     const entrada = d['Entrada'];
-    const pausa   = d['Pausa para Almoço'];
-    const volta   = d['Volta do Almoço'];
-    const saida   = d['Saída'];
+    const pausa = d['Pausa para Almoço'];
+    const volta = d['Volta do Almoço'];
+    const saida = d['Saída'];
 
     let workedMin = 0;
 
@@ -578,21 +578,21 @@ function calcBancoDeHoras(records) {
       workedMin = (saida - volta) / 60000;
     }
 
-    const metaMin    = META_DIARIA_HORAS * 60;
+    const metaMin = META_DIARIA_HORAS * 60;
     const balanceMin = workedMin - metaMin;
 
     const fmt = t => t ? t.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
 
     return {
       dateString: ds,
-      dateLabel:  new Date(ds + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }),
-      entrada:    fmt(entrada),
-      pausa:      fmt(pausa),
-      volta:      fmt(volta),
-      saida:      fmt(saida),
+      dateLabel: new Date(ds + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }),
+      entrada: fmt(entrada),
+      pausa: fmt(pausa),
+      volta: fmt(volta),
+      saida: fmt(saida),
       workedMin,
       balanceMin,
-      hasData:    workedMin > 0
+      hasData: workedMin > 0
     };
   });
 }
@@ -601,13 +601,13 @@ async function loadBancoDeHoras(start, end) {
   if (!currentUser) return;
 
   bhTableBody.innerHTML = '<tr><td colspan="7" class="text-center"><span class="loader"></span></td></tr>';
-  bhTotalWorked.innerText   = '--';
+  bhTotalWorked.innerText = '--';
   bhTotalExpected.innerText = '--';
-  bhBalance.innerText       = '--';
-  bhDaysWorked.innerText    = '--';
+  bhBalance.innerText = '--';
+  bhDaysWorked.innerText = '--';
 
   const startStr = toDateStr(start);
-  const endStr   = toDateStr(end);
+  const endStr = toDateStr(end);
 
   try {
 
@@ -625,11 +625,13 @@ async function loadBancoDeHoras(start, end) {
     });
 
     if (records.length === 0) {
-      bhTableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">Nenhum registro neste período (${startStr} a ${endStr}).</td></tr>`;
-      bhTotalWorked.innerText   = '0h00';
-      bhTotalExpected.innerText = '0h00';
-      bhBalance.innerText       = '0h00';
-      bhDaysWorked.innerText    = '0';
+      const startDisplay = startStr.split('-').reverse().join('/');
+      const endDisplay = endStr.split('-').reverse().join('/');
+      bhTableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">Nenhum registro neste período (${startDisplay} a ${endDisplay}).</td></tr>`;
+      bhTotalWorked.innerText = '0:00';
+      bhTotalExpected.innerText = '0:00';
+      bhBalance.innerText = '0:00';
+      bhDaysWorked.innerText = '0';
       return;
     }
 
@@ -637,26 +639,26 @@ async function loadBancoDeHoras(start, end) {
     _employeeBhCurrentPage = 1;
     _employeeBhPerPage = 5;
 
-    let totalWorkedMin   = 0;
-    let daysWithData     = 0;
+    let totalWorkedMin = 0;
+    let daysWithData = 0;
 
     _employeeBhData.forEach(day => {
       totalWorkedMin += day.workedMin;
       if (day.hasData) daysWithData++;
     });
 
-    const totalExpectedMin  = daysWithData * META_DIARIA_HORAS * 60;
-    const totalBalanceMin   = totalWorkedMin - totalExpectedMin;
+    const totalExpectedMin = daysWithData * META_DIARIA_HORAS * 60;
+    const totalBalanceMin = totalWorkedMin - totalExpectedMin;
 
-    bhTotalWorked.innerText   = formatMinutes(totalWorkedMin);
+    bhTotalWorked.innerText = formatMinutes(totalWorkedMin);
     bhTotalExpected.innerText = formatMinutes(totalExpectedMin);
-    bhBalance.innerText       = (totalBalanceMin >= 0 ? '+' : '') + formatMinutes(totalBalanceMin);
-    bhDaysWorked.innerText    = daysWithData;
+    bhBalance.innerText = (totalBalanceMin >= 0 ? '+' : '') + formatMinutes(totalBalanceMin);
+    bhDaysWorked.innerText = daysWithData;
 
     bhBalanceCard.classList.remove('positive', 'negative', 'neutral');
-    if (totalBalanceMin > 0)       bhBalanceCard.classList.add('positive');
-    else if (totalBalanceMin < 0)  bhBalanceCard.classList.add('negative');
-    else                           bhBalanceCard.classList.add('neutral');
+    if (totalBalanceMin > 0) bhBalanceCard.classList.add('positive');
+    else if (totalBalanceMin < 0) bhBalanceCard.classList.add('negative');
+    else bhBalanceCard.classList.add('neutral');
 
     renderEmployeeBhTable();
   } catch (err) {
@@ -668,12 +670,12 @@ async function loadBancoDeHoras(start, end) {
 function initBancoDeHoras() {
 
   const now = new Date();
-  const ymStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const ymStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   document.getElementById('bh-month-input').value = ymStr;
 
   const { start: ws, end: we } = currentWeekRange();
   document.getElementById('bh-date-start').value = toDateStr(ws);
-  document.getElementById('bh-date-end').value   = toDateStr(now);
+  document.getElementById('bh-date-end').value = toDateStr(now);
 
   bhPanelBtns.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -731,17 +733,17 @@ function initBancoDeHoras() {
   });
 }
 
-let pendingDaysData = {}; 
+let pendingDaysData = {};
 
 async function checkPendingRecords() {
   if (!currentUser) return;
   const now = new Date();
   const start = new Date(now.getFullYear(), now.getMonth(), 1);
   const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
-  
+
   if (end < start) {
     pendingAlert.style.display = 'none';
-    return; 
+    return;
   }
 
   const startStr = toDateStr(start);
@@ -787,7 +789,7 @@ async function checkPendingRecords() {
       const requested = pendingRequestsByDay[ds] || new Set();
 
       const missing = ALL_TYPES.filter(t => !existing.has(t) && !requested.has(t));
-      
+
       if (missing.length > 0) {
         pendingDaysData[ds] = missing;
       }
@@ -799,7 +801,7 @@ async function checkPendingRecords() {
         const parts = ds.split('-');
         return `${parts[2]}/${parts[1]}`;
       }).join(', ');
-      
+
       pendingAlertText.innerText = `Você possui marcações pendentes nos dias: ${fmtDates}.`;
       pendingAlert.style.display = 'block';
 

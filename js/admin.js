@@ -458,12 +458,13 @@ function renderEditRequestsTable() {
          </div>`
       : `<span style="font-size:0.8rem; color:var(--text-muted);">${req.resolvedAt?.toDate ? req.resolvedAt.toDate().toLocaleDateString('pt-BR') : '—'}</span>`;
 
+    const origDateDisplay = req.originalDateString ? req.originalDateString.split('-').reverse().join('/') : '';
     const tr = document.createElement('tr');
     tr.dataset.reqId = req.id;
     tr.innerHTML = `
       <td style="font-size:0.875rem;">${req.userEmail || req.userId}</td>
       <td><span class="badge ${req.type === 'Entrada' ? 'badge-entrada' : req.type.includes('Pausa') ? 'badge-pausa' : req.type.includes('Volta') ? 'badge-volta' : 'badge-saida'}">${req.type}</span></td>
-      <td>${origTime}<br><small style="color:var(--text-muted);">${req.originalDateString || ''}</small></td>
+      <td>${origTime}<br><small style="color:var(--text-muted);">${origDateDisplay}</small></td>
       <td><strong>${req.requestedTime}</strong></td>
       <td style="font-size:0.8125rem; max-width:200px;">${req.justification}</td>
       <td>${statusBadge}</td>
@@ -1033,7 +1034,7 @@ function calcBancoDeHoras(records) {
     const balanceMin = workedMin - metaMin;
     const fmt = t => t ? t.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
     return {
-      dateLabel: new Date(ds + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }),
+      dateLabel: new Date(ds + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' }),
       entrada: fmt(entrada), pausa: fmt(pausa), volta: fmt(volta), saida: fmt(saida),
       workedMin, balanceMin, hasData: workedMin > 0
     };
@@ -1070,7 +1071,9 @@ async function loadAdminBancoDeHoras(userId, start, end) {
     });
 
     if (records.length === 0) {
-      adminBhTableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">Nenhum registro neste período.</td></tr>`;
+      const startDisplay = startStr.split('-').reverse().join('/');
+      const endDisplay = endStr.split('-').reverse().join('/');
+      adminBhTableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">Nenhum registro neste período (${startDisplay} a ${endDisplay}).</td></tr>`;
       ['--', '--', '0h00', '0'].forEach((v, i) => [adminBhTotalWorked, adminBhTotalExpected, adminBhBalance, adminBhDaysWorked][i].innerText = v);
       adminBhTotalWorked.innerText = '0h00'; adminBhTotalExpected.innerText = '0h00'; adminBhDaysWorked.innerText = '0';
       adminBhPaginationControls.style.display = 'none';
