@@ -158,6 +158,9 @@
       <button class="tab-btn" data-tab="tab-workspace" role="tab" id="tab-btn-workspace">
         <span data-icon="map-pin" class="icon-sm"></span> Local de Trabalho e Cerca Virtual
       </button>
+      <button class="tab-btn" data-tab="tab-usuarios" role="tab" id="tab-btn-usuarios">
+        <span data-icon="employee-user" class="icon-sm"></span> Gestão de Usuários
+      </button>
     </div>
 
     <div id="tab-registros" class="tab-panel active">
@@ -493,7 +496,68 @@
       </div>
     </div>
 
+    <!-- ==================== ABA: GESTÃO DE USUÁRIOS ==================== -->
+    <div id="tab-usuarios" class="tab-panel">
+      <div class="card">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+          <h2 style="font-size: 1.25rem; font-weight: 600; margin: 0;">
+            <span data-icon="employee-user" class="icon-sm"></span> Gestão de Usuários
+          </h2>
+          <button id="btn-novo-user-tab" class="btn btn-primary" style="padding: 0.5rem 1.25rem; font-size: 0.875rem;">
+            <span data-icon="file-plus" class="icon-sm"></span> Novo Usuário
+          </button>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>E-mail</th>
+                <th>Tipo de Acesso</th>
+                <th style="text-align: center;">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="users-table-body">
+              <tr>
+                <td colspan="4" class="text-center text-muted">Carregando usuários...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div id="users-empty-state" style="display: none; text-align: center; padding: 2.5rem 1rem; color: var(--text-muted);">
+          <p style="font-size: 1rem; margin-bottom: 0.5rem;">Nenhum usuário cadastrado.</p>
+          <p style="font-size: 0.875rem;">Clique em "Novo Usuário" para criar o primeiro.</p>
+        </div>
+      </div>
+    </div>
+
   </main>
+
+  <!-- Modal: Confirmar Exclusão de Usuário -->
+  <div class="modal-overlay" id="modal-confirm-delete-user">
+    <div class="modal-box" style="max-width: 420px;">
+      <div class="modal-header">
+        <h3><span data-icon="deni" class="icon-sm"></span> Confirmar Exclusão</h3>
+        <button class="modal-close" id="btn-close-delete-user">&times;</button>
+      </div>
+      <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1rem;">
+        Tem certeza que deseja remover o acesso deste usuário? Ele não conseguirá mais fazer login no sistema.
+      </p>
+      <div class="reject-detail-box">
+        <div>Nome: <strong id="delete-user-name">—</strong></div>
+        <div>E-mail: <strong id="delete-user-email">—</strong></div>
+        <div>Tipo: <strong id="delete-user-role">—</strong></div>
+      </div>
+      <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem;">
+        <button class="btn btn-outline" style="flex: 1;" id="btn-cancel-delete-user">Cancelar</button>
+        <button class="btn btn-danger" style="flex: 1;" id="btn-confirm-delete-user">
+          <span data-icon="deni" class="icon-sm"></span> Excluir Usuário
+        </button>
+      </div>
+    </div>
+  </div>
 
   <div class="modal-overlay" id="modal-novo-user">
     <div class="modal-box">

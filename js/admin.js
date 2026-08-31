@@ -1,7 +1,7 @@
 import {
   firebaseConfig, auth, onAuthStateChanged, signOut,
   db, collection, query, where, getDocs, orderBy,
-  getDoc, doc, setDoc, addDoc, updateDoc, serverTimestamp
+  getDoc, doc, setDoc, addDoc, updateDoc, deleteDoc, serverTimestamp
 } from './firebase-config.js';
 import { insertSVGs, showToast } from './svg.js';
 
@@ -102,6 +102,16 @@ const bhFilterEmployee = document.getElementById('bh-filter-employee');
 const bhFilterEmployeeSearch = document.getElementById('bh-filter-employee-search');
 const bhFilterDropdown = document.getElementById('bh-filter-dropdown');
 
+// ── Gestão de Usuários ──
+const usersTableBody = document.getElementById('users-table-body');
+const modalConfirmDeleteUser = document.getElementById('modal-confirm-delete-user');
+const btnCloseDeleteUser = document.getElementById('btn-close-delete-user');
+const btnCancelDeleteUser = document.getElementById('btn-cancel-delete-user');
+const btnConfirmDeleteUser = document.getElementById('btn-confirm-delete-user');
+const deleteUserName = document.getElementById('delete-user-name');
+const deleteUserEmail = document.getElementById('delete-user-email');
+const deleteUserRole = document.getElementById('delete-user-role');
+
 let currentUser = null;
 let rejectingRequest = null;
 const META_DIARIA_HORAS = 8;
@@ -122,6 +132,7 @@ onAuthStateChanged(auth, async (user) => {
       await loadRecords();
       await loadEditRequests();
       await loadInsertRequests();
+      await loadUsers();
       initAdminBancoDeHoras();
     } else {
       window.location.href = 'index.html';
@@ -215,6 +226,7 @@ btnCriarUser.addEventListener('click', async () => {
       if (bhFilterEmployeeSearch) buildBhDropdown(bhFilterEmployeeSearch.value);
     }
 
+    await loadUsers();
     setTimeout(() => modalOverlay.classList.remove('active'), 1500);
 
   } catch (error) {
@@ -1210,3 +1222,129 @@ function initAdminBancoDeHoras() {
   });
 }
 
+// ═══════════════════════════════════════════════════════════
+//  GESTÃO DE USUÁRIOS
+// ═══════════════════════════════════════════════════════════
+
+let _usersData = [];
+let _pendingDeleteUser = null;
+
+async function loadUsers() {
+  usersTableBody.innerHTML = '<tr><td colspan="4" class="text-center"><span class="loader"></span></td></tr>';
+
+  try {
+    const snap = await getDocs(collection(db, 'users'));
+    _usersData = [];
+    snap.forEach(d => _usersData.push({ id: d.id, ...d.data() }));
+
+    // Ordena: admins primeiro, depois por nome
+    _usersData.sort((a, b) => {
+      if (a.role === b.role) return (a.name || '').localeCompare(b.name || '');
+      return a.role === 'admin' ? -1 : 1;
+    });
+
+    renderUsersTable();
+  } catch (err) {
+    console.error('Erro ao carregar usuários:', err);
+    usersTableBody.innerHTML = '<tr><td colspan="4" class="text-center" style="color:var(--danger);">Erro ao carregar usuários.</td></tr>';
+  }
+}
+
+function renderUsersTable() {
+  usersTableBody.innerHTML = '';
+  const emptyState = document.getElementById('users-empty-state');
+
+  if (_usersData.length === 0) {
+    usersTableBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Nenhum usuário encontrado.</td></tr>';
+    if (emptyState) emptyState.style.display = 'block';
+    return;
+  }
+
+  if (emptyState) emptyState.style.display = 'none';
+
+  _usersData.forEach(user => {
+    const isCurrentUser = user.id === currentUser?.uid;
+    const roleBadge = user.role === 'admin'
+      ? '<span class="badge badge-approved"><span data-icon="user-shield" class="icon-sm"></span> Administrador</span>'
+      : '<span class="badge badge-pausa"><span data-icon="employee-user" class="icon-sm"></span> Funcionário</span>';
+
+    const deleteBtn = isCurrentUser
+      ? `<button class="btn btn-sm" disabled title="Você não pode excluir sua própria conta" style="opacity:0.4; cursor:not-allowed;"><span data-icon="deni" class="icon-sm"></span> Excluir</button>`
+      : `<button class="btn btn-danger btn-sm btn-delete-user" data-uid="${user.id}" data-name="${user.name || ''}" data-email="${user.email || ''}" data-role="${user.role || ''}"><span data-icon="deni" class="icon-sm"></span> Excluir</button>`;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>
+        <strong>${user.name || '—'}</strong>
+        ${isCurrentUser ? '<span style="font-size:0.7rem; color:var(--primary-color); margin-left:4px;">(você)</span>' : ''}
+      </td>
+      <td style="font-size:0.875rem;">${user.email || '—'}</td>
+      <td>${roleBadge}</td>
+      <td style="text-align: center;">${deleteBtn}</td>
+    `;
+    usersTableBody.appendChild(tr);
+  });
+
+  insertSVGs();
+
+  // Listeners nos botões de excluir
+  usersTableBody.querySelectorAll('.btn-delete-user').forEach(btn => {
+    btn.addEventListener('click', () => {
+      _pendingDeleteUser = {
+        uid: btn.dataset.uid,
+        name: btn.dataset.name,
+        email: btn.dataset.email,
+        role: btn.dataset.role,
+      };
+      deleteUserName.innerText = btn.dataset.name || '—';
+      deleteUserEmail.innerText = btn.dataset.email || '—';
+      deleteUserRole.innerText = btn.dataset.role === 'admin' ? 'Administrador' : 'Funcionário';
+      modalConfirmDeleteUser.classList.add('active');
+    });
+  });
+}
+
+// Fechar modal de exclusão
+btnCloseDeleteUser.addEventListener('click', () => { modalConfirmDeleteUser.classList.remove('active'); _pendingDeleteUser = null; });
+btnCancelDeleteUser.addEventListener('click', () => { modalConfirmDeleteUser.classList.remove('active'); _pendingDeleteUser = null; });
+modalConfirmDeleteUser.addEventListener('click', e => { if (e.target === modalConfirmDeleteUser) { modalConfirmDeleteUser.classList.remove('active'); _pendingDeleteUser = null; } });
+
+// Confirmar exclusão
+btnConfirmDeleteUser.addEventListener('click', async () => {
+  if (!_pendingDeleteUser) return;
+  const { uid, name } = _pendingDeleteUser;
+  _pendingDeleteUser = null;
+  modalConfirmDeleteUser.classList.remove('active');
+
+  btnConfirmDeleteUser.disabled = true;
+  btnConfirmDeleteUser.innerText = 'Excluindo...';
+
+  try {
+    await deleteDoc(doc(db, 'users', uid));
+    showToast(`Usuário "${name}" removido com sucesso.`, 'success');
+    await loadUsers();
+
+    // Atualiza a lista de funcionários dos filtros também
+    _employeeList = [{ id: 'all', name: 'Todos os Funcionários' }];
+    await loadEmployees();
+  } catch (err) {
+    console.error('Erro ao excluir usuário:', err);
+    showToast('Erro ao excluir usuário. Verifique as permissões.', 'error');
+  } finally {
+    btnConfirmDeleteUser.disabled = false;
+    btnConfirmDeleteUser.innerHTML = '<span data-icon="deni" class="icon-sm"></span> Excluir Usuário';
+    insertSVGs();
+  }
+});
+
+// Botão "Novo Usuário" dentro da aba de gestão
+const btnNovoUserTab = document.getElementById('btn-novo-user-tab');
+if (btnNovoUserTab) {
+  btnNovoUserTab.addEventListener('click', () => {
+    document.getElementById('new-name').value = '';
+    document.getElementById('new-email').value = '';
+    document.getElementById('new-password').value = '';
+    document.getElementById('role-employee').checked = true;
+    modalOverlay.classList.add('active');
+  });
+}
