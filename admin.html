@@ -22,6 +22,7 @@
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.25s ease;
+      padding: 1rem;
     }
 
     .modal-overlay.active {
@@ -32,12 +33,21 @@
     .modal-box {
       background: white;
       border-radius: 1rem;
-      padding: 2rem;
+      padding: 1.75rem;
       width: 100%;
       max-width: 460px;
       box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
       transform: translateY(20px);
       transition: transform 0.25s ease;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    @media (max-width: 480px) {
+      .modal-box {
+        padding: 1.25rem;
+        border-radius: 0.75rem;
+      }
     }
 
     .modal-overlay.active .modal-box {
@@ -137,12 +147,10 @@
   <nav class="navbar">
     <div class="navbar-brand">PontoWeb <span
         style="color: var(--text-muted); font-size: 1rem; font-weight: 400; margin-left: 0.5rem;">Admin</span></div>
-    <div class="navbar-user" style="display: flex; align-items: center; gap: 0.5rem;">
-      <span data-icon="user-shield" class="icon-sm"></span>
-      <span id="user-name" style="font-weight: 500;">Administrador</span>
-      <button id="btn-novo-user" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">+ Novo
-        Usuário</button>
-      <button id="btn-logout" class="btn btn-outline" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Sair</button>
+    <div class="navbar-user">
+      <span data-icon="user-shield" class="icon-sm" style="color: var(--primary-color);"></span>
+      <span id="user-name" style="font-weight: 500; font-size: 0.9rem;">Administrador</span>
+      <button id="btn-logout" class="btn btn-outline" style="padding: 0.45rem 1rem; font-size: 0.85rem;">Sair</button>
     </div>
   </nav>
 

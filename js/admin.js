@@ -161,13 +161,15 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   });
 });
 
-btnNovoUser.addEventListener('click', () => {
-  document.getElementById('new-name').value = '';
-  document.getElementById('new-email').value = '';
-  document.getElementById('new-password').value = '';
-  document.getElementById('role-employee').checked = true;
-  modalOverlay.classList.add('active');
-});
+if (btnNovoUser) {
+  btnNovoUser.addEventListener('click', () => {
+    document.getElementById('new-name').value = '';
+    document.getElementById('new-email').value = '';
+    document.getElementById('new-password').value = '';
+    document.getElementById('role-employee').checked = true;
+    modalOverlay.classList.add('active');
+  });
+}
 
 btnCloseModal.addEventListener('click', () => modalOverlay.classList.remove('active'));
 modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) modalOverlay.classList.remove('active'); });

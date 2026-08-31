@@ -153,22 +153,38 @@ body {
 .navbar {
   background: var(--card-bg);
   box-shadow: var(--shadow-sm);
-  padding: 1rem 2rem;
+  padding: 0.875rem 1.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .navbar-brand {
   font-size: 1.25rem;
   font-weight: 700;
   color: var(--primary-color);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .navbar-user {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* Hide user icon and name on very small screens */
+@media (max-width: 480px) {
+  .navbar-user > span[data-icon],
+  .navbar-user > #user-name {
+    display: none;
+  }
+  .navbar {
+    padding: 0.75rem 1rem;
+  }
 }
 
 .login-wrapper {
@@ -471,6 +487,7 @@ tr:hover {
   justify-content: center;
 }
 
+/* ── Tab Navigation ── */
 .tab-nav {
   display: flex;
   gap: 0.25rem;
@@ -481,6 +498,8 @@ tr:hover {
   flex-wrap: nowrap;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,0,0,0.1) transparent;
 }
 
 .tab-nav::-webkit-scrollbar {
@@ -494,16 +513,15 @@ tr:hover {
   border-radius: 4px;
 }
 
-
 .tab-btn {
   flex: 1;
-  min-width: 160px;
-  padding: 0.625rem 1rem;
+  min-width: max-content;
+  padding: 0.55rem 0.875rem;
   border: none;
   background: transparent;
   border-radius: calc(var(--radius-lg) - 0.25rem);
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   font-weight: 500;
   color: var(--text-muted);
   transition: all 0.2s ease;
@@ -511,7 +529,14 @@ tr:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
+  gap: 0.375rem;
+}
+
+@media (min-width: 768px) {
+  .tab-btn {
+    font-size: 0.875rem;
+    padding: 0.625rem 1rem;
+  }
 }
 
 .tab-btn:hover {
@@ -643,17 +668,41 @@ tr:hover {
 .bh-summary-card.negative .bh-value { color: var(--danger); }
 .bh-summary-card.neutral  .bh-value { color: var(--warning); }
 
+/* ── Table tweaks for mobile ── */
+@media (max-width: 640px) {
+  th, td {
+    padding: 0.625rem 0.5rem;
+    font-size: 0.8125rem;
+  }
+  th {
+    font-size: 0.7rem;
+  }
+}
+
 .badge-pending  { background-color: #fef3c7; color: #92400e; }
 .badge-approved { background-color: #d1fae5; color: #065f46; }
 .badge-rejected { background-color: #fee2e2; color: #991b1b; }
 .badge-edited   { background-color: #ede9fe; color: #5b21b6; }
 
-.edit-action-btns { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.edit-action-btns {
+  display: flex;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
 
 .btn-sm {
-  padding: 0.3rem 0.75rem;
-  font-size: 0.8rem;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.775rem;
   border-radius: var(--radius-md);
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.72rem;
+  }
 }
 
 .btn-approve {
@@ -973,4 +1022,79 @@ tr:hover {
 .pagination-info {
   font-size: 0.875rem;
   color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* ── Responsive: container padding on small screens ── */
+@media (max-width: 640px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .card {
+    padding: 1.25rem;
+  }
+
+  .filter-card {
+    padding: 1rem;
+  }
+
+  .pagination-controls {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .pagination-buttons {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .pagination-info {
+    order: -1;
+    width: 100%;
+    text-align: center;
+  }
+}
+
+/* ── Users management table ── */
+.users-actions-cell {
+  text-align: center;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  /* Stack user table on mobile */
+  #users-table-body tr {
+    display: flex;
+    flex-direction: column;
+    border-bottom: 2px solid var(--border-color);
+    padding: 0.75rem 0;
+  }
+  #users-table-body td {
+    border: none;
+    padding: 0.2rem 0.5rem;
+  }
+  #users-table-body td[style*="text-align: center"] {
+    padding-top: 0.5rem;
+  }
+}
+
+/* ── Extra: hide email column on very small screens in users table ── */
+@media (max-width: 480px) {
+  table thead tr th:nth-child(2),
+  #users-table-body td:nth-child(2) {
+    display: none;
+  }
+
+  /* Cards stack with less gap on mobile */
+  .card + .card,
+  [style*="margin-top: 1.5rem"] {
+    margin-top: 1rem !important;
+  }
+
+  /* Make bh-summary-grid 2 cols on mobile */
+  .bh-summary-grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
