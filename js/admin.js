@@ -191,8 +191,17 @@ btnCriarUser.addEventListener('click', async () => {
     const authData = await authRes.json();
 
     if (!authRes.ok) {
-      const errMsg = authData.error?.message || 'Erro desconhecido';
-      throw new Error(errMsg === 'EMAIL_EXISTS' ? 'Este e-mail já está cadastrado.' : `Erro: ${errMsg}`);
+      let errMsg = authData.error?.message || 'Erro desconhecido';
+      
+      if (errMsg === 'EMAIL_EXISTS') {
+        errMsg = 'Este e-mail já está cadastrado.';
+      } else if (errMsg.startsWith('PASSWORD_DOES_NOT_MEET_REQUIREMENTS')) {
+        errMsg = 'A senha não atende aos requisitos. Deve conter pelo menos uma letra minúscula, uma letra maiúscula e um caractere especial.';
+      } else {
+        errMsg = `Erro: ${errMsg}`;
+      }
+      
+      throw new Error(errMsg);
     }
 
     const newUid = authData.localId;
