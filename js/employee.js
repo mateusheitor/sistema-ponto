@@ -270,7 +270,7 @@ async function registerPunch(type) {
     await addDoc(collection(db, 'time_records'), {
       userId: currentUser.uid,
       userEmail: currentUser.email,
-      timestamp: now,
+      timestamp: serverTimestamp(),
       type,
       dateString: todayStr,
       latitude, longitude, accuracy
@@ -312,21 +312,32 @@ async function loadTodayRecords() {
       records.push({ id: d.id, ...data });
       if (data.type) todayRegisteredTypes.add(data.type);
     });
-    records.sort((a, b) => a.timestamp.toDate() - b.timestamp.toDate());
+
+    // Sort client-side — avoids Firestore composite index requirement
+    records.sort((a, b) => {
+      const ta = a.timestamp?.toDate?.() ?? new Date(0);
+      const tb = b.timestamp?.toDate?.() ?? new Date(0);
+      return ta - tb;
+    });
+
     updateButtonStates();
 
     let _employeeRecordsData = records;
     let _employeeRecordsCurrentPage = 1;
-    let _employeeRecordsPerPage = 5;
+    let _employeeRecordsPerPage = parseInt(employeeRecordsLimitSelect?.value ?? '5', 10);
 
-    const pendingSnap = await getDocs(query(
-      collection(db, 'edit_requests'),
-      where('userId', '==', currentUser.uid),
-      where('originalDateString', '==', todayStr),
-      where('status', '==', 'pending')
-    ));
-    const pendingRecordIds = new Set();
-    pendingSnap.forEach(d => pendingRecordIds.add(d.data().recordId));
+    let pendingRecordIds = new Set();
+    try {
+      const pendingSnap = await getDocs(query(
+        collection(db, 'edit_requests'),
+        where('userId', '==', currentUser.uid),
+        where('originalDateString', '==', todayStr),
+        where('status', '==', 'pending')
+      ));
+      pendingSnap.forEach(d => pendingRecordIds.add(d.data().recordId));
+    } catch (pendingErr) {
+      console.warn('Não foi possível carregar solicitações pendentes (índice ausente?):', pendingErr);
+    }
 
     function renderEmployeeRecordsTable() {
       tableBody.innerHTML = '';
