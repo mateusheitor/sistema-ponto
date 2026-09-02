@@ -1367,6 +1367,54 @@ btnConfirmDeleteUser.addEventListener('click', async () => {
   }
 });
 
+// FUNÇÃO TEMPORÁRIA DE LIMPEZA GERAL
+// Abra o console do navegador (F12) e digite: limparOrfaosAgora()
+window.limparOrfaosAgora = async function() {
+  console.log("Iniciando limpeza de registros órfãos...");
+  
+  try {
+    const usersSnap = await getDocs(collection(db, 'users'));
+    const validUids = new Set();
+    usersSnap.forEach(doc => validUids.add(doc.id));
+    console.log(`Encontrados ${validUids.size} usuários válidos.`);
+
+    const collectionsToClean = ['time_records', 'edit_requests', 'insert_requests'];
+    let totalDeletados = 0;
+
+    for (const coll of collectionsToClean) {
+      console.log(`Limpando coleção: ${coll}...`);
+      const snap = await getDocs(collection(db, coll));
+      let deletadosNaColl = 0;
+      
+      const batch = [];
+      snap.forEach(d => {
+        const userId = d.data().userId;
+        if (userId && !validUids.has(userId)) {
+          console.log(`- Deletando órfão em ${coll} (userId: ${userId})`);
+          batch.push(deleteDoc(d.ref));
+          deletadosNaColl++;
+          totalDeletados++;
+        }
+      });
+      
+      await Promise.all(batch);
+      console.log(`Coleção ${coll} finalizada. ${deletadosNaColl} deletados.`);
+    }
+
+    console.log(`Limpeza concluída! Total deletado: ${totalDeletados}`);
+    showToast(`Limpeza concluída! ${totalDeletados} registros apagados.`, 'success');
+    
+    await loadRecords();
+    await loadEditRequests();
+    await loadInsertRequests();
+
+  } catch (error) {
+    console.error("Erro na limpeza:", error);
+    showToast('Erro ao limpar dados órfãos.', 'error');
+  }
+};
+
+
 
 // Botão "Novo Usuário" dentro da aba de gestão
 const btnNovoUserTab = document.getElementById('btn-novo-user-tab');
