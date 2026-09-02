@@ -1331,8 +1331,27 @@ btnConfirmDeleteUser.addEventListener('click', async () => {
   btnConfirmDeleteUser.innerText = 'Excluindo...';
 
   try {
+    // 1. Deletar o documento do usuário em users
     await deleteDoc(doc(db, 'users', uid));
-    showToast(`Usuário "${name}" removido com sucesso.`, 'success');
+
+    // 2. Deleção em cascata: remover todos os registros relacionados ao userId
+    const relatedCollections = ['time_records', 'edit_requests', 'insert_requests'];
+
+    for (const collName of relatedCollections) {
+      const snap = await getDocs(
+        query(collection(db, collName), where('userId', '==', uid))
+      );
+
+      // Processa em lotes de 500 (limite do Firestore batch)
+      const docs = snap.docs;
+      for (let i = 0; i < docs.length; i += 500) {
+        const batch = [];
+        docs.slice(i, i + 500).forEach(d => batch.push(deleteDoc(d.ref)));
+        await Promise.all(batch);
+      }
+    }
+
+    showToast(`Usuário "${name}" e todos os seus dados foram removidos.`, 'success');
     await loadUsers();
 
     // Atualiza a lista de funcionários dos filtros também
@@ -1347,6 +1366,7 @@ btnConfirmDeleteUser.addEventListener('click', async () => {
     insertSVGs();
   }
 });
+
 
 // Botão "Novo Usuário" dentro da aba de gestão
 const btnNovoUserTab = document.getElementById('btn-novo-user-tab');
