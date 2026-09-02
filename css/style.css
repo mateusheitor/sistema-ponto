@@ -1199,3 +1199,49 @@ tr:hover {
   background: #ddd6fe;
   color: #4c1d95;
 }
+
+/* --- PDF Buttons --- */
+.btn-pdf {
+  background-color: #ef4444;
+  color: white;
+  box-shadow: 0 4px 6px rgba(239, 68, 68, 0.2);
+}
+.btn-pdf:hover {
+  background-color: #dc2626;
+  box-shadow: 0 6px 8px rgba(239, 68, 68, 0.3);
+}
+
+/* --- Jornada Config Modal --- */
+.day-chips-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+.day-chip {
+  position: relative;
+}
+.day-chip input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.day-chip label {
+  display: inline-block;
+  padding: 0.4rem 0.6rem;
+  background-color: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  transition: all 0.2s ease;
+  user-select: none;
+}
+.day-chip input:checked + label {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}

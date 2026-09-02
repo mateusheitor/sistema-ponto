@@ -4,6 +4,7 @@ import {
   getDoc, doc, setDoc, addDoc, updateDoc, deleteDoc, serverTimestamp
 } from './firebase-config.js';
 import { insertSVGs, showToast } from './svg.js';
+import { gerarRelatorioMensalPDF } from './pdf.js';
 
 const userNameSpan = document.getElementById('user-name');
 const btnLogout = document.getElementById('btn-logout');
@@ -114,7 +115,8 @@ const deleteUserRole = document.getElementById('delete-user-role');
 
 let currentUser = null;
 let rejectingRequest = null;
-const META_DIARIA_HORAS = 8;
+const DEFAULT_DAILY_HOURS = 8;
+const DEFAULT_WORK_DAYS = [1, 2, 3, 4, 5];
 
 const today = new Date().toISOString().split('T')[0];
 filterDate.value = today;
@@ -1014,7 +1016,7 @@ function monthRange(ym) {
   return { start: new Date(y, m - 1, 1), end: new Date(y, m, 0, 23, 59, 59, 999) };
 }
 
-function calcBancoDeHoras(records) {
+function calcBancoDeHoras(records, dailyHours = DEFAULT_DAILY_HOURS) {
   const byDay = {};
   records.forEach(r => {
     const ds = r.dateString;
@@ -1036,7 +1038,7 @@ function calcBancoDeHoras(records) {
       workedMin = (saida - volta) / 60000;
     }
 
-    const metaMin = META_DIARIA_HORAS * 60;
+    const metaMin = dailyHours * 60;
     const balanceMin = workedMin - metaMin;
     const fmt = t => t ? t.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
     return {
@@ -1048,9 +1050,11 @@ function calcBancoDeHoras(records) {
 }
 
 async function loadAdminBancoDeHoras(userId, start, end) {
+  const btnExport = document.getElementById('admin-btn-export-pdf');
   if (!userId) {
     adminBhTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Selecione um funcionário.</td></tr>';
     adminBhPaginationControls.style.display = 'none';
+    if (btnExport) btnExport.disabled = true;
     return;
   }
 
@@ -1063,6 +1067,11 @@ async function loadAdminBancoDeHoras(userId, start, end) {
   const startStr = toDateStr(start), endStr = toDateStr(end);
 
   try {
+    const userDocSnap = await getDoc(doc(db, 'users', userId));
+    const userData = userDocSnap.exists() ? userDocSnap.data() : {};
+    const userDailyHours = userData.dailyHours || DEFAULT_DAILY_HOURS;
+    const userName = userData.name || userData.email || 'Funcionário';
+
     const snap = await getDocs(query(
       collection(db, 'time_records'),
       where('userId', '==', userId)
@@ -1083,10 +1092,11 @@ async function loadAdminBancoDeHoras(userId, start, end) {
       ['--', '--', '00:00', '0'].forEach((v, i) => [adminBhTotalWorked, adminBhTotalExpected, adminBhBalance, adminBhDaysWorked][i].innerText = v);
       adminBhTotalWorked.innerText = '00:00'; adminBhTotalExpected.innerText = '00:00'; adminBhDaysWorked.innerText = '0';
       adminBhPaginationControls.style.display = 'none';
+      if (btnExport) btnExport.disabled = true;
       return;
     }
 
-    _adminBhData = calcBancoDeHoras(records);
+    _adminBhData = calcBancoDeHoras(records, userDailyHours);
     
     let totalWorked = 0, daysWithData = 0;
     _adminBhData.forEach(day => {
@@ -1094,7 +1104,7 @@ async function loadAdminBancoDeHoras(userId, start, end) {
       if (day.hasData) daysWithData++;
     });
 
-    const totalExpected = daysWithData * META_DIARIA_HORAS * 60;
+    const totalExpected = daysWithData * userDailyHours * 60;
     const totalBalance = totalWorked - totalExpected;
 
     adminBhTotalWorked.innerText = formatMinutes(totalWorked);
@@ -1110,10 +1120,22 @@ async function loadAdminBancoDeHoras(userId, start, end) {
     _adminBhCurrentPage = 1;
     renderAdminBhTable();
 
+    if (btnExport) {
+      btnExport.disabled = false;
+      const startDisplay = startStr.split('-').reverse().join('/');
+      const endDisplay = endStr.split('-').reverse().join('/');
+      const periodoLabel = `${startDisplay} a ${endDisplay}`;
+      const totals = { totalWorkedMin: totalWorked, totalExpectedMin: totalExpected, totalBalanceMin: totalBalance, daysWorked: daysWithData };
+      btnExport.onclick = () => {
+        gerarRelatorioMensalPDF(_adminBhData, userName, periodoLabel, totals, userDailyHours);
+      };
+    }
+
   } catch (err) {
     console.error('Erro no banco de horas admin:', err);
     adminBhTableBody.innerHTML = '<tr><td colspan="7" class="text-center" style="color:var(--danger);">Erro ao carregar dados.</td></tr>';
     adminBhPaginationControls.style.display = 'none';
+    if (btnExport) btnExport.disabled = true;
   }
 }
 
@@ -1279,9 +1301,16 @@ function renderUsersTable() {
       ? '<span class="badge badge-approved"><span data-icon="user-shield" class="icon-sm"></span> Administrador</span>'
       : '<span class="badge badge-pausa"><span data-icon="employee-user" class="icon-sm"></span> Funcionário</span>';
 
+    const dh = user.dailyHours || DEFAULT_DAILY_HOURS;
+    const wd = user.workDays || DEFAULT_WORK_DAYS;
+    const wdMap = {0:'Dom',1:'Seg',2:'Ter',3:'Qua',4:'Qui',5:'Sex',6:'Sáb'};
+    const daysStr = wd.map(d => wdMap[d]).join(', ');
+
     const deleteBtn = isCurrentUser
       ? `<button class="btn btn-sm" disabled title="Você não pode excluir sua própria conta" style="opacity:0.4; cursor:not-allowed;"><span data-icon="deni" class="icon-sm"></span> Excluir</button>`
       : `<button class="btn btn-danger btn-sm btn-delete-user" data-uid="${user.id}" data-name="${user.name || ''}" data-email="${user.email || ''}" data-role="${user.role || ''}"><span data-icon="deni" class="icon-sm"></span> Excluir</button>`;
+
+    const configBtn = `<button class="btn btn-primary btn-sm btn-config-jornada" data-uid="${user.id}" data-name="${user.name || ''}" data-dh="${dh}" data-wd="${wd.join(',')}"><span data-icon="folder-clock" class="icon-sm"></span> Jornada</button>`;
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -1291,7 +1320,8 @@ function renderUsersTable() {
       </td>
       <td style="font-size:0.875rem;">${user.email || '—'}</td>
       <td>${roleBadge}</td>
-      <td style="text-align: center;">${deleteBtn}</td>
+      <td style="font-size:0.875rem;"><strong>${dh}h/dia</strong> <br><span style="color:var(--text-muted); font-size:0.75rem;">${daysStr}</span></td>
+      <td style="text-align: center; display:flex; gap:0.5rem; justify-content:center;">${configBtn}${deleteBtn}</td>
     `;
     usersTableBody.appendChild(tr);
   });
@@ -1312,6 +1342,84 @@ function renderUsersTable() {
       deleteUserRole.innerText = btn.dataset.role === 'admin' ? 'Administrador' : 'Funcionário';
       modalConfirmDeleteUser.classList.add('active');
     });
+  });
+
+  // Listeners nos botões de configurar jornada
+  usersTableBody.querySelectorAll('.btn-config-jornada').forEach(btn => {
+    btn.addEventListener('click', () => {
+      openJornadaModal(btn.dataset.uid, btn.dataset.name, btn.dataset.dh, btn.dataset.wd);
+    });
+  });
+}
+
+// ── Lógica Modal Jornada ──
+const modalConfigJornada = document.getElementById('modal-config-jornada');
+const btnCloseJornadaModal = document.getElementById('btn-close-jornada-modal');
+const btnCancelJornada = document.getElementById('btn-cancel-jornada');
+const btnSaveJornada = document.getElementById('btn-save-jornada');
+let _pendingJornadaUid = null;
+
+function openJornadaModal(uid, name, dh, wdStr) {
+  _pendingJornadaUid = uid;
+  document.getElementById('jornada-user-name').innerText = name || 'Funcionário';
+  document.getElementById('jornada-daily-hours').value = dh;
+  const wds = wdStr.split(',').map(Number);
+  for (let i = 0; i <= 6; i++) {
+    const cb = document.getElementById(`day-${i}`);
+    if (cb) cb.checked = wds.includes(i);
+  }
+  modalConfigJornada.classList.add('active');
+}
+
+function closeJornadaModal() {
+  modalConfigJornada.classList.remove('active');
+  _pendingJornadaUid = null;
+}
+
+if (btnCloseJornadaModal) btnCloseJornadaModal.addEventListener('click', closeJornadaModal);
+if (btnCancelJornada) btnCancelJornada.addEventListener('click', closeJornadaModal);
+if (modalConfigJornada) modalConfigJornada.addEventListener('click', e => { if (e.target === modalConfigJornada) closeJornadaModal(); });
+
+if (btnSaveJornada) {
+  btnSaveJornada.addEventListener('click', async () => {
+    if (!_pendingJornadaUid) return;
+    
+    const dhInput = document.getElementById('jornada-daily-hours').value;
+    const dailyHours = parseInt(dhInput, 10);
+    if (isNaN(dailyHours) || dailyHours < 1 || dailyHours > 24) {
+      showToast('Por favor, informe uma carga horária entre 1 e 24 horas.', 'warning');
+      return;
+    }
+
+    const workDays = [];
+    for (let i = 0; i <= 6; i++) {
+      const cb = document.getElementById(`day-${i}`);
+      if (cb && cb.checked) workDays.push(i);
+    }
+    
+    if (workDays.length === 0) {
+      showToast('Selecione pelo menos um dia de trabalho.', 'warning');
+      return;
+    }
+
+    btnSaveJornada.disabled = true;
+    btnSaveJornada.innerText = 'Salvando...';
+
+    try {
+      await updateDoc(doc(db, 'users', _pendingJornadaUid), {
+        dailyHours,
+        workDays
+      });
+      showToast('Jornada atualizada com sucesso!', 'success');
+      closeJornadaModal();
+      await loadUsers();
+    } catch (err) {
+      console.error('Erro ao atualizar jornada:', err);
+      showToast('Erro ao atualizar jornada.', 'error');
+    } finally {
+      btnSaveJornada.disabled = false;
+      btnSaveJornada.innerHTML = '<span data-icon="save" class="icon-sm"></span> Salvar Jornada';
+    }
   });
 }
 

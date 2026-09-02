@@ -4,6 +4,7 @@ import {
   storage, ref, uploadBytes, getDownloadURL
 } from './firebase-config.js';
 import { insertSVGs, showToast } from './svg.js';
+import { gerarComprovantePDF, gerarRelatorioMensalPDF } from './pdf.js';
 
 const userNameSpan = document.getElementById('user-name');
 const btnLogout = document.getElementById('btn-logout');
@@ -78,7 +79,11 @@ const PUNCH_CONFIG = {
   'Saída': { btn: document.getElementById('btn-saida'), label: 'Saída', registeredLabel: '✓ Saída (Feita)' }
 };
 
-const META_DIARIA_HORAS = 8;
+const DEFAULT_DAILY_HOURS = 8;
+const DEFAULT_WORK_DAYS = [1, 2, 3, 4, 5];
+let userDailyHours = DEFAULT_DAILY_HOURS;
+let userWorkDays = DEFAULT_WORK_DAYS;
+let userNameStr = 'Funcionário';
 
 let currentUser = null;
 let todayRegisteredTypes = new Set();
@@ -102,7 +107,10 @@ onAuthStateChanged(auth, async (user) => {
 
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        userNameSpan.innerText = userData.name || user.email;
+        userNameStr = userData.name || user.email;
+        userNameSpan.innerText = userNameStr;
+        userDailyHours = userData.dailyHours || DEFAULT_DAILY_HOURS;
+        userWorkDays = userData.workDays || DEFAULT_WORK_DAYS;
 
         if (userData.firstLogin === true) {
           const modalForcePassword = document.getElementById('modal-force-password');
@@ -152,11 +160,13 @@ onAuthStateChanged(auth, async (user) => {
           }
         }
       } else {
-        userNameSpan.innerText = user.email;
+        userNameStr = user.email;
+        userNameSpan.innerText = userNameStr;
       }
     } catch (err) {
       console.error('Erro ao carregar dados do usuário:', err);
-      userNameSpan.innerText = user.email;
+      userNameStr = user.email;
+      userNameSpan.innerText = userNameStr;
     }
 
     await loadTodayRecords();
@@ -330,13 +340,15 @@ function renderTodayRecordsTable() {
     const isPending = _todayPendingIds.has(data.id);
     const editBtnOrBadge = isPending
       ? `<span class="badge badge-pending" style="font-size:0.7rem;"><span data-icon="ampulheta" class="icon-sm"></span> Aguardando</span>`
-      : `<button class="btn-edit-record" data-id="${data.id}" title="Solicitar edição deste registro"><span data-icon="edit" class="icon-sm"></span> Editar</button>`;
+      : `<button class="btn-edit-record" data-id="${data.id}" title="Solicitar edição"><span data-icon="edit" class="icon-sm"></span> Editar</button>`;
+
+    const comprovanteBtn = `<button class="btn btn-outline btn-pdf-comprovante" data-id="${data.id}" style="padding:0.2rem 0.5rem; font-size:0.75rem;" title="Baixar Comprovante"><span data-icon="file-text" class="icon-sm"></span> PDF</button>`;
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><span class="badge ${badgeClass}">${data.type}</span></td>
       <td><strong>${timeStr}</strong>${data.edited ? ' <span class="badge badge-edited" style="font-size:0.7rem; margin-left:4px;">Editado</span>' : ''}</td>
-      <td>${editBtnOrBadge}</td>
+      <td style="display:flex; gap:0.5rem; flex-wrap:wrap;">${editBtnOrBadge} ${comprovanteBtn}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -347,6 +359,13 @@ function renderTodayRecordsTable() {
     btn.addEventListener('click', () => {
       const record = _todayRecordsData.find(r => r.id === btn.dataset.id);
       if (record) openEditModal(record);
+    });
+  });
+
+  tbody.querySelectorAll('.btn-pdf-comprovante').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const record = _todayRecordsData.find(r => r.id === btn.dataset.id);
+      if (record) gerarComprovantePDF(record, userNameStr);
     });
   });
 
@@ -627,7 +646,7 @@ function monthRange(yearMonthStr) {
   return { start, end };
 }
 
-function calcBancoDeHoras(records) {
+function calcBancoDeHoras(records, dailyHours = DEFAULT_DAILY_HOURS) {
 
   const byDay = {};
   records.forEach(r => {
@@ -659,7 +678,7 @@ function calcBancoDeHoras(records) {
       workedMin = (saida - volta) / 60000;
     }
 
-    const metaMin = META_DIARIA_HORAS * 60;
+    const metaMin = dailyHours * 60;
     const balanceMin = workedMin - metaMin;
 
     const fmt = t => t ? t.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
@@ -713,10 +732,12 @@ async function loadBancoDeHoras(start, end) {
       bhTotalExpected.innerText = '00:00';
       bhBalance.innerText       = '00:00';
       bhDaysWorked.innerText = '0';
+      const btnExport = document.getElementById('btn-export-pdf');
+      if (btnExport) btnExport.disabled = true;
       return;
     }
 
-    _employeeBhData = calcBancoDeHoras(records);
+    _employeeBhData = calcBancoDeHoras(records, userDailyHours);
     _employeeBhCurrentPage = 1;
     _employeeBhPerPage = 5;
 
@@ -728,7 +749,7 @@ async function loadBancoDeHoras(start, end) {
       if (day.hasData) daysWithData++;
     });
 
-    const totalExpectedMin = daysWithData * META_DIARIA_HORAS * 60;
+    const totalExpectedMin = daysWithData * userDailyHours * 60;
     const totalBalanceMin = totalWorkedMin - totalExpectedMin;
 
     bhTotalWorked.innerText = formatMinutes(totalWorkedMin);
@@ -742,6 +763,18 @@ async function loadBancoDeHoras(start, end) {
     else bhBalanceCard.classList.add('neutral');
 
     renderEmployeeBhTable();
+
+    const btnExport = document.getElementById('btn-export-pdf');
+    if (btnExport) {
+      btnExport.disabled = false;
+      const startDisplay = startStr.split('-').reverse().join('/');
+      const endDisplay = endStr.split('-').reverse().join('/');
+      const periodoLabel = `${startDisplay} a ${endDisplay}`;
+      const totals = { totalWorkedMin, totalExpectedMin, totalBalanceMin, daysWorked: daysWithData };
+      btnExport.onclick = () => {
+        gerarRelatorioMensalPDF(_employeeBhData, userNameStr, periodoLabel, totals, userDailyHours);
+      };
+    }
   } catch (err) {
     console.error('Erro ao carregar banco de horas:', err);
     bhTableBody.innerHTML = '<tr><td colspan="7" class="text-center" style="color:var(--danger);">Erro ao carregar dados. Verifique as permissões no Firebase.</td></tr>';

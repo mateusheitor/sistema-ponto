@@ -7,6 +7,7 @@
   <title>PontoWeb - Meu Painel</title>
   <meta name="description" content="Painel do funcionário para registro e consulta de ponto e banco de horas.">
   <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     .modal-overlay {
       position: fixed;
@@ -177,9 +178,11 @@
                 </select>
               </div>
               <div class="pagination-buttons">
-                <button class="pagination-btn" id="employee-records-prev" disabled><span data-icon="chevron-left" class="icon-sm"></span> Anterior</button>
+                <button class="pagination-btn" id="employee-records-prev" disabled><span data-icon="chevron-left"
+                    class="icon-sm"></span> Anterior</button>
                 <span class="pagination-info" id="employee-records-info">Página 1</span>
-                <button class="pagination-btn" id="employee-records-next" disabled>Próximo <span data-icon="chevron-right" class="icon-sm"></span></button>
+                <button class="pagination-btn" id="employee-records-next" disabled>Próximo <span
+                    data-icon="chevron-right" class="icon-sm"></span></button>
               </div>
             </div>
             <div id="edit-requests-status" style="margin-top: 1rem;"></div>
@@ -189,16 +192,16 @@
             <h2 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1.25rem;"><span data-icon="folder-clock"
                 class="icon-sm"></span> Banco de Horas</h2>
 
-            <div class="bh-period-selector">
-              <button class="bh-period-btn active" data-period="week" id="bh-btn-week"><span data-icon="calendario"
-                  class="icon-sm"></span> Esta Semana</button>
-              <button class="bh-period-btn" data-period="month" id="bh-btn-month"><span data-icon="calendario"
-                  class="icon-sm"></span> Mês Atual</button>
-              <button class="bh-period-btn" data-period="custom-month" id="bh-btn-custom-month"><span
-                  data-icon="calendario" class="icon-sm"></span> Mês
-                Específico</button>
-              <button class="bh-period-btn" data-period="custom-range" id="bh-btn-range"><span data-icon="calendario"
-                  class="icon-sm"></span> Período</button>
+            <div class="bh-period-selector" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+              <div>
+                <button class="bh-period-btn active" data-period="week" id="bh-btn-week"><span data-icon="calendario" class="icon-sm"></span> Esta Semana</button>
+                <button class="bh-period-btn" data-period="month" id="bh-btn-month"><span data-icon="calendario" class="icon-sm"></span> Mês Atual</button>
+                <button class="bh-period-btn" data-period="custom-month" id="bh-btn-custom-month"><span data-icon="calendario" class="icon-sm"></span> Mês Específico</button>
+                <button class="bh-period-btn" data-period="custom-range" id="bh-btn-range"><span data-icon="calendario" class="icon-sm"></span> Período</button>
+              </div>
+              <button id="btn-export-pdf" class="btn btn-pdf" style="padding: 0.5rem 1rem; font-size: 0.875rem;" disabled>
+                <span data-icon="file-text" class="icon-sm"></span> Exportar PDF
+              </button>
             </div>
 
             <div class="bh-custom-range" id="bh-range-month">
@@ -266,9 +269,11 @@
                 </select>
               </div>
               <div class="pagination-buttons">
-                <button class="pagination-btn" id="employee-bh-prev" disabled><span data-icon="chevron-left" class="icon-sm"></span> Anterior</button>
+                <button class="pagination-btn" id="employee-bh-prev" disabled><span data-icon="chevron-left"
+                    class="icon-sm"></span> Anterior</button>
                 <span class="pagination-info" id="employee-bh-info">Página 1</span>
-                <button class="pagination-btn" id="employee-bh-next" disabled>Próximo <span data-icon="chevron-right" class="icon-sm"></span></button>
+                <button class="pagination-btn" id="employee-bh-next" disabled>Próximo <span data-icon="chevron-right"
+                    class="icon-sm"></span></button>
               </div>
             </div>
 
@@ -309,11 +314,13 @@
       </div>
 
       <div class="form-group">
-        <label class="form-label">Anexo <span style="color:var(--text-muted); font-weight:400;">(opcional — ex: atestado médico)</span></label>
+        <label class="form-label">Anexo <span style="color:var(--text-muted); font-weight:400;">(opcional — ex: atestado
+            médico)</span></label>
         <div class="file-upload-area" id="edit-file-area">
           <input type="file" id="edit-attachment" accept="image/*,.pdf,.doc,.docx" title="Selecionar arquivo">
           <span class="file-upload-icon" data-icon="file-plus"></span>
-          <div class="file-upload-text"><strong>Clique para selecionar</strong> ou arraste o arquivo aqui<br>Imagens, PDF, DOC — máx. 10MB</div>
+          <div class="file-upload-text"><strong>Clique para selecionar</strong> ou arraste o arquivo aqui<br>Imagens,
+            PDF, DOC — máx. 10MB</div>
         </div>
         <div class="file-upload-preview" id="edit-file-preview">
           <span style="font-size:1rem;">📄</span>
@@ -374,16 +381,19 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">Anexo <span style="color:var(--text-muted); font-weight:400;">(opcional — ex: atestado médico)</span></label>
+          <label class="form-label">Anexo <span style="color:var(--text-muted); font-weight:400;">(opcional — ex:
+              atestado médico)</span></label>
           <div class="file-upload-area" id="insert-file-area">
             <input type="file" id="insert-attachment" accept="image/*,.pdf,.doc,.docx" title="Selecionar arquivo">
             <span class="file-upload-icon" data-icon="file-plus"></span>
-            <div class="file-upload-text"><strong>Clique para selecionar</strong> ou arraste o arquivo aqui<br>Imagens, PDF, DOC — máx. 10MB</div>
+            <div class="file-upload-text"><strong>Clique para selecionar</strong> ou arraste o arquivo aqui<br>Imagens,
+              PDF, DOC — máx. 10MB</div>
           </div>
           <div class="file-upload-preview" id="insert-file-preview">
             <span style="font-size:1rem;">📄</span>
             <span class="file-upload-preview-name" id="insert-file-name"></span>
-            <button type="button" class="file-upload-clear" id="insert-file-clear" title="Remover arquivo">&times;</button>
+            <button type="button" class="file-upload-clear" id="insert-file-clear"
+              title="Remover arquivo">&times;</button>
           </div>
         </div>
 

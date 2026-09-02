@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     .modal-overlay {
       position: fixed;
@@ -421,15 +422,16 @@
           </div>
         </div>
 
-        <div class="bh-period-selector">
-          <button class="bh-period-btn active" data-period="week" id="admin-bh-btn-week"><span data-icon="calendario"
-              class="icon-sm"></span> Esta Semana</button>
-          <button class="bh-period-btn" data-period="month" id="admin-bh-btn-month"><span data-icon="calendario"
-              class="icon-sm"></span> Mês Atual</button>
-          <button class="bh-period-btn" data-period="custom-month" id="admin-bh-btn-cmonth"><span data-icon="calendario"
-              class="icon-sm"></span> Mês Específico</button>
-          <button class="bh-period-btn" data-period="custom-range" id="admin-bh-btn-range"><span data-icon="calendario"
-              class="icon-sm"></span> Período</button>
+        <div class="bh-period-selector" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <button class="bh-period-btn active" data-period="week" id="admin-bh-btn-week"><span data-icon="calendario" class="icon-sm"></span> Esta Semana</button>
+            <button class="bh-period-btn" data-period="month" id="admin-bh-btn-month"><span data-icon="calendario" class="icon-sm"></span> Mês Atual</button>
+            <button class="bh-period-btn" data-period="custom-month" id="admin-bh-btn-cmonth"><span data-icon="calendario" class="icon-sm"></span> Mês Específico</button>
+            <button class="bh-period-btn" data-period="custom-range" id="admin-bh-btn-range"><span data-icon="calendario" class="icon-sm"></span> Período</button>
+          </div>
+          <button id="admin-btn-export-pdf" class="btn btn-pdf" style="padding: 0.5rem 1rem; font-size: 0.875rem;" disabled>
+            <span data-icon="file-text" class="icon-sm"></span> Exportar PDF
+          </button>
         </div>
 
         <div class="bh-custom-range" id="admin-bh-range-month">
@@ -532,12 +534,13 @@
                 <th>Nome</th>
                 <th>E-mail</th>
                 <th>Tipo de Acesso</th>
+                <th>Jornada Diária</th>
                 <th style="text-align: center;">Ações</th>
               </tr>
             </thead>
             <tbody id="users-table-body">
               <tr>
-                <td colspan="4" class="text-center text-muted">Carregando usuários...</td>
+                <td colspan="5" class="text-center text-muted">Carregando usuários...</td>
               </tr>
             </tbody>
           </table>
@@ -692,6 +695,43 @@
         <button class="btn btn-outline" style="flex:1;" id="btn-cancel-approve-insert">Cancelar</button>
         <button class="btn btn-success" style="flex:1;" id="btn-confirm-approve-insert">
           <span data-icon="check" class="icon-sm"></span> Aprovar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-config-jornada">
+    <div class="modal-box" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3><span data-icon="folder-clock" class="icon-sm"></span> Configurar Jornada</h3>
+        <button class="modal-close" id="btn-close-jornada-modal">&times;</button>
+      </div>
+      <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+        Configure a carga horária diária e os dias da semana em que <strong><span id="jornada-user-name"></span></strong> trabalha. Esses valores serão usados no cálculo do Banco de Horas.
+      </p>
+
+      <div class="form-group">
+        <label class="form-label" for="jornada-daily-hours">Carga Horária Diária (Horas)</label>
+        <input type="number" id="jornada-daily-hours" class="form-input" placeholder="Ex: 8" min="1" max="24">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Dias de Trabalho</label>
+        <div class="day-chips-container" id="jornada-work-days">
+          <div class="day-chip"><input type="checkbox" id="day-0" value="0"><label for="day-0">Dom</label></div>
+          <div class="day-chip"><input type="checkbox" id="day-1" value="1"><label for="day-1">Seg</label></div>
+          <div class="day-chip"><input type="checkbox" id="day-2" value="2"><label for="day-2">Ter</label></div>
+          <div class="day-chip"><input type="checkbox" id="day-3" value="3"><label for="day-3">Qua</label></div>
+          <div class="day-chip"><input type="checkbox" id="day-4" value="4"><label for="day-4">Qui</label></div>
+          <div class="day-chip"><input type="checkbox" id="day-5" value="5"><label for="day-5">Sex</label></div>
+          <div class="day-chip"><input type="checkbox" id="day-6" value="6"><label for="day-6">Sáb</label></div>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:0.75rem; margin-top: 1.5rem;">
+        <button class="btn btn-outline" style="flex:1;" id="btn-cancel-jornada">Cancelar</button>
+        <button class="btn btn-primary" style="flex:1;" id="btn-save-jornada">
+          <span data-icon="save" class="icon-sm"></span> Salvar Jornada
         </button>
       </div>
     </div>
