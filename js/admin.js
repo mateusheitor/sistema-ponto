@@ -4,7 +4,8 @@ import {
   getDoc, doc, setDoc, addDoc, updateDoc, deleteDoc, serverTimestamp
 } from './firebase-config.js';
 import { insertSVGs, showToast } from './svg.js';
-import { gerarRelatorioMensalPDF } from './pdf.js';
+import { gerarRelatorioMensalPDF, gerarEspelhoPontoPDF } from './pdf.js';
+
 
 const userNameSpan = document.getElementById('user-name');
 const btnLogout = document.getElementById('btn-logout');
@@ -169,6 +170,12 @@ if (btnNovoUser) {
     document.getElementById('new-email').value = '';
     document.getElementById('new-password').value = '';
     document.getElementById('role-employee').checked = true;
+    // Limpar campos trabalhistas
+    ['new-cpf', 'new-matricula', 'new-cargo', 'new-departamento'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+    const det = document.getElementById('labor-details-new');
+    if (det) det.removeAttribute('open');
     modalOverlay.classList.add('active');
   });
 }
@@ -220,7 +227,17 @@ btnCriarUser.addEventListener('click', async () => {
     }
 
     const newUid = authData.localId;
-    await setDoc(doc(db, 'users', newUid), { name, email, role, firstLogin: true });
+    const cpf         = (document.getElementById('new-cpf')?.value || '').trim();
+    const matricula   = (document.getElementById('new-matricula')?.value || '').trim();
+    const cargo       = (document.getElementById('new-cargo')?.value || '').trim();
+    const departamento= (document.getElementById('new-departamento')?.value || '').trim();
+    await setDoc(doc(db, 'users', newUid), {
+      name, email, role, firstLogin: true,
+      ...(cpf         ? { cpf }         : {}),
+      ...(matricula   ? { matricula }   : {}),
+      ...(cargo       ? { cargo }       : {}),
+      ...(departamento? { departamento }: {}),
+    });
 
     showToast(`Usuário "${name}" criado com sucesso!`, 'success');
 
@@ -907,12 +924,44 @@ async function loadWorkspaceSettings() {
         lat = data.latitude;
         lng = data.longitude;
       }
+      // Identificação da empresa (para PDFs)
+      const companyNameEl = document.getElementById('workspace-company-name');
+      const cnpjEl = document.getElementById('workspace-cnpj');
+      if (companyNameEl && data.companyName) companyNameEl.value = data.companyName;
+      if (cnpjEl && data.cnpj) cnpjEl.value = data.cnpj;
     }
   } catch (err) {
     console.error('Erro ao carregar workspace:', err);
   }
   initOrUpdateMap(lat, lng, radius);
+
+  // Botão Salvar Identificação da Empresa
+  const btnSaveCompany = document.getElementById('btn-save-company-info');
+  if (btnSaveCompany) {
+    btnSaveCompany.addEventListener('click', async () => {
+      const companyName = (document.getElementById('workspace-company-name')?.value || '').trim();
+      const cnpj = (document.getElementById('workspace-cnpj')?.value || '').trim();
+      if (!companyName) {
+        showToast('Informe a Razão Social da empresa.', 'warning');
+        return;
+      }
+      btnSaveCompany.disabled = true;
+      btnSaveCompany.innerText = 'Salvando...';
+      try {
+        await setDoc(doc(db, 'settings', 'workspace'), { companyName, cnpj }, { merge: true });
+        showToast('Identificação da empresa salva!', 'success');
+      } catch (err) {
+        console.error('Erro ao salvar identificação:', err);
+        showToast('Erro ao salvar. Verifique as permissões.', 'error');
+      } finally {
+        btnSaveCompany.disabled = false;
+        btnSaveCompany.innerHTML = '<span data-icon="save" class="icon-sm"></span> Salvar Identificação';
+        insertSVGs();
+      }
+    });
+  }
 }
+
 
 async function searchAddress(address) {
   if (!address) {
@@ -1126,9 +1175,27 @@ async function loadAdminBancoDeHoras(userId, start, end) {
       const endDisplay = endStr.split('-').reverse().join('/');
       const periodoLabel = `${startDisplay} a ${endDisplay}`;
       const totals = { totalWorkedMin: totalWorked, totalExpectedMin: totalExpected, totalBalanceMin: totalBalance, daysWorked: daysWithData };
-      btnExport.onclick = () => {
-        gerarRelatorioMensalPDF(_adminBhData, userName, periodoLabel, totals, userDailyHours);
-      };
+      // Carregar companyName e dados do funcionário para o PDF
+      let companyName = null;
+      let cnpj = null;
+      let employeeData = {};
+      try {
+        const wsSnap = await getDoc(doc(db, 'settings', 'workspace'));
+        if (wsSnap.exists()) { companyName = wsSnap.data().companyName || null; cnpj = wsSnap.data().cnpj || null; }
+        const fullCompanyName = companyName ? (cnpj ? `${companyName} | CNPJ: ${cnpj}` : companyName) : null;
+        const userSnap2 = await getDoc(doc(db, 'users', userId));
+        if (userSnap2.exists()) {
+          const ud = userSnap2.data();
+          employeeData = { cpf: ud.cpf, matricula: ud.matricula, cargo: ud.cargo, departamento: ud.departamento };
+        }
+        btnExport.onclick = () => {
+          gerarRelatorioMensalPDF(_adminBhData, userName, periodoLabel, totals, userDailyHours, fullCompanyName, employeeData);
+        };
+      } catch(_) {
+        btnExport.onclick = () => {
+          gerarRelatorioMensalPDF(_adminBhData, userName, periodoLabel, totals, userDailyHours);
+        };
+      }
     }
 
   } catch (err) {
@@ -1310,7 +1377,7 @@ function renderUsersTable() {
       ? `<button class="btn btn-sm" disabled title="Você não pode excluir sua própria conta" style="opacity:0.4; cursor:not-allowed;"><span data-icon="deni" class="icon-sm"></span> Excluir</button>`
       : `<button class="btn btn-danger btn-sm btn-delete-user" data-uid="${user.id}" data-name="${user.name || ''}" data-email="${user.email || ''}" data-role="${user.role || ''}"><span data-icon="deni" class="icon-sm"></span> Excluir</button>`;
 
-    const configBtn = `<button class="btn btn-primary btn-sm btn-config-jornada" data-uid="${user.id}" data-name="${user.name || ''}" data-dh="${dh}" data-wd="${wd.join(',')}"><span data-icon="folder-clock" class="icon-sm"></span> Jornada</button>`;
+    const configBtn = `<button class="btn btn-primary btn-sm btn-config-jornada" data-uid="${user.id}" data-name="${user.name || ''}" data-dh="${dh}" data-wd="${wd.join(',')}" data-cpf="${user.cpf || ''}" data-matricula="${user.matricula || ''}" data-cargo="${user.cargo || ''}" data-departamento="${user.departamento || ''}"><span data-icon="employee-user" class="icon-sm"></span> Configurar</button>`;
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -1347,7 +1414,10 @@ function renderUsersTable() {
   // Listeners nos botões de configurar jornada
   usersTableBody.querySelectorAll('.btn-config-jornada').forEach(btn => {
     btn.addEventListener('click', () => {
-      openJornadaModal(btn.dataset.uid, btn.dataset.name, btn.dataset.dh, btn.dataset.wd);
+      openJornadaModal(
+        btn.dataset.uid, btn.dataset.name, btn.dataset.dh, btn.dataset.wd,
+        btn.dataset.cpf, btn.dataset.matricula, btn.dataset.cargo, btn.dataset.departamento
+      );
     });
   });
 }
@@ -1359,7 +1429,26 @@ const btnCancelJornada = document.getElementById('btn-cancel-jornada');
 const btnSaveJornada = document.getElementById('btn-save-jornada');
 let _pendingJornadaUid = null;
 
-function openJornadaModal(uid, name, dh, wdStr) {
+// Troca de abas internas do modal
+document.querySelectorAll('.jornada-tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.jornada-tab-btn').forEach(b => {
+      b.classList.remove('active');
+      b.style.color = 'var(--text-muted)';
+      b.style.borderBottomColor = 'transparent';
+    });
+    btn.classList.add('active');
+    btn.style.color = 'var(--primary-color)';
+    btn.style.borderBottomColor = 'var(--primary-color)';
+    const target = btn.dataset.jtab;
+    document.querySelectorAll('#jtab-jornada, #jtab-dados').forEach(p => {
+      p.style.display = p.id === target ? 'block' : 'none';
+    });
+    insertSVGs();
+  });
+});
+
+function openJornadaModal(uid, name, dh, wdStr, cpf, matricula, cargo, departamento) {
   _pendingJornadaUid = uid;
   document.getElementById('jornada-user-name').innerText = name || 'Funcionário';
   document.getElementById('jornada-daily-hours').value = dh;
@@ -1368,7 +1457,23 @@ function openJornadaModal(uid, name, dh, wdStr) {
     const cb = document.getElementById(`day-${i}`);
     if (cb) cb.checked = wds.includes(i);
   }
+  // Preencher dados trabalhistas
+  const flds = [
+    ['jornada-cpf', cpf], ['jornada-matricula', matricula],
+    ['jornada-cargo', cargo], ['jornada-departamento', departamento]
+  ];
+  flds.forEach(([id, val]) => { const el = document.getElementById(id); if (el) el.value = val || ''; });
+  // Garantir que a aba Jornada esteja ativa ao abrir
+  document.getElementById('jtab-jornada').style.display = 'block';
+  document.getElementById('jtab-dados').style.display = 'none';
+  document.querySelectorAll('.jornada-tab-btn').forEach(b => {
+    const isJornada = b.dataset.jtab === 'jtab-jornada';
+    b.classList.toggle('active', isJornada);
+    b.style.color = isJornada ? 'var(--primary-color)' : 'var(--text-muted)';
+    b.style.borderBottomColor = isJornada ? 'var(--primary-color)' : 'transparent';
+  });
   modalConfigJornada.classList.add('active');
+  insertSVGs();
 }
 
 function closeJornadaModal() {
@@ -1383,7 +1488,7 @@ if (modalConfigJornada) modalConfigJornada.addEventListener('click', e => { if (
 if (btnSaveJornada) {
   btnSaveJornada.addEventListener('click', async () => {
     if (!_pendingJornadaUid) return;
-    
+
     const dhInput = document.getElementById('jornada-daily-hours').value;
     const dailyHours = parseInt(dhInput, 10);
     if (isNaN(dailyHours) || dailyHours < 1 || dailyHours > 24) {
@@ -1396,11 +1501,17 @@ if (btnSaveJornada) {
       const cb = document.getElementById(`day-${i}`);
       if (cb && cb.checked) workDays.push(i);
     }
-    
+
     if (workDays.length === 0) {
       showToast('Selecione pelo menos um dia de trabalho.', 'warning');
       return;
     }
+
+    // Dados trabalhistas
+    const cpf          = (document.getElementById('jornada-cpf')?.value || '').trim();
+    const matricula    = (document.getElementById('jornada-matricula')?.value || '').trim();
+    const cargo        = (document.getElementById('jornada-cargo')?.value || '').trim();
+    const departamento = (document.getElementById('jornada-departamento')?.value || '').trim();
 
     btnSaveJornada.disabled = true;
     btnSaveJornada.innerText = 'Salvando...';
@@ -1408,17 +1519,22 @@ if (btnSaveJornada) {
     try {
       await updateDoc(doc(db, 'users', _pendingJornadaUid), {
         dailyHours,
-        workDays
+        workDays,
+        cpf:          cpf          || null,
+        matricula:    matricula    || null,
+        cargo:        cargo        || null,
+        departamento: departamento || null,
       });
-      showToast('Jornada atualizada com sucesso!', 'success');
+      showToast('Dados do funcionário atualizados!', 'success');
       closeJornadaModal();
       await loadUsers();
     } catch (err) {
-      console.error('Erro ao atualizar jornada:', err);
-      showToast('Erro ao atualizar jornada.', 'error');
+      console.error('Erro ao atualizar funcionário:', err);
+      showToast('Erro ao atualizar. Tente novamente.', 'error');
     } finally {
       btnSaveJornada.disabled = false;
-      btnSaveJornada.innerHTML = '<span data-icon="save" class="icon-sm"></span> Salvar Jornada';
+      btnSaveJornada.innerHTML = '<span data-icon="save" class="icon-sm"></span> Salvar';
+      insertSVGs();
     }
   });
 }

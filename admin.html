@@ -140,6 +140,53 @@
     .reject-detail-box strong {
       color: var(--text-main);
     }
+
+    /* ── Dados Trabalhistas (colapsável no modal novo usuário) ── */
+    .labor-details {
+      border: 1.5px solid var(--border-color);
+      border-radius: var(--radius-md);
+      margin-top: 1rem;
+      overflow: hidden;
+    }
+    .labor-details-summary {
+      padding: 0.75rem 1rem;
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--primary-color);
+      background: var(--bg-color);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      list-style: none;
+      user-select: none;
+    }
+    .labor-details-summary::-webkit-details-marker { display: none; }
+    .labor-details-summary::after {
+      content: '▸';
+      margin-left: auto;
+      transition: transform 0.2s;
+      color: var(--text-muted);
+    }
+    details[open] .labor-details-summary::after { transform: rotate(90deg); }
+    .labor-details-body {
+      padding: 1rem;
+      border-top: 1px solid var(--border-color);
+    }
+
+    /* ── Abas internas do modal Configurar Funcionário ── */
+    .jornada-tab-btn { transition: color 0.15s, border-color 0.15s; }
+    .jornada-tab-btn:hover { color: var(--primary-color) !important; }
+    .jornada-tab-btn.active {
+      color: var(--primary-color) !important;
+      border-bottom-color: var(--primary-color) !important;
+    }
+
+    @media (max-width: 480px) {
+      #modal-config-jornada .modal-box { padding: 1.25rem; }
+      #modal-config-jornada #jtab-dados > div[style*="grid"] { grid-template-columns: 1fr; }
+      #workspace-company-name, #workspace-cnpj { grid-column: 1 / -1; }
+    }
   </style>
 </head>
 
@@ -343,8 +390,35 @@
     </div>
 
     <div id="tab-workspace" class="tab-panel">
+
+      <!-- Card: Identificação da Empresa (para comprovantes trabalhistas) -->
+      <div class="card" style="margin-bottom: 1.5rem;">
+        <h2 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.25rem;">
+          <span data-icon="file-text" class="icon-sm"></span> Identificação da Empresa
+        </h2>
+        <p style="color: var(--text-muted); font-size: 0.8125rem; margin-bottom: 1.25rem;">
+          Esses dados são exibidos nos comprovantes de ponto gerados em PDF, conforme exigência da <strong>Portaria MTE 671/2021</strong>.
+        </p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="workspace-company-name" class="form-label">Razão Social <span style="color:var(--danger)">*</span></label>
+            <input type="text" id="workspace-company-name" class="form-input" placeholder="Ex: Empresa XYZ Ltda.">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="workspace-cnpj" class="form-label">CNPJ</label>
+            <input type="text" id="workspace-cnpj" class="form-input" placeholder="Ex: 12.345.678/0001-99" maxlength="18">
+          </div>
+        </div>
+        <div style="margin-top: 1rem; display: flex; justify-content: flex-end;">
+          <button id="btn-save-company-info" class="btn btn-primary" style="padding: 0.5rem 1.25rem;">
+            <span data-icon="save" class="icon-sm"></span> Salvar Identificação
+          </button>
+        </div>
+      </div>
+
+      <!-- Card: Local de Trabalho e Cerca Virtual -->
       <div class="card">
-        <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;"><span data-icon="map-pin"
+        <h2 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.5rem;"><span data-icon="map-pin"
             class="icon-sm"></span> Local de Trabalho e Cerca Virtual
         </h2>
         <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.5rem;">Defina o endereço da empresa e
@@ -353,7 +427,7 @@
         <div style="display: flex; flex-direction: column; gap: 1.25rem;">
           <div class="workspace-search-row">
             <div class="form-group" style="margin-bottom: 0; flex: 1;">
-              <label for="workspace-address" class="form-label">Endereço da Empresa</label>
+              <label for="workspace-address" class="form-label">Endereço Completo</label>
               <input type="text" id="workspace-address" class="form-input"
                 placeholder="Ex: Av. Paulista, 1000, São Paulo, SP">
             </div>
@@ -395,8 +469,6 @@
               para posicionar a empresa. O círculo indica o raio da cerca virtual.
             </small>
           </div>
-
-
         </div>
       </div>
     </div>
@@ -618,7 +690,37 @@
         </div>
       </div>
 
-      <button class="btn btn-primary btn-block" id="btn-criar-user">Criar Usuário</button>
+      <!-- Seção colapsável: Dados Trabalhistas -->
+      <details class="labor-details" id="labor-details-new">
+        <summary class="labor-details-summary">
+          <span data-icon="file-text" class="icon-sm"></span>
+          Dados Trabalhistas <span style="font-weight:400; color:var(--text-muted);">(opcional — usados no PDF)</span>
+        </summary>
+        <div class="labor-details-body">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label" for="new-cpf">CPF</label>
+              <input type="text" id="new-cpf" class="form-input" placeholder="000.000.000-00" maxlength="14">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label" for="new-matricula">Matrícula</label>
+              <input type="text" id="new-matricula" class="form-input" placeholder="Ex: EMP-0042">
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-top:0.75rem;">
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label" for="new-cargo">Cargo / Função</label>
+              <input type="text" id="new-cargo" class="form-input" placeholder="Ex: Analista de TI">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label" for="new-departamento">Departamento / Setor</label>
+              <input type="text" id="new-departamento" class="form-input" placeholder="Ex: Tecnologia">
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <button class="btn btn-primary btn-block" id="btn-criar-user" style="margin-top:0.25rem;">Criar Usuário</button>
 
     </div>
   </div>
@@ -701,37 +803,82 @@
   </div>
 
   <div class="modal-overlay" id="modal-config-jornada">
-    <div class="modal-box" style="max-width: 480px;">
+    <div class="modal-box" style="max-width: 520px;">
       <div class="modal-header">
-        <h3><span data-icon="folder-clock" class="icon-sm"></span> Configurar Jornada</h3>
+        <h3><span data-icon="employee-user" class="icon-sm"></span> Configurar Funcionário — <span id="jornada-user-name" style="font-weight:500; color:var(--primary-color);"></span></h3>
         <button class="modal-close" id="btn-close-jornada-modal">&times;</button>
       </div>
-      <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1.25rem;">
-        Configure a carga horária diária e os dias da semana em que <strong><span id="jornada-user-name"></span></strong> trabalha. Esses valores serão usados no cálculo do Banco de Horas.
-      </p>
 
-      <div class="form-group">
-        <label class="form-label" for="jornada-daily-hours">Carga Horária Diária (Horas)</label>
-        <input type="number" id="jornada-daily-hours" class="form-input" placeholder="Ex: 8" min="1" max="24">
+      <!-- Abas internas do modal -->
+      <div class="jornada-tab-nav" style="display:flex; gap:0.25rem; margin-bottom:1.25rem; border-bottom:1.5px solid var(--border-color); padding-bottom:0;">
+        <button class="jornada-tab-btn active" data-jtab="jtab-jornada" id="jtab-btn-jornada"
+          style="background:none;border:none;padding:0.5rem 0.75rem;font-size:0.875rem;font-weight:600;cursor:pointer;color:var(--primary-color);border-bottom:2.5px solid var(--primary-color);margin-bottom:-1.5px;">
+          <span data-icon="folder-clock" class="icon-sm"></span> Jornada
+        </button>
+        <button class="jornada-tab-btn" data-jtab="jtab-dados" id="jtab-btn-dados"
+          style="background:none;border:none;padding:0.5rem 0.75rem;font-size:0.875rem;font-weight:600;cursor:pointer;color:var(--text-muted);border-bottom:2.5px solid transparent;margin-bottom:-1.5px;">
+          <span data-icon="file-text" class="icon-sm"></span> Dados Trabalhistas
+        </button>
       </div>
 
-      <div class="form-group">
-        <label class="form-label">Dias de Trabalho</label>
-        <div class="day-chips-container" id="jornada-work-days">
-          <div class="day-chip"><input type="checkbox" id="day-0" value="0"><label for="day-0">Dom</label></div>
-          <div class="day-chip"><input type="checkbox" id="day-1" value="1"><label for="day-1">Seg</label></div>
-          <div class="day-chip"><input type="checkbox" id="day-2" value="2"><label for="day-2">Ter</label></div>
-          <div class="day-chip"><input type="checkbox" id="day-3" value="3"><label for="day-3">Qua</label></div>
-          <div class="day-chip"><input type="checkbox" id="day-4" value="4"><label for="day-4">Qui</label></div>
-          <div class="day-chip"><input type="checkbox" id="day-5" value="5"><label for="day-5">Sex</label></div>
-          <div class="day-chip"><input type="checkbox" id="day-6" value="6"><label for="day-6">Sáb</label></div>
+      <!-- Painel: Jornada -->
+      <div id="jtab-jornada">
+        <p style="font-size: 0.8125rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+          Carga horária e dias de trabalho — usados no cálculo do Banco de Horas.
+        </p>
+        <div class="form-group">
+          <label class="form-label" for="jornada-daily-hours">Carga Horária Diária (Horas)</label>
+          <input type="number" id="jornada-daily-hours" class="form-input" placeholder="Ex: 8" min="1" max="24">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Dias de Trabalho</label>
+          <div class="day-chips-container" id="jornada-work-days">
+            <div class="day-chip"><input type="checkbox" id="day-0" value="0"><label for="day-0">Dom</label></div>
+            <div class="day-chip"><input type="checkbox" id="day-1" value="1"><label for="day-1">Seg</label></div>
+            <div class="day-chip"><input type="checkbox" id="day-2" value="2"><label for="day-2">Ter</label></div>
+            <div class="day-chip"><input type="checkbox" id="day-3" value="3"><label for="day-3">Qua</label></div>
+            <div class="day-chip"><input type="checkbox" id="day-4" value="4"><label for="day-4">Qui</label></div>
+            <div class="day-chip"><input type="checkbox" id="day-5" value="5"><label for="day-5">Sex</label></div>
+            <div class="day-chip"><input type="checkbox" id="day-6" value="6"><label for="day-6">Sáb</label></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Painel: Dados Trabalhistas -->
+      <div id="jtab-dados" style="display:none;">
+        <p style="font-size: 0.8125rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+          Dados de identificação do funcionário exibidos nos comprovantes PDF (Portaria MTE 671/2021).
+        </p>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" for="jornada-cpf">CPF</label>
+            <input type="text" id="jornada-cpf" class="form-input" placeholder="000.000.000-00" maxlength="14">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" for="jornada-matricula">Matrícula</label>
+            <input type="text" id="jornada-matricula" class="form-input" placeholder="Ex: EMP-0042">
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-top:0.75rem;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" for="jornada-cargo">Cargo / Função</label>
+            <input type="text" id="jornada-cargo" class="form-input" placeholder="Ex: Analista de TI">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" for="jornada-departamento">Departamento / Setor</label>
+            <input type="text" id="jornada-departamento" class="form-input" placeholder="Ex: Tecnologia">
+          </div>
+        </div>
+        <div class="edit-info-box" style="margin-top:1rem;">
+          <span data-icon="info" class="icon-sm"></span>
+          Esses campos são <strong>opcionais</strong>. Quando preenchidos, aparecem no comprovante individual, espelho de ponto e relatório mensal.
         </div>
       </div>
 
       <div style="display:flex; gap:0.75rem; margin-top: 1.5rem;">
         <button class="btn btn-outline" style="flex:1;" id="btn-cancel-jornada">Cancelar</button>
         <button class="btn btn-primary" style="flex:1;" id="btn-save-jornada">
-          <span data-icon="save" class="icon-sm"></span> Salvar Jornada
+          <span data-icon="save" class="icon-sm"></span> Salvar
         </button>
       </div>
     </div>

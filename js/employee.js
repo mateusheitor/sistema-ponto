@@ -85,6 +85,7 @@ let userDailyHours = DEFAULT_DAILY_HOURS;
 let userWorkDays = DEFAULT_WORK_DAYS;
 let userNameStr = 'Funcionário';
 let companyName = null;  // Razão social do empregador (carregado do Firestore)
+let userEmployeeData = {}; // CPF, matrícula, cargo, departamento
 
 let currentUser = null;
 let todayRegisteredTypes = new Set();
@@ -111,7 +112,7 @@ if (modalPunchSuccess) {
 }
 if (btnModalDownload) {
   btnModalDownload.addEventListener('click', () => {
-    if (_lastPunchRecord) gerarComprovantePDF(_lastPunchRecord, userNameStr, companyName);
+    if (_lastPunchRecord) gerarComprovantePDF(_lastPunchRecord, userNameStr, companyName, userEmployeeData);
     if (modalPunchSuccess) modalPunchSuccess.classList.remove('active');
   });
 }
@@ -147,11 +148,23 @@ onAuthStateChanged(auth, async (user) => {
         userNameSpan.innerText = userNameStr;
         userDailyHours = userData.dailyHours || DEFAULT_DAILY_HOURS;
         userWorkDays = userData.workDays || DEFAULT_WORK_DAYS;
+        // Dados trabalhistas para os PDFs
+        userEmployeeData = {
+          cpf:          userData.cpf          || null,
+          matricula:    userData.matricula    || null,
+          cargo:        userData.cargo        || null,
+          departamento: userData.departamento || null,
+        };
 
         // Tenta buscar o nome da empresa nas configurações globais
         try {
           const wsSnap = await getDoc(doc(db, 'settings', 'workspace'));
-          if (wsSnap.exists()) companyName = wsSnap.data().companyName || wsSnap.data().name || null;
+          if (wsSnap.exists()) {
+            const wsData = wsSnap.data();
+            const cn = wsData.companyName || wsData.name || null;
+            const cnpj = wsData.cnpj || null;
+            companyName = cn ? (cnpj ? `${cn} | CNPJ: ${cnpj}` : cn) : null;
+          }
         } catch (_) { /* ignorar se não existir */ }
 
         if (userData.firstLogin === true) {
@@ -417,7 +430,7 @@ function renderTodayRecordsTable() {
   tbody.querySelectorAll('.btn-pdf-comprovante').forEach(btn => {
     btn.addEventListener('click', () => {
       const record = _todayRecordsData.find(r => r.id === btn.dataset.id);
-      if (record) gerarComprovantePDF(record, userNameStr, companyName);
+      if (record) gerarComprovantePDF(record, userNameStr, companyName, userEmployeeData);
     });
   });
 
@@ -827,7 +840,7 @@ async function loadBancoDeHoras(start, end) {
       const periodoLabel = `${startDisplay} a ${endDisplay}`;
       const totals = { totalWorkedMin, totalExpectedMin, totalBalanceMin, daysWorked: daysWithData };
       btnExport.onclick = () => {
-        gerarRelatorioMensalPDF(_employeeBhData, userNameStr, periodoLabel, totals, userDailyHours, companyName);
+        gerarRelatorioMensalPDF(_employeeBhData, userNameStr, periodoLabel, totals, userDailyHours, companyName, userEmployeeData);
       };
     }
 
@@ -841,7 +854,7 @@ async function loadBancoDeHoras(start, end) {
       const totals = { totalWorkedMin, totalExpectedMin, totalBalanceMin, daysWorked: daysWithData };
       // Passa os registros brutos (não agregados) para o espelho de ponto
       btnEspelho.onclick = () => {
-        gerarEspelhoPontoPDF(records, userNameStr, periodoLabel, totals, userDailyHours, companyName);
+        gerarEspelhoPontoPDF(records, userNameStr, periodoLabel, totals, userDailyHours, companyName, userEmployeeData);
       };
     }
   } catch (err) {
