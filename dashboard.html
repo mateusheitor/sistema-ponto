@@ -91,6 +91,125 @@
       color: var(--text-main);
     }
   </style>
+  <style>
+    /* ── Mini-modal pós-batida ─────────────────────────────────────── */
+    #modal-punch-success {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    #modal-punch-success.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .punch-success-box {
+      background: #fff;
+      border-radius: 1.25rem;
+      padding: 2rem 1.75rem 1.5rem;
+      max-width: 380px;
+      width: 92%;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.18);
+      transform: translateY(20px) scale(0.97);
+      transition: transform 0.28s cubic-bezier(.175,.885,.32,1.275);
+      text-align: center;
+    }
+    #modal-punch-success.active .punch-success-box {
+      transform: translateY(0) scale(1);
+    }
+    .punch-success-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #10b981, #059669);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem;
+      font-size: 2rem;
+      animation: pop 0.4s cubic-bezier(.175,.885,.32,1.275) 0.1s both;
+    }
+    @keyframes pop {
+      from { transform: scale(0); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+    .punch-success-type {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 0.25rem;
+    }
+    .punch-success-time {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #10b981;
+      letter-spacing: -1px;
+      margin-bottom: 0.15rem;
+    }
+    .punch-success-date {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      margin-bottom: 1.25rem;
+    }
+    .punch-success-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn-download-comprovante {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #fff;
+      border: none;
+      border-radius: 0.6rem;
+      padding: 0.6rem 1.1rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 12px rgba(37,99,235,0.3);
+    }
+    .btn-download-comprovante:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(37,99,235,0.38);
+    }
+    .btn-skip-comprovante {
+      background: none;
+      border: 1.5px solid var(--border-color);
+      border-radius: 0.6rem;
+      padding: 0.6rem 1.1rem;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-weight: 500;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-skip-comprovante:hover {
+      border-color: var(--text-main);
+      color: var(--text-main);
+    }
+    .punch-legal-note {
+      margin-top: 1rem;
+      font-size: 0.6875rem;
+      color: #93c5fd;
+      background: #eff6ff;
+      border-radius: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      border-left: 3px solid #3b82f6;
+      text-align: left;
+      color: #1e40af;
+    }
+  </style>
 </head>
 
 <body>
@@ -199,9 +318,14 @@
                 <button class="bh-period-btn" data-period="custom-month" id="bh-btn-custom-month"><span data-icon="calendario" class="icon-sm"></span> Mês Específico</button>
                 <button class="bh-period-btn" data-period="custom-range" id="bh-btn-range"><span data-icon="calendario" class="icon-sm"></span> Período</button>
               </div>
-              <button id="btn-export-pdf" class="btn btn-pdf" style="padding: 0.5rem 1rem; font-size: 0.875rem;" disabled>
-                <span data-icon="file-text" class="icon-sm"></span> Exportar PDF
-              </button>
+              <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button id="btn-export-pdf" class="btn btn-pdf" style="padding: 0.5rem 1rem; font-size: 0.875rem;" disabled>
+                  <span data-icon="file-text" class="icon-sm"></span> Resumo PDF
+                </button>
+                <button id="btn-export-espelho" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.875rem;" disabled>
+                  <span data-icon="clipboard-list" class="icon-sm"></span> Espelho de Ponto
+                </button>
+              </div>
             </div>
 
             <div class="bh-custom-range" id="bh-range-month">
@@ -433,6 +557,26 @@
           <span data-icon="save" class="icon-sm"></span> Atualizar Senha
         </button>
       </form>
+    </div>
+  </div>
+
+  <!-- Modal: Comprovante pós-batida -->
+  <div id="modal-punch-success">
+    <div class="punch-success-box">
+      <div class="punch-success-icon" id="punch-success-icon">✓</div>
+      <div class="punch-success-type" id="punch-success-type">Ponto Registrado</div>
+      <div class="punch-success-time" id="punch-success-time">--:--</div>
+      <div class="punch-success-date" id="punch-success-date"></div>
+      <div class="punch-success-actions">
+        <button class="btn-download-comprovante" id="btn-modal-download-comprovante">
+          <span data-icon="file-text" class="icon-sm"></span>
+          Baixar Comprovante PDF
+        </button>
+        <button class="btn-skip-comprovante" id="btn-modal-skip-comprovante">Agora não</button>
+      </div>
+      <div class="punch-legal-note">
+        📋 Comprovante válido conforme Portaria MTE 671/2021 e Art. 74 §2º CLT.
+      </div>
     </div>
   </div>
 

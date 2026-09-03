@@ -4,7 +4,7 @@ import {
   storage, ref, uploadBytes, getDownloadURL
 } from './firebase-config.js';
 import { insertSVGs, showToast } from './svg.js';
-import { gerarComprovantePDF, gerarRelatorioMensalPDF } from './pdf.js';
+import { gerarComprovantePDF, gerarRelatorioMensalPDF, gerarEspelhoPontoPDF } from './pdf.js';
 
 const userNameSpan = document.getElementById('user-name');
 const btnLogout = document.getElementById('btn-logout');
@@ -84,10 +84,46 @@ const DEFAULT_WORK_DAYS = [1, 2, 3, 4, 5];
 let userDailyHours = DEFAULT_DAILY_HOURS;
 let userWorkDays = DEFAULT_WORK_DAYS;
 let userNameStr = 'Funcionário';
+let companyName = null;  // Razão social do empregador (carregado do Firestore)
 
 let currentUser = null;
 let todayRegisteredTypes = new Set();
 let editingRecord = null;
+
+// ── Modal pós-batida ───────────────────────────────────────────────────────────
+const modalPunchSuccess  = document.getElementById('modal-punch-success');
+const punchSuccessType   = document.getElementById('punch-success-type');
+const punchSuccessTime   = document.getElementById('punch-success-time');
+const punchSuccessDate   = document.getElementById('punch-success-date');
+const btnModalDownload   = document.getElementById('btn-modal-download-comprovante');
+const btnModalSkip       = document.getElementById('btn-modal-skip-comprovante');
+let   _lastPunchRecord   = null;  // guarda o último registro para o download
+
+if (btnModalSkip) {
+  btnModalSkip.addEventListener('click', () => {
+    if (modalPunchSuccess) modalPunchSuccess.classList.remove('active');
+  });
+}
+if (modalPunchSuccess) {
+  modalPunchSuccess.addEventListener('click', e => {
+    if (e.target === modalPunchSuccess) modalPunchSuccess.classList.remove('active');
+  });
+}
+if (btnModalDownload) {
+  btnModalDownload.addEventListener('click', () => {
+    if (_lastPunchRecord) gerarComprovantePDF(_lastPunchRecord, userNameStr, companyName);
+    if (modalPunchSuccess) modalPunchSuccess.classList.remove('active');
+  });
+}
+
+function openPunchSuccessModal(record) {
+  _lastPunchRecord = record;
+  const ts = record.timestamp instanceof Date ? record.timestamp : record.timestamp?.toDate?.() ?? new Date();
+  if (punchSuccessType) punchSuccessType.innerText = record.type;
+  if (punchSuccessTime) punchSuccessTime.innerText = ts.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  if (punchSuccessDate) punchSuccessDate.innerText = ts.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+  if (modalPunchSuccess) modalPunchSuccess.classList.add('active');
+}
 
 function updateClock() {
   const now = new Date();
@@ -111,6 +147,12 @@ onAuthStateChanged(auth, async (user) => {
         userNameSpan.innerText = userNameStr;
         userDailyHours = userData.dailyHours || DEFAULT_DAILY_HOURS;
         userWorkDays = userData.workDays || DEFAULT_WORK_DAYS;
+
+        // Tenta buscar o nome da empresa nas configurações globais
+        try {
+          const wsSnap = await getDoc(doc(db, 'settings', 'workspace'));
+          if (wsSnap.exists()) companyName = wsSnap.data().companyName || wsSnap.data().name || null;
+        } catch (_) { /* ignorar se não existir */ }
 
         if (userData.firstLogin === true) {
           const modalForcePassword = document.getElementById('modal-force-password');
@@ -277,16 +319,26 @@ async function registerPunch(type) {
     }
 
     const now = new Date();
-    await addDoc(collection(db, 'time_records'), {
+    const docRef = await addDoc(collection(db, 'time_records'), {
       userId: currentUser.uid,
       userEmail: currentUser.email,
-      timestamp: new Date(),
+      timestamp: now,
       type,
       dateString: todayStr,
       latitude, longitude, accuracy
     });
 
-    showToast(`Ponto registrado: ${type}`, 'success');
+    // Mostra modal de sucesso com oferta de comprovante
+    const recordForModal = {
+      id: docRef.id,
+      userId: currentUser.uid,
+      userEmail: currentUser.email,
+      timestamp: now,
+      type,
+      dateString: todayStr,
+    };
+    openPunchSuccessModal(recordForModal);
+
     await loadTodayRecords();
 
   } catch (error) {
@@ -365,7 +417,7 @@ function renderTodayRecordsTable() {
   tbody.querySelectorAll('.btn-pdf-comprovante').forEach(btn => {
     btn.addEventListener('click', () => {
       const record = _todayRecordsData.find(r => r.id === btn.dataset.id);
-      if (record) gerarComprovantePDF(record, userNameStr);
+      if (record) gerarComprovantePDF(record, userNameStr, companyName);
     });
   });
 
@@ -731,9 +783,11 @@ async function loadBancoDeHoras(start, end) {
       bhTotalWorked.innerText   = '00:00';
       bhTotalExpected.innerText = '00:00';
       bhBalance.innerText       = '00:00';
-      bhDaysWorked.innerText = '0';
+      bhDaysWorked.innerText    = '0';
       const btnExport = document.getElementById('btn-export-pdf');
       if (btnExport) btnExport.disabled = true;
+      const btnEspelho = document.getElementById('btn-export-espelho');
+      if (btnEspelho) btnEspelho.disabled = true;
       return;
     }
 
@@ -764,6 +818,7 @@ async function loadBancoDeHoras(start, end) {
 
     renderEmployeeBhTable();
 
+    // Botão Resumo PDF (banco de horas)
     const btnExport = document.getElementById('btn-export-pdf');
     if (btnExport) {
       btnExport.disabled = false;
@@ -772,7 +827,21 @@ async function loadBancoDeHoras(start, end) {
       const periodoLabel = `${startDisplay} a ${endDisplay}`;
       const totals = { totalWorkedMin, totalExpectedMin, totalBalanceMin, daysWorked: daysWithData };
       btnExport.onclick = () => {
-        gerarRelatorioMensalPDF(_employeeBhData, userNameStr, periodoLabel, totals, userDailyHours);
+        gerarRelatorioMensalPDF(_employeeBhData, userNameStr, periodoLabel, totals, userDailyHours, companyName);
+      };
+    }
+
+    // Botão Espelho de Ponto (batidas individuais)
+    const btnEspelho = document.getElementById('btn-export-espelho');
+    if (btnEspelho) {
+      btnEspelho.disabled = false;
+      const startDisplay = startStr.split('-').reverse().join('/');
+      const endDisplay = endStr.split('-').reverse().join('/');
+      const periodoLabel = `${startDisplay} a ${endDisplay}`;
+      const totals = { totalWorkedMin, totalExpectedMin, totalBalanceMin, daysWorked: daysWithData };
+      // Passa os registros brutos (não agregados) para o espelho de ponto
+      btnEspelho.onclick = () => {
+        gerarEspelhoPontoPDF(records, userNameStr, periodoLabel, totals, userDailyHours, companyName);
       };
     }
   } catch (err) {
