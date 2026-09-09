@@ -399,7 +399,7 @@
         <p style="color: var(--text-muted); font-size: 0.8125rem; margin-bottom: 1.25rem;">
           Esses dados são exibidos nos comprovantes de ponto gerados em PDF, conforme exigência da <strong>Portaria MTE 671/2021</strong>.
         </p>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="company-info-grid">
           <div class="form-group" style="margin-bottom: 0;">
             <label for="workspace-company-name" class="form-label">Razão Social <span style="color:var(--danger)">*</span></label>
             <input type="text" id="workspace-company-name" class="form-input" placeholder="Ex: Empresa XYZ Ltda.">
@@ -494,16 +494,18 @@
           </div>
         </div>
 
-        <div class="bh-period-selector" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-          <div>
+        <div class="bh-actions-row">
+          <div class="bh-period-btns">
             <button class="bh-period-btn active" data-period="week" id="admin-bh-btn-week"><span data-icon="calendario" class="icon-sm"></span> Esta Semana</button>
             <button class="bh-period-btn" data-period="month" id="admin-bh-btn-month"><span data-icon="calendario" class="icon-sm"></span> Mês Atual</button>
             <button class="bh-period-btn" data-period="custom-month" id="admin-bh-btn-cmonth"><span data-icon="calendario" class="icon-sm"></span> Mês Específico</button>
             <button class="bh-period-btn" data-period="custom-range" id="admin-bh-btn-range"><span data-icon="calendario" class="icon-sm"></span> Período</button>
           </div>
-          <button id="admin-btn-export-pdf" class="btn btn-pdf" style="padding: 0.5rem 1rem; font-size: 0.875rem;" disabled>
-            <span data-icon="file-text" class="icon-sm"></span> Exportar PDF
-          </button>
+          <div class="bh-export-btns">
+            <button id="admin-btn-export-pdf" class="btn btn-pdf" disabled>
+              <span data-icon="file-text" class="icon-sm"></span> Exportar PDF
+            </button>
+          </div>
         </div>
 
         <div class="bh-custom-range" id="admin-bh-range-month">
@@ -545,8 +547,8 @@
               <tr>
                 <th>Data</th>
                 <th>Entrada</th>
-                <th>Pausa</th>
-                <th>Volta</th>
+                <th class="bh-hide-xs">Pausa</th>
+                <th class="bh-hide-xs">Volta</th>
                 <th>Saída</th>
                 <th>Total</th>
                 <th>Saldo do Dia</th>
@@ -697,7 +699,7 @@
           Dados Trabalhistas <span style="font-weight:400; color:var(--text-muted);">(opcional — usados no PDF)</span>
         </summary>
         <div class="labor-details-body">
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+          <div class="labor-grid">
             <div class="form-group" style="margin-bottom:0;">
               <label class="form-label" for="new-cpf">CPF</label>
               <input type="text" id="new-cpf" class="form-input" placeholder="000.000.000-00" maxlength="14">
@@ -707,7 +709,7 @@
               <input type="text" id="new-matricula" class="form-input" placeholder="Ex: EMP-0042">
             </div>
           </div>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-top:0.75rem;">
+          <div class="labor-grid" style="margin-top:0.75rem;">
             <div class="form-group" style="margin-bottom:0;">
               <label class="form-label" for="new-cargo">Cargo / Função</label>
               <input type="text" id="new-cargo" class="form-input" placeholder="Ex: Analista de TI">
@@ -849,7 +851,7 @@
         <p style="font-size: 0.8125rem; color: var(--text-muted); margin-bottom: 1.25rem;">
           Dados de identificação do funcionário exibidos nos comprovantes PDF (Portaria MTE 671/2021).
         </p>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+        <div class="labor-grid">
           <div class="form-group" style="margin-bottom:0;">
             <label class="form-label" for="jornada-cpf">CPF</label>
             <input type="text" id="jornada-cpf" class="form-input" placeholder="000.000.000-00" maxlength="14">
@@ -859,7 +861,7 @@
             <input type="text" id="jornada-matricula" class="form-input" placeholder="Ex: EMP-0042">
           </div>
         </div>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-top:0.75rem;">
+        <div class="labor-grid" style="margin-top:0.75rem;">
           <div class="form-group" style="margin-bottom:0;">
             <label class="form-label" for="jornada-cargo">Cargo / Função</label>
             <input type="text" id="jornada-cargo" class="form-input" placeholder="Ex: Analista de TI">

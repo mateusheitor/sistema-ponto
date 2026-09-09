@@ -273,7 +273,7 @@ export function gerarComprovantePDF(record, userName, companyName, employeeData 
 
   // Empregador
   doc.setFillColor(...BG);
-  doc.roundedRect(10 + colW, y, colW, 23, 2, 2, 'F');
+  doc.roundedRect(10 + colW, y, colW, 28, 2, 2, 'F');
   doc.setTextColor(...MUTED);
   doc.setFontSize(6);
   doc.setFont('helvetica', 'bold');
@@ -281,8 +281,9 @@ export function gerarComprovantePDF(record, userName, companyName, employeeData 
   doc.setTextColor(...TEXT);
   doc.setFontSize(7.5);
   doc.setFont('helvetica', 'bold');
-  doc.text(companyName || 'Conforme contrato', 13 + colW, y + 11, { maxWidth: colW - 6 });
-  y += 27;
+  const compLines = doc.splitTextToSize(companyName || 'Conforme contrato', colW - 6);
+  doc.text(compLines, 13 + colW, y + 11);
+  y += 32;
 
   // ── NSR e identificadores legais ──
   doc.setFillColor(239, 246, 255);
@@ -389,12 +390,12 @@ export function gerarEspelhoPontoPDF(records, userName, periodoLabel, totals, da
   let empLine1 = `Periodo: ${periodoLabel}`;
   if (employeeData.cpf) empLine1 += ` | CPF: ${employeeData.cpf}`;
   if (employeeData.matricula) empLine1 += ` | Matrícula: ${employeeData.matricula}`;
-  doc.text(empLine1, mX + 5, y + 18);
+  doc.text(doc.splitTextToSize(empLine1, cW / 2 - 10), mX + 5, y + 18);
   
   let empLine2 = '';
   if (employeeData.cargo) empLine2 += `Cargo: ${employeeData.cargo}`;
   if (employeeData.departamento) empLine2 += (empLine2 ? ' | ' : '') + `Depto: ${employeeData.departamento}`;
-  if (empLine2) doc.text(empLine2, mX + 5, y + 24);
+  if (empLine2) doc.text(doc.splitTextToSize(empLine2, cW / 2 - 10), mX + 5, y + 24);
 
   doc.setTextColor(...PRIMARY);
   doc.setFontSize(7);
@@ -402,11 +403,18 @@ export function gerarEspelhoPontoPDF(records, userName, periodoLabel, totals, da
   doc.text('EMPREGADOR', pageW / 2 + 5, y + 6);
   doc.setTextColor(...TEXT);
   doc.setFontSize(10);
-  doc.text(companyName || 'Conforme contrato de trabalho', pageW / 2 + 5, y + 14);
+  doc.setFont('helvetica', 'bold');
+  doc.text(
+    doc.splitTextToSize(companyName || 'Conforme contrato de trabalho', cW / 2 - 10),
+    pageW / 2 + 5, y + 14
+  );
   doc.setFontSize(7);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...MUTED);
-  doc.text(`Meta diaria: ${dailyHours}h | Cod. Autenticidade: ${authCode}`, pageW / 2 + 5, y + 21);
+  doc.text(
+    doc.splitTextToSize(`Meta diaria: ${dailyHours}h | Cod. Autenticidade: ${authCode}`, cW / 2 - 10),
+    pageW / 2 + 5, y + 21
+  );
   y += 33;
 
   // ── Cards de totais ──
@@ -639,11 +647,11 @@ export function gerarRelatorioMensalPDF(bhData, userName, periodoLabel, totals, 
   let empLine1 = `Periodo: ${periodoLabel}`;
   if (employeeData.cpf) empLine1 += ` | CPF: ${employeeData.cpf}`;
   if (employeeData.matricula) empLine1 += ` | Matrícula: ${employeeData.matricula}`;
-  doc.text(empLine1, mX + 5, y + 17);
+  doc.text(doc.splitTextToSize(empLine1, cW / 2 - 10), mX + 5, y + 17);
   
   let empLine2 = `Meta diaria: ${dailyHours}h  |  Cod. Auth.: ${authCode}`;
   if (employeeData.cargo) empLine2 += ` | Cargo: ${employeeData.cargo}`;
-  doc.text(empLine2, mX + 5, y + 21);
+  doc.text(doc.splitTextToSize(empLine2, cW / 2 - 10), mX + 5, y + 21);
 
   doc.setTextColor(...PRIMARY);
   doc.setFontSize(7);
@@ -651,7 +659,11 @@ export function gerarRelatorioMensalPDF(bhData, userName, periodoLabel, totals, 
   doc.text('EMPREGADOR', pageW / 2 + 5, y + 6);
   doc.setTextColor(...TEXT);
   doc.setFontSize(10);
-  doc.text(companyName || 'Conforme contrato de trabalho', pageW / 2 + 5, y + 13);
+  doc.setFont('helvetica', 'bold');
+  doc.text(
+    doc.splitTextToSize(companyName || 'Conforme contrato de trabalho', cW / 2 - 10),
+    pageW / 2 + 5, y + 13
+  );
   y += 29;
 
   // ── Cards de resumo ──

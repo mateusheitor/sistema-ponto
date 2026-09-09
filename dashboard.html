@@ -21,6 +21,7 @@
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.25s ease;
+      padding: 1rem;
     }
 
     .modal-overlay.active {
@@ -311,18 +312,18 @@
             <h2 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1.25rem;"><span data-icon="folder-clock"
                 class="icon-sm"></span> Banco de Horas</h2>
 
-            <div class="bh-period-selector" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-              <div>
+            <div class="bh-actions-row">
+              <div class="bh-period-btns">
                 <button class="bh-period-btn active" data-period="week" id="bh-btn-week"><span data-icon="calendario" class="icon-sm"></span> Esta Semana</button>
                 <button class="bh-period-btn" data-period="month" id="bh-btn-month"><span data-icon="calendario" class="icon-sm"></span> Mês Atual</button>
                 <button class="bh-period-btn" data-period="custom-month" id="bh-btn-custom-month"><span data-icon="calendario" class="icon-sm"></span> Mês Específico</button>
                 <button class="bh-period-btn" data-period="custom-range" id="bh-btn-range"><span data-icon="calendario" class="icon-sm"></span> Período</button>
               </div>
-              <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                <button id="btn-export-pdf" class="btn btn-pdf" style="padding: 0.5rem 1rem; font-size: 0.875rem;" disabled>
+              <div class="bh-export-btns">
+                <button id="btn-export-pdf" class="btn btn-pdf" disabled>
                   <span data-icon="file-text" class="icon-sm"></span> Resumo PDF
                 </button>
-                <button id="btn-export-espelho" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.875rem;" disabled>
+                <button id="btn-export-espelho" class="btn btn-primary" disabled>
                   <span data-icon="clipboard-list" class="icon-sm"></span> Espelho de Ponto
                 </button>
               </div>
@@ -367,11 +368,11 @@
                   <tr>
                     <th>Data</th>
                     <th>Entrada</th>
-                    <th>Pausa</th>
-                    <th>Volta</th>
+                    <th class="bh-hide-xs">Pausa</th>
+                    <th class="bh-hide-xs">Volta</th>
                     <th>Saída</th>
                     <th>Total</th>
-                    <th>Saldo do Dia</th>
+                    <th>Saldo</th>
                   </tr>
                 </thead>
                 <tbody id="bh-table-body">

@@ -38,6 +38,8 @@ body {
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
+  padding-left:  max(2rem, env(safe-area-inset-left));
+  padding-right: max(2rem, env(safe-area-inset-right));
 }
 
 .text-center { text-align: center; }
@@ -94,11 +96,6 @@ body {
 
 .btn:active {
   transform: translateY(1px);
-}
-
-.icon-sm {
-  display: inline-flex;
-  align-items: center;
 }
 
 .btn-primary {
@@ -252,6 +249,20 @@ body {
 
 .table-container {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,0,0,0.12) transparent;
+}
+
+.table-container::-webkit-scrollbar {
+  height: 5px;
+}
+.table-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+.table-container::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.15);
+  border-radius: 4px;
 }
 
 table {
@@ -568,7 +579,6 @@ tr:hover {
 .bh-period-selector::-webkit-scrollbar-track { background: transparent; }
 .bh-period-selector::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 4px; }
 
-
 .bh-period-btn {
   padding: 0.5rem 1.25rem;
   border: 1px solid var(--border-color);
@@ -580,6 +590,7 @@ tr:hover {
   color: var(--text-muted);
   transition: all 0.2s ease;
   box-shadow: var(--shadow-sm);
+  white-space: nowrap;
 }
 
 .bh-period-btn:hover {
@@ -628,7 +639,7 @@ tr:hover {
   box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
 }
 
-.bh-custom-range input:focus { 
+.bh-custom-range input:focus {
   border-color: var(--primary-color);
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
 }
@@ -730,7 +741,6 @@ tr:hover {
 .employee-tab-nav::-webkit-scrollbar-track { background: transparent; }
 .employee-tab-nav::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 4px; }
 
-
 .employee-tab-btn {
   padding: 0.625rem 1.25rem;
   border: none;
@@ -743,6 +753,7 @@ tr:hover {
   border-bottom: 2px solid transparent;
   margin-bottom: -2px;
   position: relative;
+  white-space: nowrap;
 }
 .employee-tab-btn:hover { color: var(--text-main); }
 .employee-tab-btn.active {
@@ -829,8 +840,8 @@ tr:hover {
   border-radius: var(--radius-md);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.06);
   border-left: 4px solid var(--primary-color);
-  min-width: 280px;
-  max-width: 380px;
+  min-width: min(280px, calc(100vw - 2.5rem));
+  max-width: min(380px, calc(100vw - 2.5rem));
   pointer-events: all;
   opacity: 0;
   transform: translateX(20px);
@@ -1029,6 +1040,8 @@ tr:hover {
 @media (max-width: 640px) {
   .container {
     padding: 1rem;
+    padding-left:  max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
   }
 
   .card {
@@ -1087,13 +1100,11 @@ tr:hover {
     display: none;
   }
 
-  /* Cards stack with less gap on mobile */
   /* Make bh-summary-grid 2 cols on mobile */
   .bh-summary-grid {
     grid-template-columns: 1fr 1fr;
   }
 }
-
 
 /* ── File Upload Area ── */
 .file-upload-area {
@@ -1192,7 +1203,6 @@ tr:hover {
   white-space: nowrap;
   transition: background 0.15s, color 0.15s;
   margin-top: 0.35rem;
-  display: inline-flex;
 }
 
 .attachment-link:hover {
@@ -1244,4 +1254,109 @@ tr:hover {
   background-color: var(--primary-color);
   color: white;
   border-color: var(--primary-color);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   RESPONSIVE UTILITIES — adicionadas para consistência mobile/desktop
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Modal overlay: garante padding em telas pequenas (sem notch cuts) ── */
+.modal-overlay {
+  padding: 1rem;
+}
+
+/* ── BH Actions Row: seletor de período + botões de exportação ── */
+.bh-actions-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.bh-period-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.bh-export-btns {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+@media (max-width: 640px) {
+  .bh-actions-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .bh-export-btns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .bh-export-btns .btn {
+    justify-content: center;
+    font-size: 0.8rem;
+    padding: 0.5rem 0.75rem;
+  }
+}
+
+/* ── Company Info Grid: grade 2 colunas responsiva ── */
+.company-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 520px) {
+  .company-info-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Labor Grid: grade 2 colunas para dados trabalhistas em modais ── */
+.labor-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+@media (max-width: 480px) {
+  .labor-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Solicitações: tabelas com 7 colunas — fonte menor em tablets ── */
+@media (max-width: 768px) {
+  #edit-requests-table-body td,
+  #insert-requests-table-body td {
+    font-size: 0.76rem;
+    padding: 0.5rem 0.4rem;
+  }
+
+  /* Oculta colunas de menor prioridade em telas muito pequenas */
+  .col-hide-mobile {
+    display: none;
+  }
+}
+
+/* ── Banco de Horas: oculta Pausa/Volta em telas xs, mantém Data/Total/Saldo ── */
+@media (max-width: 480px) {
+  #bh-table-body td:nth-child(3),
+  #bh-table-body td:nth-child(4),
+  #bh-table-body th:nth-child(3),
+  #bh-table-body th:nth-child(4),
+  #admin-bh-table-body td:nth-child(3),
+  #admin-bh-table-body td:nth-child(4),
+  table thead tr th.bh-hide-xs,
+  table tbody tr td.bh-hide-xs {
+    display: none;
+  }
 }
