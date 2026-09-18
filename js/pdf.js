@@ -42,11 +42,24 @@ function fmtTime(d, withSec = true) {
 }
 
 /**
- * Gera NSR (Número Sequencial de Registro) — identificador único do evento
- * de ponto, conforme nomenclatura da Portaria 671/2021.
- * Implementado como hash determinístico do ID do registro.
+ * Retorna o NSR (Número Sequencial de Registro) do registro.
+ *
+ * Prioridade:
+ *   1. Campo `nsr` gravado no Firestore pelo contador atômico (Portaria 671/2021).
+ *   2. Fallback para hash determinístico do ID (registros legados sem campo nsr).
+ *
+ * @param {object} record   - Objeto do registro (com campo `id` e opcionalmente `nsr`).
+ * @param {string} recordId - ID do documento (aceito também como string direta para compatibilidade).
  */
-function generateNSR(recordId) {
+function generateNSR(recordOrId) {
+  // Chamada moderna: passa o objeto completo do registro
+  if (recordOrId && typeof recordOrId === 'object') {
+    if (recordOrId.nsr) return String(recordOrId.nsr).padStart(9, '0');
+    // Fallback para registros legados
+    recordOrId = recordOrId.id || '';
+  }
+  // Chamada legada: passa apenas o recordId como string
+  const recordId = recordOrId || '';
   if (!recordId) return 'N/A';
   let hash = 0;
   for (let i = 0; i < recordId.length; i++) {
@@ -194,7 +207,7 @@ export function gerarComprovantePDF(record, userName, companyName, employeeData 
     ? record.timestamp.toDate()
     : new Date(record.timestamp);
 
-  const nsr      = generateNSR(record.id);
+  const nsr      = generateNSR(record);   // usa record.nsr (atômico) ou fallback por hash
   const authCode = generateAuthCode(record.id || 'unknown', ts.getTime());
 
   const typeColors = {

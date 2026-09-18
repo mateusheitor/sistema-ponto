@@ -1,7 +1,7 @@
 import {
   firebaseConfig, auth, onAuthStateChanged, signOut,
   db, collection, query, where, getDocs, orderBy,
-  getDoc, doc, setDoc, addDoc, updateDoc, deleteDoc, serverTimestamp
+  getDoc, doc, setDoc, addDoc, updateDoc, deleteDoc, serverTimestamp, writeBatch
 } from './firebase-config.js';
 import { insertSVGs, showToast } from './svg.js';
 import { gerarRelatorioMensalPDF, gerarEspelhoPontoPDF } from './pdf.js';
@@ -767,26 +767,64 @@ btnConfirmApprove.addEventListener('click', async () => {
   btn.innerText = '...';
 
   try {
-
     const [h, m] = req.requestedTime.split(':').map(Number);
     const originalDate = req.originalTimestamp.toDate();
     const newTimestamp = new Date(originalDate);
     newTimestamp.setHours(h, m, 0, 0);
 
-    await updateDoc(doc(db, 'time_records', req.recordId), {
-      timestamp: newTimestamp,
-      edited: true,
-      editedAt: new Date(),
-      editNote: req.justification
+    // ── Item 2: Registros de ponto imutáveis ────────────────────────────────────────
+    // Em vez de sobrescrever o timestamp, cria-se um novo registro corrigido
+    // e marca o original como superseded, preservando o histórico completo.
+    const batch = writeBatch(db);
+
+    // 1. Busca o registro original para copiar os campos relevantes
+    const originalSnap = await getDoc(doc(db, 'time_records', req.recordId));
+    if (!originalSnap.exists()) throw new Error('Registro original não encontrado.');
+    const originalData = originalSnap.data();
+
+    // 2. Marca o registro original como inválido (superseded)
+    batch.update(doc(db, 'time_records', req.recordId), {
+      superseded:      true,
+      supersededAt:    new Date(),
+      supersededBy:    currentUser.email,
+      supersededReason: req.justification,
+      supersededReqId: reqId,
     });
 
-    await updateDoc(doc(db, 'edit_requests', reqId), {
-      status: 'approved',
-      resolvedAt: new Date(),
-      resolvedBy: currentUser.email
+    // 3. Cria novo registro corrigido, vinculado ao original
+    const newRecordRef = doc(collection(db, 'time_records'));
+    batch.set(newRecordRef, {
+      userId:          originalData.userId,
+      userEmail:       originalData.userEmail,
+      timestamp:       newTimestamp,
+      type:            originalData.type,
+      dateString:      originalData.dateString,
+      latitude:        originalData.latitude  ?? null,
+      longitude:       originalData.longitude ?? null,
+      accuracy:        originalData.accuracy  ?? null,
+      nsr:             originalData.nsr       ?? null,  // herda o NSR original
+      // Audição completa da correção
+      edited:          true,
+      editedAt:        new Date(),
+      editedBy:        currentUser.email,
+      editNote:        req.justification,
+      originalRecordId: req.recordId,            // vincula ao original
+      originalTimestamp: originalData.timestamp, // preserva valor antigo
+      editReqId:       reqId,
+      createdAt:       new Date(),
     });
 
-    showToast(`Edição aprovada! Registro de "${req.type}" alterado para ${req.requestedTime}.`, 'success');
+    // 4. Atualiza a solicitação como aprovada
+    batch.update(doc(db, 'edit_requests', reqId), {
+      status:          'approved',
+      resolvedAt:      new Date(),
+      resolvedBy:      currentUser.email,
+      newRecordId:     newRecordRef.id,
+    });
+
+    await batch.commit();
+
+    showToast(`Edição aprovada! Novo registro de "${req.type}" criado para ${req.requestedTime}.`, 'success');
     await loadEditRequests();
     await loadRecords();
 

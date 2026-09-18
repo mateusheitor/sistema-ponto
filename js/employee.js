@@ -1,6 +1,6 @@
 import {
   auth, onAuthStateChanged, signOut, updatePassword,
-  db, collection, addDoc, query, where, getDocs, doc, getDoc, updateDoc, serverTimestamp,
+  db, collection, addDoc, query, where, getDocs, doc, getDoc, updateDoc, serverTimestamp, runTransaction,
   storage, ref, uploadBytes, getDownloadURL
 } from './firebase-config.js';
 import { insertSVGs, showToast } from './svg.js';
@@ -276,6 +276,20 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+/**
+ * Obtém e incrementa atomicamente o contador de NSR global.
+ * Usa uma transação Firestore no documento settings/nsr_counter.
+ * Retorna o NSR como string de 9 dígitos (Portaria 671/2021).
+ */
+async function getNextNSR(transaction) {
+  const counterRef = doc(db, 'settings', 'nsr_counter');
+  const snap = await transaction.get(counterRef);
+  const current = snap.exists() ? (snap.data().value || 0) : 0;
+  const next = current + 1;
+  transaction.set(counterRef, { value: next }, { merge: true });
+  return String(next).padStart(9, '0');
+}
+
 async function registerPunch(type) {
   if (!currentUser) return;
   const todayStr = new Date().toISOString().split('T')[0];
@@ -288,7 +302,6 @@ async function registerPunch(type) {
   Object.values(PUNCH_CONFIG).forEach(c => { if (c.btn) c.btn.disabled = true; });
 
   try {
-
     const checkSnap = await getDocs(query(
       collection(db, 'time_records'),
       where('userId', '==', currentUser.uid),
@@ -304,9 +317,9 @@ async function registerPunch(type) {
     let latitude, longitude, accuracy;
     try {
       const pos = await getCurrentPosition();
-      latitude = pos.coords.latitude;
+      latitude  = pos.coords.latitude;
       longitude = pos.coords.longitude;
-      accuracy = pos.coords.accuracy;
+      accuracy  = pos.coords.accuracy;
     } catch (geoError) {
       let msg = 'É necessário permitir o acesso à localização para registrar o ponto.';
       if (geoError.code === 1) msg = 'Permissão de localização negada. Permita o acesso ao GPS nas configurações do navegador e tente novamente.';
@@ -334,23 +347,34 @@ async function registerPunch(type) {
     }
 
     const now = new Date();
-    const docRef = await addDoc(collection(db, 'time_records'), {
-      userId: currentUser.uid,
-      userEmail: currentUser.email,
-      timestamp: now,
-      type,
-      dateString: todayStr,
-      latitude, longitude, accuracy
+
+    // ── Item 1: NSR sequencial e imutável via transação atômica ──────────────
+    let docRef;
+    let nsr;
+    await runTransaction(db, async (transaction) => {
+      nsr = await getNextNSR(transaction);
+      docRef = doc(collection(db, 'time_records'));
+      transaction.set(docRef, {
+        userId:    currentUser.uid,
+        userEmail: currentUser.email,
+        timestamp: now,
+        type,
+        dateString: todayStr,
+        latitude, longitude, accuracy,
+        nsr,                         // NSR sequencial e único (Portaria 671/2021)
+        createdAt: now,
+      });
     });
 
     // Mostra modal de sucesso com oferta de comprovante
     const recordForModal = {
       id: docRef.id,
-      userId: currentUser.uid,
+      userId:    currentUser.uid,
       userEmail: currentUser.email,
       timestamp: now,
       type,
       dateString: todayStr,
+      nsr,
     };
     openPunchSuccessModal(recordForModal);
 
