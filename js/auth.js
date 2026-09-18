@@ -1,5 +1,5 @@
 import {
-  auth, db,
+  auth, db, doc, getDoc,
   signInWithEmailAndPassword, signOut, updatePassword,
   sendPasswordResetEmail, signInWithPhoneNumber, RecaptchaVerifier,
   collection, query, where, getDocs
@@ -578,7 +578,6 @@ function initLoginForm() {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        const { db, doc, getDoc } = await import('./firebase-config.js');
         const userDocSnap = await getDoc(doc(db, 'users', user.uid));
 
         if (userDocSnap.exists()) {
