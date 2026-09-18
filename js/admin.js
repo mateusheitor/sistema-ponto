@@ -1381,14 +1381,14 @@ function renderUsersTable() {
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>
+      <td data-label="Nome">
         <strong>${user.name || '—'}</strong>
         ${isCurrentUser ? '<span style="font-size:0.7rem; color:var(--primary-color); margin-left:4px;">(você)</span>' : ''}
       </td>
-      <td style="font-size:0.875rem;">${user.email || '—'}</td>
-      <td>${roleBadge}</td>
-      <td style="font-size:0.875rem;"><strong>${dh}h/dia</strong> <br><span style="color:var(--text-muted); font-size:0.75rem;">${daysStr}</span></td>
-      <td style="text-align: center; display:flex; gap:0.5rem; justify-content:center;">${configBtn}${deleteBtn}</td>
+      <td data-label="E-mail" style="font-size:0.875rem;">${user.email || '—'}</td>
+      <td data-label="Tipo de Acesso">${roleBadge}</td>
+      <td data-label="Jornada Diária" style="font-size:0.875rem;"><strong>${dh}h/dia</strong> <br><span style="color:var(--text-muted); font-size:0.75rem;">${daysStr}</span></td>
+      <td class="users-actions-cell" style="display:flex; gap:0.5rem; justify-content:center; flex-wrap:wrap;">${configBtn}${deleteBtn}</td>
     `;
     usersTableBody.appendChild(tr);
   });

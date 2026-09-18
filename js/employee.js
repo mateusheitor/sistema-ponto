@@ -40,6 +40,7 @@ const editFileArea        = document.getElementById('edit-file-area');
 const editFilePreview     = document.getElementById('edit-file-preview');
 const editFileName        = document.getElementById('edit-file-name');
 const editFileClear       = document.getElementById('edit-file-clear');
+let _editFile = null; // arquivo selecionado (via input ou drag-and-drop)
 
 // File upload: insert modal
 const insertAttachmentInput = document.getElementById('insert-attachment');
@@ -47,6 +48,7 @@ const insertFileArea        = document.getElementById('insert-file-area');
 const insertFilePreview     = document.getElementById('insert-file-preview');
 const insertFileName        = document.getElementById('insert-file-name');
 const insertFileClear       = document.getElementById('insert-file-clear');
+let _insertFile = null; // arquivo selecionado (via input ou drag-and-drop)
 
 const bhTableBody = document.getElementById('bh-table-body');
 const bhTotalWorked = document.getElementById('bh-total-worked');
@@ -565,6 +567,7 @@ function openEditModal(record) {
 }
 
 function clearEditFile() {
+  _editFile = null;
   editAttachmentInput.value = '';
   editFilePreview.classList.remove('visible');
   editFileName.innerText = '';
@@ -578,6 +581,7 @@ if (editAttachmentInput) {
   editAttachmentInput.addEventListener('change', () => {
     const file = editAttachmentInput.files[0];
     if (file) {
+      _editFile = file;
       editFileName.innerText = file.name;
       editFilePreview.classList.add('visible');
     }
@@ -586,9 +590,10 @@ if (editAttachmentInput) {
   editFileArea.addEventListener('dragleave', () => editFileArea.classList.remove('drag-over'));
   editFileArea.addEventListener('drop', e => {
     e.preventDefault(); editFileArea.classList.remove('drag-over');
-    if (e.dataTransfer.files[0]) {
-      editAttachmentInput.files = e.dataTransfer.files;
-      editFileName.innerText = e.dataTransfer.files[0].name;
+    const dropped = e.dataTransfer.files[0];
+    if (dropped) {
+      _editFile = dropped;  // armazena referência direta (FileList é somente leitura)
+      editFileName.innerText = dropped.name;
       editFilePreview.classList.add('visible');
     }
   });
@@ -610,7 +615,7 @@ btnSubmitEdit.addEventListener('click', async () => {
     return;
   }
 
-  const file = editAttachmentInput?.files[0];
+  const file = _editFile || editAttachmentInput?.files[0] || null;
   if (file && file.size > 10 * 1024 * 1024) {
     showToast('O arquivo deve ter no máximo 10MB.', 'warning');
     return;
@@ -624,11 +629,28 @@ btnSubmitEdit.addEventListener('click', async () => {
     let attachmentName = null;
 
     if (file) {
-      const path = `attachments/edit/${currentUser.uid}/${Date.now()}_${file.name}`;
-      const storageRef = ref(storage, path);
-      await uploadBytes(storageRef, file);
-      attachmentUrl  = await getDownloadURL(storageRef);
-      attachmentName = file.name;
+      try {
+        const uploadTimeout = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('timeout')), 30000)
+        );
+        const path = `attachments/edit/${currentUser.uid}/${Date.now()}_${file.name}`;
+        const storageRef = ref(storage, path);
+        await Promise.race([
+          (async () => {
+            await uploadBytes(storageRef, file);
+            attachmentUrl  = await getDownloadURL(storageRef);
+            attachmentName = file.name;
+          })(),
+          uploadTimeout
+        ]);
+      } catch (uploadErr) {
+        const msg = uploadErr.message === 'timeout'
+          ? 'O upload do arquivo expirou. A solicitação será enviada sem o anexo.'
+          : 'Não foi possível enviar o arquivo. A solicitação será enviada sem o anexo.';
+        showToast(msg, 'warning');
+        attachmentUrl = null;
+        attachmentName = null;
+      }
     }
 
     await addDoc(collection(db, 'edit_requests'), {
@@ -1024,11 +1046,6 @@ if (btnResolvePending) {
   });
 }
 
-if (btnCloseInsert) {
-  btnCloseInsert.addEventListener('click', () => {
-    modalInsert.classList.remove('active');
-  });
-}
 
 if (insertDate) {
   insertDate.addEventListener('change', () => {
@@ -1049,6 +1066,7 @@ if (insertDate) {
 }
 
 function clearInsertFile() {
+  _insertFile = null;
   insertAttachmentInput.value = '';
   insertFilePreview.classList.remove('visible');
   insertFileName.innerText = '';
@@ -1059,6 +1077,7 @@ if (insertAttachmentInput) {
   insertAttachmentInput.addEventListener('change', () => {
     const file = insertAttachmentInput.files[0];
     if (file) {
+      _insertFile = file;
       insertFileName.innerText = file.name;
       insertFilePreview.classList.add('visible');
     }
@@ -1067,9 +1086,10 @@ if (insertAttachmentInput) {
   insertFileArea.addEventListener('dragleave', () => insertFileArea.classList.remove('drag-over'));
   insertFileArea.addEventListener('drop', e => {
     e.preventDefault(); insertFileArea.classList.remove('drag-over');
-    if (e.dataTransfer.files[0]) {
-      insertAttachmentInput.files = e.dataTransfer.files;
-      insertFileName.innerText = e.dataTransfer.files[0].name;
+    const dropped = e.dataTransfer.files[0];
+    if (dropped) {
+      _insertFile = dropped;  // armazena referência direta (FileList é somente leitura)
+      insertFileName.innerText = dropped.name;
       insertFilePreview.classList.add('visible');
     }
   });
@@ -1096,7 +1116,7 @@ if (document.getElementById('form-insert-request')) {
       return;
     }
 
-    const file = insertAttachmentInput?.files[0];
+    const file = _insertFile || insertAttachmentInput?.files[0] || null;
     if (file && file.size > 10 * 1024 * 1024) {
       showToast('O arquivo deve ter no máximo 10MB.', 'warning');
       return;
@@ -1112,11 +1132,28 @@ if (document.getElementById('form-insert-request')) {
       let attachmentName = null;
 
       if (file) {
-        const path = `attachments/insert/${currentUser.uid}/${Date.now()}_${file.name}`;
-        const storageRef = ref(storage, path);
-        await uploadBytes(storageRef, file);
-        attachmentUrl  = await getDownloadURL(storageRef);
-        attachmentName = file.name;
+        try {
+          const uploadTimeout = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('timeout')), 30000)
+          );
+          const path = `attachments/insert/${currentUser.uid}/${Date.now()}_${file.name}`;
+          const storageRef = ref(storage, path);
+          await Promise.race([
+            (async () => {
+              await uploadBytes(storageRef, file);
+              attachmentUrl  = await getDownloadURL(storageRef);
+              attachmentName = file.name;
+            })(),
+            uploadTimeout
+          ]);
+        } catch (uploadErr) {
+          const msg = uploadErr.message === 'timeout'
+            ? 'O upload do arquivo expirou. A solicitação será enviada sem o anexo.'
+            : 'Não foi possível enviar o arquivo. A solicitação será enviada sem o anexo.';
+          showToast(msg, 'warning');
+          attachmentUrl = null;
+          attachmentName = null;
+        }
       }
 
       await addDoc(collection(db, 'insert_requests'), {

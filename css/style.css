@@ -1077,29 +1077,50 @@ tr:hover {
 }
 
 @media (max-width: 640px) {
-  /* Stack user table on mobile */
+  /* Stack user table on mobile — card layout */
+  #tab-usuarios .table-container thead {
+    display: none;
+  }
   #users-table-body tr {
     display: flex;
     flex-direction: column;
-    border-bottom: 2px solid var(--border-color);
-    padding: 0.75rem 0;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    margin-bottom: 0.75rem;
+    padding: 0.75rem;
+    background: white;
+    box-shadow: var(--shadow-sm);
+  }
+  #users-table-body tr:hover {
+    background: white;
   }
   #users-table-body td {
     border: none;
-    padding: 0.2rem 0.5rem;
+    padding: 0.2rem 0.25rem;
+    font-size: 0.875rem;
   }
-  #users-table-body td[style*="text-align: center"] {
+  #users-table-body td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    display: block;
+    margin-bottom: 0.1rem;
+  }
+  #users-table-body td.users-actions-cell {
     padding-top: 0.5rem;
+    border-top: 1px solid var(--border-color);
+    margin-top: 0.35rem;
+  }
+  #users-table-body td.users-actions-cell::before {
+    content: none;
   }
 }
 
 /* ── Extra: hide email column on very small screens in users table ── */
 @media (max-width: 480px) {
-  table thead tr th:nth-child(2),
-  #users-table-body td:nth-child(2) {
-    display: none;
-  }
-
   /* Make bh-summary-grid 2 cols on mobile */
   .bh-summary-grid {
     grid-template-columns: 1fr 1fr;
@@ -1347,16 +1368,9 @@ tr:hover {
   }
 }
 
-/* ── Banco de Horas: oculta Pausa/Volta em telas xs, mantém Data/Total/Saldo ── */
+/* ── Banco de Horas: oculta Pausa/Volta em telas xs via classe bh-hide-xs ── */
 @media (max-width: 480px) {
-  #bh-table-body td:nth-child(3),
-  #bh-table-body td:nth-child(4),
-  #bh-table-body th:nth-child(3),
-  #bh-table-body th:nth-child(4),
-  #admin-bh-table-body td:nth-child(3),
-  #admin-bh-table-body td:nth-child(4),
-  table thead tr th.bh-hide-xs,
-  table tbody tr td.bh-hide-xs {
+  .bh-hide-xs {
     display: none;
   }
 }
