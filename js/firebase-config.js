@@ -3,7 +3,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebas
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, updatePassword, sendPasswordResetEmail, signInWithPhoneNumber, RecaptchaVerifier } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, query, where, getDocs, doc, getDoc, setDoc, orderBy, updateDoc, deleteDoc, serverTimestamp, Timestamp, runTransaction, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-storage.js";
-import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app-check.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAlhwyEr5-IxqvfSL6V6oUzwQ980V7_FIc",
@@ -21,17 +20,18 @@ const db = getFirestore(app);
 const storage = getStorage(app);
 
 // ── Item 8: Firebase App Check ────────────────────────────────────────────────
-// Chave de SITE (pública) do reCAPTCHA v3.
-// Domínio autorizado: sistema-ponto-ecru.vercel.app e localhost.
-// Para bloquear chamadas não verificadas: Firebase Console → App Check → Aplicar (Enforce).
-// ATENÇÃO: só ative o Enforce após confirmar que o percentual verificado é alto.
-try {
-  initializeAppCheck(app, {
-    provider: new ReCaptchaV3Provider('6Ld2CMMtAAAAAEsB2yj5CZab7kxIdFGMvwALdeTj'),
-    isTokenAutoRefreshEnabled: true,
-  });
-} catch (e) {
-  console.warn('[AppCheck] Falha ao inicializar:', e);
-}
+// O App Check foi temporariamente removido do código para restaurar o login.
+// O erro "auth/firebase-app-check-token-is-invalid" indica que o console do Firebase
+// exige um token válido, mas o domínio pode não estar configurado corretamente no reCAPTCHA.
+// 
+// Para reativar com segurança no futuro:
+// 1. Verifique se o domínio do Vercel está no painel do reCAPTCHA admin.
+// 2. Coloque o Firebase Authentication e Firestore em "Monitorando" no painel do App Check.
+// 3. Adicione este código de volta:
+// import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app-check.js";
+// initializeAppCheck(app, {
+//   provider: new ReCaptchaV3Provider('SUA_CHAVE_SITE_AQUI'),
+//   isTokenAutoRefreshEnabled: true,
+// });
 
 export { firebaseConfig, auth, db, storage, onAuthStateChanged, signInWithEmailAndPassword, signOut, updatePassword, sendPasswordResetEmail, signInWithPhoneNumber, RecaptchaVerifier, collection, addDoc, query, where, getDocs, doc, getDoc, setDoc, orderBy, updateDoc, deleteDoc, serverTimestamp, Timestamp, runTransaction, writeBatch, ref, uploadBytes, getDownloadURL };
