@@ -479,7 +479,7 @@ function renderEditRequestsTable() {
 
     const origDateDisplay = req.originalDateString ? req.originalDateString.split('-').reverse().join('/') : '';
     const attachmentHtml = req.attachmentUrl
-      ? `<br><a class="attachment-link" href="${req.attachmentUrl}" target="_blank" rel="noopener noreferrer">📎 ${req.attachmentName || 'Ver Anexo'}</a>`
+      ? `<br><a class="attachment-link" href="${req.attachmentUrl}" target="_blank" rel="noopener noreferrer" title="${req.attachmentName || 'Anexo'}">📎 Ver Anexo</a>`
       : '';
     const tr = document.createElement('tr');
     tr.dataset.reqId = req.id;
@@ -599,7 +599,7 @@ function renderInsertRequestsTable() {
       : `<span style="font-size:0.8rem; color:var(--text-muted);">${req.resolvedAt?.toDate ? req.resolvedAt.toDate().toLocaleDateString('pt-BR') : '—'}</span>`;
 
     const attachmentHtml = req.attachmentUrl
-      ? `<br><a class="attachment-link" href="${req.attachmentUrl}" target="_blank" rel="noopener noreferrer">📎 ${req.attachmentName || 'Ver Anexo'}</a>`
+      ? `<br><a class="attachment-link" href="${req.attachmentUrl}" target="_blank" rel="noopener noreferrer" title="${req.attachmentName || 'Anexo'}">📎 Ver Anexo</a>`
       : '';
     const tr = document.createElement('tr');
     tr.dataset.reqId = req.id;
