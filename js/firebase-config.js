@@ -26,7 +26,7 @@ const storage = getStorage(app);
 // a rede falhar, o App Check é ignorado e o restante do Firebase funciona normalmente.
 try {
   initializeAppCheck(app, {
-    provider: new ReCaptchaV3Provider('6Ld2CMMtAAAAAF7Rc1Rqf4UDuwfDnQVQYeGP_NNv'),
+    provider: new ReCaptchaV3Provider('6Ld2CMMtAAAAAEsB2yj5CZab7kxIdFGMvwALdeTj'), // chave de SITE (pública)
     isTokenAutoRefreshEnabled: true,
   });
 } catch (e) {
