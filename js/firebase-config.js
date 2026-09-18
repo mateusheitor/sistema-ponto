@@ -1,7 +1,7 @@
 
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, updatePassword } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, updatePassword, sendPasswordResetEmail, signInWithPhoneNumber, RecaptchaVerifier } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, query, where, getDocs, doc, getDoc, setDoc, orderBy, updateDoc, deleteDoc, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-storage.js";
 
@@ -20,5 +20,5 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-export { firebaseConfig, auth, db, storage, onAuthStateChanged, signInWithEmailAndPassword, signOut, updatePassword, collection, addDoc, query, where, getDocs, doc, getDoc, setDoc, orderBy, updateDoc, deleteDoc, serverTimestamp, Timestamp, ref, uploadBytes, getDownloadURL };
+export { firebaseConfig, auth, db, storage, onAuthStateChanged, signInWithEmailAndPassword, signOut, updatePassword, sendPasswordResetEmail, signInWithPhoneNumber, RecaptchaVerifier, collection, addDoc, query, where, getDocs, doc, getDoc, setDoc, orderBy, updateDoc, deleteDoc, serverTimestamp, Timestamp, ref, uploadBytes, getDownloadURL };
 

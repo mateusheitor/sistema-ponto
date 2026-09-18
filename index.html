@@ -4,7 +4,341 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PontoWeb - Login</title>
+  <meta name="description" content="Faça login no sistema de controle de ponto PontoWeb.">
   <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* ══════════════════════════════════════════════════════════════
+       Modal de Recuperação de Senha — Estilos
+    ══════════════════════════════════════════════════════════════ */
+    #modal-forgot-password {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.52);
+      backdrop-filter: blur(5px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      padding: 1rem;
+    }
+    #modal-forgot-password.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    /* Caixa do modal */
+    .fp-box {
+      background: #fff;
+      border-radius: 1.25rem;
+      padding: 2rem 2rem 1.75rem;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 32px 64px rgba(0,0,0,0.22);
+      transform: translateY(28px) scale(0.97);
+      transition: transform 0.32s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      max-height: 92vh;
+      overflow-y: auto;
+    }
+    #modal-forgot-password.active .fp-box {
+      transform: translateY(0) scale(1);
+    }
+
+    /* Cabeçalho de cada etapa */
+    .fp-step-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+      min-height: 2rem;
+    }
+    .fp-back-btn {
+      background: none;
+      border: none;
+      color: var(--primary-color);
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0.25rem 0;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      transition: color 0.2s;
+    }
+    .fp-back-btn:hover { color: var(--primary-hover); }
+    .fp-close-btn {
+      background: none;
+      border: none;
+      font-size: 1.4rem;
+      line-height: 1;
+      cursor: pointer;
+      color: var(--text-muted);
+      padding: 0.2rem;
+      margin-left: auto;
+      transition: color 0.2s;
+    }
+    .fp-close-btn:hover { color: var(--text-main); }
+
+    /* Ícone decorativo */
+    .fp-emoji-icon {
+      font-size: 2.25rem;
+      text-align: center;
+      margin-bottom: 0.75rem;
+      display: block;
+      animation: fp-pop 0.4s cubic-bezier(0.175,0.885,0.32,1.275) both;
+    }
+    @keyframes fp-pop {
+      from { transform: scale(0); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+
+    /* Título e descrição */
+    .fp-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 0.4rem;
+    }
+    .fp-desc {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: 1.35rem;
+      line-height: 1.55;
+    }
+
+    /* Caixas de erro inline */
+    .fp-error {
+      display: none;
+      font-size: 0.8125rem;
+      color: var(--danger);
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: var(--radius-md);
+      padding: 0.55rem 0.85rem;
+      margin-top: 0.65rem;
+      line-height: 1.45;
+    }
+    .fp-error.visible { display: block; }
+
+    /* ── Botão de link (texto clicável) ── */
+    .fp-text-btn {
+      background: none;
+      border: none;
+      color: var(--primary-color);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 0;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      transition: color 0.2s;
+    }
+    .fp-text-btn:hover { color: var(--primary-hover); }
+
+    /* ── Link "Esqueci a senha" na tela de login ── */
+    .fp-trigger-row {
+      text-align: center;
+      margin-top: 1rem;
+    }
+
+    /* ══ ETAPA 2 — Cards de método ══ */
+    .fp-method-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .fp-method-card {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem 1.1rem;
+      border: 2px solid var(--border-color);
+      border-radius: var(--radius-md);
+      background: #fff;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s, transform 0.15s, box-shadow 0.2s;
+      text-align: left;
+      width: 100%;
+    }
+    .fp-method-card:hover {
+      border-color: var(--primary-color);
+      background: #faf5ff;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(79,70,229,0.12);
+    }
+    .fp-method-card:active { transform: translateY(0); }
+    .fp-method-card:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .fp-method-emoji {
+      font-size: 1.75rem;
+      flex-shrink: 0;
+    }
+    .fp-method-body {
+      flex: 1;
+      min-width: 0;
+    }
+    .fp-method-label {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 0.15rem;
+    }
+    .fp-method-dest {
+      font-size: 0.8125rem;
+      color: var(--primary-color);
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .fp-method-arrow {
+      font-size: 1rem;
+      color: var(--text-muted);
+      flex-shrink: 0;
+      transition: transform 0.2s;
+    }
+    .fp-method-card:hover .fp-method-arrow {
+      transform: translateX(3px);
+      color: var(--primary-color);
+    }
+
+    /* ══ ETAPA 3 — OTP ══ */
+    .otp-inputs {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      margin: 1.25rem 0 0.5rem;
+    }
+    .otp-input {
+      width: 44px;
+      height: 52px;
+      text-align: center;
+      font-size: 1.35rem;
+      font-weight: 700;
+      border: 2px solid var(--border-color);
+      border-radius: var(--radius-md);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      background: #fff;
+      color: var(--text-main);
+      caret-color: var(--primary-color);
+    }
+    .otp-input:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(79,70,229,0.15);
+    }
+    .otp-input.filled {
+      border-color: var(--primary-color);
+      background: #f5f3ff;
+    }
+    .fp-resend-row {
+      text-align: center;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      margin-top: 1rem;
+    }
+
+    /* ══ ETAPA 4 — Barra de força de senha ══ */
+    .fp-strength-bar {
+      height: 4px;
+      background: var(--border-color);
+      border-radius: 99px;
+      margin-top: 0.5rem;
+      overflow: hidden;
+    }
+    .fp-strength-fill {
+      height: 100%;
+      border-radius: 99px;
+      transition: width 0.35s ease, background 0.35s ease;
+      width: 0;
+    }
+    .fp-strength-label {
+      font-size: 0.75rem;
+      font-weight: 500;
+      margin-top: 0.3rem;
+      height: 1rem;
+      transition: color 0.35s ease;
+    }
+
+    /* ══ ETAPA 5 — Sucesso ══ */
+    .fp-success-wrap {
+      text-align: center;
+      padding: 0.5rem 0;
+      animation: fp-fadein 0.35s ease both;
+    }
+    @keyframes fp-fadein {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fp-success-circle {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #10b981, #059669);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      margin: 0 auto 1.1rem;
+      box-shadow: 0 8px 24px rgba(16,185,129,0.3);
+      animation: fp-pop 0.4s cubic-bezier(0.175,0.885,0.32,1.275) 0.1s both;
+    }
+    .fp-success-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 0.5rem;
+    }
+    .fp-success-msg {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+      margin-bottom: 0.5rem;
+    }
+    .fp-success-dest-badge {
+      display: inline-block;
+      background: #ede9fe;
+      color: #5b21b6;
+      font-weight: 600;
+      font-size: 0.875rem;
+      border-radius: 999px;
+      padding: 0.3rem 1rem;
+      margin: 0.2rem 0 0.75rem;
+    }
+    .fp-success-note {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 0;
+    }
+
+    /* Indicador de progresso */
+    .fp-progress {
+      display: flex;
+      gap: 0.3rem;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+    }
+    .fp-progress-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--border-color);
+      transition: background 0.3s, transform 0.3s;
+    }
+    .fp-progress-dot.active {
+      background: var(--primary-color);
+      transform: scale(1.3);
+    }
+    .fp-progress-dot.done {
+      background: var(--success);
+    }
+  </style>
 </head>
 <body>
 
@@ -18,13 +352,13 @@
       <form id="login-form">
         <div class="form-group">
           <label for="email" class="form-label">E-mail</label>
-          <input type="email" id="email" class="form-input" placeholder="seu@email.com" required>
+          <input type="email" id="email" class="form-input" placeholder="seu@email.com" required autocomplete="email">
         </div>
-        
+
         <div class="form-group">
           <label for="password" class="form-label">Senha</label>
           <div style="position: relative; display: flex; align-items: center;">
-            <input type="password" id="password" class="form-input" placeholder="••••••••" required style="padding-right: 40px; width: 100%;">
+            <input type="password" id="password" class="form-input" placeholder="••••••••" required style="padding-right: 40px; width: 100%;" autocomplete="current-password">
             <button type="button" id="btn-toggle-password" style="position: absolute; right: 10px; background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 0; display: flex; align-items: center;">
               <span data-icon="eye" class="icon-sm"></span>
             </button>
@@ -34,7 +368,13 @@
         <button type="submit" class="btn btn-primary btn-block" id="btn-login">
           Entrar no Sistema
         </button>
-        
+
+        <div class="fp-trigger-row">
+          <button type="button" id="btn-forgot-password" class="fp-text-btn">
+            Esqueci minha senha
+          </button>
+        </div>
+
         <div id="error-message" class="mt-2 text-center hidden" style="color: var(--danger); font-size: 0.875rem;">
           Credenciais inválidas. Tente novamente.
         </div>
@@ -42,7 +382,180 @@
     </div>
   </div>
 
-  <!-- Firebase Setup -->
+  <!-- ═══════════════════════════════════════════════════════════════
+       Modal: Recuperação de Senha (5 etapas)
+  ════════════════════════════════════════════════════════════════ -->
+  <div id="modal-forgot-password" role="dialog" aria-modal="true" aria-labelledby="fp-title-text">
+
+    <div class="fp-box">
+
+      <!-- ── Indicador de progresso (dots) ── -->
+      <div class="fp-progress" id="fp-progress" style="display:none">
+        <div class="fp-progress-dot" id="fp-dot-1"></div>
+        <div class="fp-progress-dot" id="fp-dot-2"></div>
+        <div class="fp-progress-dot" id="fp-dot-3"></div>
+        <div class="fp-progress-dot" id="fp-dot-4"></div>
+      </div>
+
+      <!-- ══════════════════════════════
+           ETAPA 1 — Identificação
+      ══════════════════════════════ -->
+      <div id="fp-step-identify" class="fp-step">
+        <div class="fp-step-header">
+          <span></span>
+          <button class="fp-close-btn" id="btn-fp-close-1" aria-label="Fechar">&times;</button>
+        </div>
+        <span class="fp-emoji-icon">🔑</span>
+        <h2 class="fp-title" id="fp-title-text">Recuperar senha</h2>
+        <p class="fp-desc">Informe o e-mail cadastrado na sua conta para identificarmos quem é você.</p>
+
+        <div class="form-group">
+          <label class="form-label" for="fp-email">E-mail da conta</label>
+          <input type="email" id="fp-email" class="form-input" placeholder="seu@email.com" autocomplete="email">
+        </div>
+
+        <div class="fp-error" id="fp-identify-error"></div>
+
+        <button class="btn btn-primary btn-block" id="btn-fp-identify" style="margin-top:1rem">
+          Continuar &rarr;
+        </button>
+        <div style="text-align:center; margin-top:0.75rem;">
+          <button type="button" class="fp-text-btn" id="btn-fp-cancel-1">Voltar ao login</button>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════
+           ETAPA 2 — Escolha do método
+      ══════════════════════════════ -->
+      <div id="fp-step-method" class="fp-step" style="display:none">
+        <div class="fp-step-header">
+          <button class="fp-back-btn" id="btn-fp-back-2">&#8592; Voltar</button>
+          <button class="fp-close-btn" id="btn-fp-close-2" aria-label="Fechar">&times;</button>
+        </div>
+
+        <span class="fp-emoji-icon">📬</span>
+        <h2 class="fp-title">Como deseja receber?</h2>
+        <p class="fp-desc">Escolha o método e veja para onde enviaremos as instruções de recuperação.</p>
+
+        <div class="fp-method-cards">
+
+          <!-- Cartão: E-mail -->
+          <button class="fp-method-card" id="fp-email-card" type="button">
+            <span class="fp-method-emoji">📧</span>
+            <div class="fp-method-body">
+              <div class="fp-method-label">Por e-mail</div>
+              <div class="fp-method-dest">Enviar link para <strong id="fp-dest-email"></strong></div>
+            </div>
+            <span class="fp-method-arrow">&#8594;</span>
+          </button>
+
+          <!-- Cartão: SMS (exibido somente se houver telefone cadastrado) -->
+          <button class="fp-method-card" id="fp-sms-card" type="button" style="display:none">
+            <span class="fp-method-emoji">📱</span>
+            <div class="fp-method-body">
+              <div class="fp-method-label">Por SMS</div>
+              <div class="fp-method-dest">Enviar código para <strong id="fp-dest-sms"></strong></div>
+            </div>
+            <span class="fp-method-arrow">&#8594;</span>
+          </button>
+
+        </div>
+
+        <div class="fp-error" id="fp-method-error"></div>
+      </div>
+
+      <!-- ══════════════════════════════
+           ETAPA 3 — Código OTP (SMS)
+      ══════════════════════════════ -->
+      <div id="fp-step-otp" class="fp-step" style="display:none">
+        <div class="fp-step-header">
+          <button class="fp-back-btn" id="btn-fp-back-3">&#8592; Voltar</button>
+          <button class="fp-close-btn" id="btn-fp-close-3" aria-label="Fechar">&times;</button>
+        </div>
+
+        <span class="fp-emoji-icon">💬</span>
+        <h2 class="fp-title">Verifique seu celular</h2>
+        <p class="fp-desc">
+          Enviamos um código de 6 dígitos para<br>
+          <strong id="fp-otp-phone-dest" style="color:var(--primary-color)"></strong>
+        </p>
+
+        <div class="otp-inputs" id="fp-otp-inputs" role="group" aria-label="Código de verificação">
+          <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" class="otp-input" id="otp-0" autocomplete="one-time-code" aria-label="Dígito 1">
+          <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" class="otp-input" id="otp-1" aria-label="Dígito 2">
+          <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" class="otp-input" id="otp-2" aria-label="Dígito 3">
+          <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" class="otp-input" id="otp-3" aria-label="Dígito 4">
+          <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" class="otp-input" id="otp-4" aria-label="Dígito 5">
+          <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" class="otp-input" id="otp-5" aria-label="Dígito 6">
+        </div>
+
+        <div class="fp-error" id="fp-otp-error"></div>
+
+        <button class="btn btn-primary btn-block" id="btn-fp-verify-otp" style="margin-top:1rem">
+          Verificar código
+        </button>
+
+        <div class="fp-resend-row">
+          Não recebeu o código?
+          <button type="button" class="fp-text-btn" id="btn-fp-resend" style="margin-left:0.25rem">Reenviar</button>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════
+           ETAPA 4 — Nova senha (pós-SMS)
+      ══════════════════════════════ -->
+      <div id="fp-step-newpass" class="fp-step" style="display:none">
+        <div class="fp-step-header">
+          <span></span>
+          <button class="fp-close-btn" id="btn-fp-close-4" aria-label="Fechar">&times;</button>
+        </div>
+
+        <span class="fp-emoji-icon">🔒</span>
+        <h2 class="fp-title">Criar nova senha</h2>
+        <p class="fp-desc">Escolha uma senha segura para proteger sua conta.</p>
+
+        <div class="form-group">
+          <label class="form-label" for="fp-new-password">Nova senha</label>
+          <input type="password" id="fp-new-password" class="form-input" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+          <div class="fp-strength-bar"><div class="fp-strength-fill" id="fp-strength-fill"></div></div>
+          <div class="fp-strength-label" id="fp-strength-label"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="fp-confirm-password">Confirmar nova senha</label>
+          <input type="password" id="fp-confirm-password" class="form-input" placeholder="Repita a senha" autocomplete="new-password">
+        </div>
+
+        <div class="fp-error" id="fp-newpass-error"></div>
+
+        <button class="btn btn-primary btn-block" id="btn-fp-save-password" style="margin-top:0.5rem">
+          Salvar nova senha
+        </button>
+      </div>
+
+      <!-- ══════════════════════════════
+           ETAPA 5 — Sucesso
+      ══════════════════════════════ -->
+      <div id="fp-step-success" class="fp-step" style="display:none">
+        <div class="fp-success-wrap">
+          <div class="fp-success-circle">✓</div>
+          <div class="fp-success-title" id="fp-success-title">Pronto!</div>
+          <p class="fp-success-msg" id="fp-success-msg"></p>
+          <div class="fp-success-dest-badge" id="fp-success-dest" style="display:none"></div>
+          <p class="fp-success-note" id="fp-success-note"></p>
+          <button class="btn btn-primary btn-block" id="btn-fp-done" style="margin-top:1.5rem">
+            Entendido
+          </button>
+        </div>
+      </div>
+
+    </div><!-- /fp-box -->
+  </div><!-- /modal-forgot-password -->
+
+  <!-- reCAPTCHA (invisível — necessário para autenticação por SMS) -->
+  <div id="recaptcha-container" style="display:none"></div>
+
+  <!-- Scripts -->
   <script type="module" src="js/firebase-config.js"></script>
   <script type="module" src="js/auth.js"></script>
   <script type="module">
