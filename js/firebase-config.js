@@ -25,7 +25,7 @@ const storage = getStorage(app);
 // A chave SECRETA (6Ld2CMMtAAAAAEsB2yj5CZab7kxIdFGMvwALdeTj) nunca vai no frontend.
 // Para ativar o bloqueio real: no Console Firebase → App Check → Firestore → Aplicar (Enforce).
 initializeAppCheck(app, {
-  provider: new ReCaptchaV3Provider('6Ld2CMMtAAAAAEsB2yj5CZab7kxIdFGMvwALdeTj'),
+  provider: new ReCaptchaV3Provider('6Ld2CMMtAAAAAF7Rc1Rqf4UDuwfDnQVQYeGP_NNv'),
   isTokenAutoRefreshEnabled: true,
 });
 
