@@ -21,15 +21,17 @@ const db = getFirestore(app);
 const storage = getStorage(app);
 
 // ── Item 8: Firebase App Check ────────────────────────────────────────────────
-// TEMPORARIAMENTE DESATIVADO para diagnóstico de login.
-// Reativar após confirmar que o login funciona corretamente.
-// try {
-//   initializeAppCheck(app, {
-//     provider: new ReCaptchaV3Provider('6Ld2CMMtAAAAAEsB2yj5CZab7kxIdFGMvwALdeTj'), // chave de SITE (pública)
-//     isTokenAutoRefreshEnabled: true,
-//   });
-// } catch (e) {
-//   console.warn('[AppCheck] Falha ao inicializar.', e);
-// }
+// Chave de SITE (pública) do reCAPTCHA v3.
+// Domínio autorizado: sistema-ponto-ecru.vercel.app e localhost.
+// Para bloquear chamadas não verificadas: Firebase Console → App Check → Aplicar (Enforce).
+// ATENÇÃO: só ative o Enforce após confirmar que o percentual verificado é alto.
+try {
+  initializeAppCheck(app, {
+    provider: new ReCaptchaV3Provider('6Ld2CMMtAAAAAEsB2yj5CZab7kxIdFGMvwALdeTj'),
+    isTokenAutoRefreshEnabled: true,
+  });
+} catch (e) {
+  console.warn('[AppCheck] Falha ao inicializar:', e);
+}
 
 export { firebaseConfig, auth, db, storage, onAuthStateChanged, signInWithEmailAndPassword, signOut, updatePassword, sendPasswordResetEmail, signInWithPhoneNumber, RecaptchaVerifier, collection, addDoc, query, where, getDocs, doc, getDoc, setDoc, orderBy, updateDoc, deleteDoc, serverTimestamp, Timestamp, runTransaction, writeBatch, ref, uploadBytes, getDownloadURL };
