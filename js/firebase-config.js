@@ -22,11 +22,15 @@ const storage = getStorage(app);
 
 // ── Item 8: Firebase App Check ────────────────────────────────────────────────
 // Usa reCAPTCHA v3 (chave do SITE — pública).
-// A chave SECRETA (6Ld2CMMtAAAAAEsB2yj5CZab7kxIdFGMvwALdeTj) nunca vai no frontend.
-// Para ativar o bloqueio real: no Console Firebase → App Check → Firestore → Aplicar (Enforce).
-initializeAppCheck(app, {
-  provider: new ReCaptchaV3Provider('6Ld2CMMtAAAAAF7Rc1Rqf4UDuwfDnQVQYeGP_NNv'),
-  isTokenAutoRefreshEnabled: true,
-});
+// Wrapped em try-catch: se o domínio não estiver autorizado no reCAPTCHA ou
+// a rede falhar, o App Check é ignorado e o restante do Firebase funciona normalmente.
+try {
+  initializeAppCheck(app, {
+    provider: new ReCaptchaV3Provider('6Ld2CMMtAAAAAF7Rc1Rqf4UDuwfDnQVQYeGP_NNv'),
+    isTokenAutoRefreshEnabled: true,
+  });
+} catch (e) {
+  console.warn('[AppCheck] Falha ao inicializar. O domínio pode não estar autorizado no reCAPTCHA.', e);
+}
 
 export { firebaseConfig, auth, db, storage, onAuthStateChanged, signInWithEmailAndPassword, signOut, updatePassword, sendPasswordResetEmail, signInWithPhoneNumber, RecaptchaVerifier, collection, addDoc, query, where, getDocs, doc, getDoc, setDoc, orderBy, updateDoc, deleteDoc, serverTimestamp, Timestamp, runTransaction, writeBatch, ref, uploadBytes, getDownloadURL };
