@@ -33,4 +33,4 @@ const storage = getStorage(app);
 //   isTokenAutoRefreshEnabled: true,
 // });
 
-export { firebaseConfig, auth, db, storage, onAuthStateChanged, signInWithEmailAndPassword, signOut, updatePassword, sendPasswordResetEmail, signInWithPhoneNumber, RecaptchaVerifier, collection, addDoc, query, where, getDocs, doc, getDoc, setDoc, orderBy, updateDoc, deleteDoc, serverTimestamp, Timestamp, runTransaction, writeBatch, ref, uploadBytes, getDownloadURL };
+export { firebaseConfig, auth, db, storage, onAuthStateChanged, signInWithEmailAndPassword, signOut, updatePassword, sendPasswordResetEmail, signInWithPhoneNumber, RecaptchaVerifier, verifyPasswordResetCode, confirmPasswordReset, collection, addDoc, query, where, getDocs, doc, getDoc, setDoc, orderBy, updateDoc, deleteDoc, serverTimestamp, Timestamp, runTransaction, writeBatch, ref, uploadBytes, getDownloadURL };

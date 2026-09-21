@@ -217,10 +217,15 @@ async function handleEmailRecovery() {
 
   try {
     const actionCodeSettings = {
-      url: window.location.href,
+      url: window.location.origin + window.location.pathname,
       handleCodeInApp: true,
     };
-    await sendPasswordResetEmail(auth, _recoveryUser.lookupEmail, actionCodeSettings);
+    try {
+      await sendPasswordResetEmail(auth, _recoveryUser.lookupEmail, actionCodeSettings);
+    } catch (settingErr) {
+      console.warn('ActionCodeSettings com URL personalizada falhou, tentando envio padrão:', settingErr);
+      await sendPasswordResetEmail(auth, _recoveryUser.lookupEmail);
+    }
 
     // Popula tela de sucesso
     document.getElementById('fp-success-title').textContent = 'E-mail enviado!';
