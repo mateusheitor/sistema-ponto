@@ -356,13 +356,15 @@ async function registerPunch(type) {
       docRef = doc(collection(db, 'time_records'));
       transaction.set(docRef, {
         userId:    currentUser.uid,
-        userEmail: currentUser.email,
-        timestamp: now,
+        userEmail: currentUser.email || '',
+        timestamp: serverTimestamp(),
         type,
         dateString: todayStr,
-        latitude, longitude, accuracy,
+        latitude:  latitude ?? null,
+        longitude: longitude ?? null,
+        accuracy:  accuracy ?? null,
         nsr,                         // NSR sequencial e único (Portaria 671/2021)
-        createdAt: now,
+        createdAt: serverTimestamp(),
       });
     });
 
@@ -370,7 +372,7 @@ async function registerPunch(type) {
     const recordForModal = {
       id: docRef.id,
       userId:    currentUser.uid,
-      userEmail: currentUser.email,
+      userEmail: currentUser.email || '',
       timestamp: now,
       type,
       dateString: todayStr,
