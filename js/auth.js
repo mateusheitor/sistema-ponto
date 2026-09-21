@@ -2,6 +2,7 @@ import {
   auth, db, doc, getDoc,
   signInWithEmailAndPassword, signOut, updatePassword,
   sendPasswordResetEmail, signInWithPhoneNumber, RecaptchaVerifier,
+  verifyPasswordResetCode, confirmPasswordReset,
   collection, query, where, getDocs
 } from './firebase-config.js';
 import { insertSVGs } from './svg.js';
@@ -13,6 +14,7 @@ let _recoveryUser       = null;  // dados do usuário encontrado no Firestore
 let _recaptchaVerifier  = null;  // RecaptchaVerifier (para SMS)
 let _confirmationResult = null;  // resultado de signInWithPhoneNumber
 let _recoveryMethod     = null;  // 'email' | 'sms'
+let _recoveryResetCode  = null;  // oobCode do link de redefinição via e-mail
 
 // ══════════════════════════════════════════════════════════════════
 //  Utilitários de mascaramento
@@ -122,6 +124,7 @@ function resetForgotFlow() {
   _recoveryUser       = null;
   _confirmationResult = null;
   _recoveryMethod     = null;
+  _recoveryResetCode  = null;
   showStep('fp-step-identify');
   clearOtpInputs();
   hideFpError('fp-identify-error');
@@ -213,7 +216,11 @@ async function handleEmailRecovery() {
   if (emailCard) { emailCard.disabled = true; emailCard.style.opacity = '0.65'; }
 
   try {
-    await sendPasswordResetEmail(auth, _recoveryUser.lookupEmail);
+    const actionCodeSettings = {
+      url: window.location.href,
+      handleCodeInApp: true,
+    };
+    await sendPasswordResetEmail(auth, _recoveryUser.lookupEmail, actionCodeSettings);
 
     // Popula tela de sucesso
     document.getElementById('fp-success-title').textContent = 'E-mail enviado!';
@@ -368,15 +375,21 @@ async function handleSetNewPassword() {
   if (btn) { btn.disabled = true; btn.innerHTML = '<span class="loader" style="width:15px;height:15px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px;border-top-color:transparent;"></span>Salvando...'; }
 
   try {
-    await updatePassword(auth.currentUser, p1);
-    // Desloga para que o usuário faça login com a nova senha
-    await signOut(auth);
+    if (_recoveryResetCode) {
+      await confirmPasswordReset(auth, _recoveryResetCode, p1);
+      _recoveryResetCode = null;
+    } else if (auth.currentUser) {
+      await updatePassword(auth.currentUser, p1);
+      await signOut(auth);
+    } else {
+      throw new Error('Sessão de redefinição não encontrada.');
+    }
 
     // Tela de sucesso
     document.getElementById('fp-success-title').textContent = 'Senha alterada!';
     document.getElementById('fp-success-msg').textContent   = 'Sua nova senha foi salva com sucesso.';
     const destBadge = document.getElementById('fp-success-dest');
-    destBadge.style.display = 'none';
+    if (destBadge) destBadge.style.display = 'none';
     document.getElementById('fp-success-note').textContent =
       'Agora você pode entrar no sistema com sua nova senha.';
 
@@ -384,8 +397,8 @@ async function handleSetNewPassword() {
   } catch (err) {
     console.error('Erro ao salvar senha:', err);
     let msg = 'Não foi possível salvar a senha. Tente novamente.';
-    if (err.code === 'auth/requires-recent-login')
-      msg = 'Sessão expirada. Feche e tente o processo de recuperação novamente.';
+    if (err.code === 'auth/requires-recent-login' || err.code === 'auth/invalid-action-code' || err.code === 'auth/expired-action-code')
+      msg = 'O link de redefinição é inválido ou já expirou. Feche e solicite um novo link.';
     showFpError('fp-newpass-error', msg);
   } finally {
     if (btn) { btn.disabled = false; btn.innerHTML = 'Salvar nova senha'; }
@@ -542,6 +555,31 @@ function initForgotPasswordEvents() {
   // ── Inicializações de sub-componentes ───────────────────────────
   initOtpInputs();
   initStrengthMeter();
+  checkUrlResetCode();
+}
+
+async function checkUrlResetCode() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const mode = urlParams.get('mode');
+  const oobCode = urlParams.get('oobCode');
+
+  if (mode === 'resetPassword' && oobCode) {
+    try {
+      const email = await verifyPasswordResetCode(auth, oobCode);
+      _recoveryResetCode = oobCode;
+      if (modalForgot) modalForgot.classList.add('active');
+      showStep('fp-step-newpass');
+      const noteEl = document.getElementById('fp-newpass-error');
+      if (noteEl) {
+        hideFpError('fp-newpass-error');
+      }
+    } catch (err) {
+      console.error('Link de redefinição inválido ou expirado:', err);
+      if (modalForgot) modalForgot.classList.add('active');
+      showStep('fp-step-identify');
+      showFpError('fp-identify-error', 'O link de redefinição de senha é inválido ou já expirou. Por favor, solicite um novo.');
+    }
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════
