@@ -663,13 +663,14 @@ btnSubmitEdit.addEventListener('click', async () => {
         const storageRef = ref(storage, path);
         await Promise.race([
           (async () => {
-            await uploadBytes(storageRef, file);
+            await uploadBytes(storageRef, file, { contentType: file.type || 'application/octet-stream' });
             attachmentUrl  = await getDownloadURL(storageRef);
             attachmentName = file.name;
           })(),
           uploadTimeout
         ]);
       } catch (uploadErr) {
+        console.error('Erro no upload do anexo (edit):', uploadErr);
         const msg = uploadErr.message === 'timeout'
           ? 'O upload do arquivo expirou. A solicitação será enviada sem o anexo.'
           : 'Não foi possível enviar o arquivo. A solicitação será enviada sem o anexo.';
@@ -1166,13 +1167,14 @@ if (document.getElementById('form-insert-request')) {
           const storageRef = ref(storage, path);
           await Promise.race([
             (async () => {
-              await uploadBytes(storageRef, file);
+              await uploadBytes(storageRef, file, { contentType: file.type || 'application/octet-stream' });
               attachmentUrl  = await getDownloadURL(storageRef);
               attachmentName = file.name;
             })(),
             uploadTimeout
           ]);
         } catch (uploadErr) {
+          console.error('Erro no upload do anexo (insert):', uploadErr);
           const msg = uploadErr.message === 'timeout'
             ? 'O upload do arquivo expirou. A solicitação será enviada sem o anexo.'
             : 'Não foi possível enviar o arquivo. A solicitação será enviada sem o anexo.';
