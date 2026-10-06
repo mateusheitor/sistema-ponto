@@ -1126,7 +1126,31 @@ function monthRange(ym) {
   return { start: new Date(y, m - 1, 1), end: new Date(y, m, 0, 23, 59, 59, 999) };
 }
 
-function calcBancoDeHoras(records, dailyHours = DEFAULT_DAILY_HOURS) {
+// ── FERIADOS (BrasilAPI) ────────────────────────────────────────────────────────
+let _cachedHolidays = {};
+async function getHolidays(years) {
+  const holidays = new Set();
+  for (let year of years) {
+    if (!_cachedHolidays[year]) {
+      try {
+        const res = await fetch(`https://brasilapi.com.br/api/feriados/v1/${year}`);
+        if (res.ok) {
+          const data = await res.json();
+          _cachedHolidays[year] = data.map(h => h.date);
+        } else {
+          _cachedHolidays[year] = [];
+        }
+      } catch (err) {
+        console.error('Erro ao buscar feriados:', err);
+        _cachedHolidays[year] = [];
+      }
+    }
+    _cachedHolidays[year].forEach(d => holidays.add(d));
+  }
+  return holidays;
+}
+
+function calcBancoDeHoras(records, dailyHours = DEFAULT_DAILY_HOURS, holidays = new Set()) {
   const byDay = {};
   records.forEach(r => {
     const ds = r.dateString;
@@ -1148,13 +1172,19 @@ function calcBancoDeHoras(records, dailyHours = DEFAULT_DAILY_HOURS) {
       workedMin = (saida - volta) / 60000;
     }
 
-    const metaMin = dailyHours * 60;
+    const dateObj = new Date(ds + 'T12:00:00');
+    const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
+    const isHoliday = holidays.has(ds);
+    const isDayOff = isWeekend || isHoliday;
+
+    const metaMin = isDayOff ? 0 : dailyHours * 60;
     const balanceMin = workedMin - metaMin;
     const fmt = t => t ? t.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
     return {
-      dateLabel: new Date(ds + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' }),
+      dateLabel: dateObj.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' }),
       entrada: fmt(entrada), pausa: fmt(pausa), volta: fmt(volta), saida: fmt(saida),
-      workedMin, balanceMin, hasData: workedMin > 0
+      workedMin, balanceMin, hasData: workedMin > 0,
+      isDayOff, isHoliday, isWeekend
     };
   });
 }
@@ -1208,15 +1238,22 @@ async function loadAdminBancoDeHoras(userId, start, end) {
       return;
     }
 
-    _adminBhData = calcBancoDeHoras(records, userDailyHours);
+    const years = new Set([start.getFullYear(), end.getFullYear()]);
+    const holidays = await getHolidays(years);
+
+    _adminBhData = calcBancoDeHoras(records, userDailyHours, holidays);
     
-    let totalWorked = 0, daysWithData = 0;
+    let totalWorked = 0, totalExpected = 0, daysWithData = 0;
     _adminBhData.forEach(day => {
       totalWorked += day.workedMin;
-      if (day.hasData) daysWithData++;
+      if (day.hasData) {
+        daysWithData++;
+        if (!day.isDayOff) {
+          totalExpected += userDailyHours * 60;
+        }
+      }
     });
 
-    const totalExpected = daysWithData * userDailyHours * 60;
     const totalBalance = totalWorked - totalExpected;
 
     adminBhTotalWorked.innerText = formatMinutes(totalWorked);
@@ -1291,9 +1328,14 @@ function renderAdminBhTable() {
   pageData.forEach(day => {
     const balClass = day.balanceMin >= 0 ? '#065f46' : '#991b1b';
     const balSign = day.balanceMin >= 0 ? '+' : '';
+    
+    let dayLabel = day.dateLabel;
+    if (day.isHoliday) dayLabel += ' <br><span class="badge" style="background:#fef3c7; color:#b45309; font-size:0.6rem; margin-top:2px; display:inline-block;">Feriado</span>';
+    else if (day.isWeekend) dayLabel += ' <br><span style="font-size:0.7rem; color:var(--text-muted); display:inline-block; margin-top:2px;">(Fim de semana)</span>';
+
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td style="font-weight:500; white-space:nowrap;">${day.dateLabel}</td>
+      <td style="font-weight:500; white-space:nowrap;">${dayLabel}</td>
       <td>${day.entrada}</td><td>${day.pausa}</td><td>${day.volta}</td><td>${day.saida}</td>
       <td><strong>${day.hasData ? formatMinutes(day.workedMin) : '—'}</strong></td>
       <td style="color:${day.hasData ? balClass : 'var(--text-muted)'}; font-weight:600;">${day.hasData ? balSign + formatMinutes(day.balanceMin) : '—'}</td>

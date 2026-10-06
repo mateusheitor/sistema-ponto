@@ -749,8 +749,12 @@ export function gerarRelatorioMensalPDF(bhData, userName, periodoLabel, totals, 
     doc.rect(mX, y, cW, rowH, 'F');
 
     const balSign = day.balanceMin >= 0 ? '+' : '';
+    
+    let label = day.dateLabel;
+    if (day.isHoliday) label += ' (Feriado)';
+
     const cells = [
-      { text: day.dateLabel, color: TEXT, bold: day.hasData },
+      { text: label, color: TEXT, bold: day.hasData },
       { text: day.entrada, color: TEXT, bold: false },
       { text: day.pausa,   color: TEXT, bold: false },
       { text: day.volta,   color: TEXT, bold: false },

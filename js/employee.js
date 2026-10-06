@@ -927,7 +927,31 @@ function monthRange(yearMonthStr) {
   return { start, end };
 }
 
-function calcBancoDeHoras(records, dailyHours = DEFAULT_DAILY_HOURS) {
+// ── FERIADOS (BrasilAPI) ────────────────────────────────────────────────────────
+let _cachedHolidays = {};
+async function getHolidays(years) {
+  const holidays = new Set();
+  for (let year of years) {
+    if (!_cachedHolidays[year]) {
+      try {
+        const res = await fetch(`https://brasilapi.com.br/api/feriados/v1/${year}`);
+        if (res.ok) {
+          const data = await res.json();
+          _cachedHolidays[year] = data.map(h => h.date);
+        } else {
+          _cachedHolidays[year] = [];
+        }
+      } catch (err) {
+        console.error('Erro ao buscar feriados:', err);
+        _cachedHolidays[year] = [];
+      }
+    }
+    _cachedHolidays[year].forEach(d => holidays.add(d));
+  }
+  return holidays;
+}
+
+function calcBancoDeHoras(records, dailyHours = DEFAULT_DAILY_HOURS, holidays = new Set()) {
 
   const byDay = {};
   records.forEach(r => {
@@ -959,21 +983,29 @@ function calcBancoDeHoras(records, dailyHours = DEFAULT_DAILY_HOURS) {
       workedMin = (saida - volta) / 60000;
     }
 
-    const metaMin = dailyHours * 60;
+    const dateObj = new Date(ds + 'T12:00:00');
+    const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
+    const isHoliday = holidays.has(ds);
+    const isDayOff = isWeekend || isHoliday;
+
+    const metaMin = isDayOff ? 0 : dailyHours * 60;
     const balanceMin = workedMin - metaMin;
 
     const fmt = t => t ? t.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
 
     return {
       dateString: ds,
-      dateLabel: new Date(ds + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }),
+      dateLabel: dateObj.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }),
       entrada: fmt(entrada),
       pausa: fmt(pausa),
       volta: fmt(volta),
       saida: fmt(saida),
       workedMin,
       balanceMin,
-      hasData: workedMin > 0
+      hasData: workedMin > 0,
+      isDayOff,
+      isWeekend,
+      isHoliday
     };
   });
 }
@@ -1022,19 +1054,27 @@ async function loadBancoDeHoras(start, end) {
       return;
     }
 
-    _employeeBhData = calcBancoDeHoras(records, userDailyHours);
+    const years = new Set([start.getFullYear(), end.getFullYear()]);
+    const holidays = await getHolidays(years);
+
+    _employeeBhData = calcBancoDeHoras(records, userDailyHours, holidays);
     _employeeBhCurrentPage = 1;
     _employeeBhPerPage = 5;
 
     let totalWorkedMin = 0;
+    let totalExpectedMin = 0;
     let daysWithData = 0;
 
     _employeeBhData.forEach(day => {
       totalWorkedMin += day.workedMin;
-      if (day.hasData) daysWithData++;
+      if (day.hasData) {
+        daysWithData++;
+        if (!day.isDayOff) {
+          totalExpectedMin += userDailyHours * 60;
+        }
+      }
     });
 
-    const totalExpectedMin = daysWithData * userDailyHours * 60;
     const totalBalanceMin = totalWorkedMin - totalExpectedMin;
 
     bhTotalWorked.innerText = formatMinutes(totalWorkedMin);
@@ -1192,6 +1232,9 @@ async function checkPendingRecords() {
       }
     });
 
+    const years = new Set([start.getFullYear(), end.getFullYear()]);
+    const holidays = await getHolidays(years);
+
     pendingDaysData = {};
     const ALL_TYPES = ['Entrada', 'Pausa para Almoço', 'Volta do Almoço', 'Saída'];
 
@@ -1199,6 +1242,8 @@ async function checkPendingRecords() {
       if (d.getDay() === 0 || d.getDay() === 6) continue;
 
       const ds = toDateStr(d);
+      if (holidays.has(ds)) continue; // Feriados não geram pendência
+
       const existing = recordsByDay[ds] || new Set();
       const requested = pendingRequestsByDay[ds] || new Set();
 
@@ -1404,9 +1449,14 @@ function renderEmployeeBhTable() {
   pageData.forEach(day => {
     const balClass = day.balanceMin >= 0 ? '#065f46' : '#991b1b';
     const balSign = day.balanceMin >= 0 ? '+' : '';
+    
+    let dayLabel = day.dateLabel;
+    if (day.isHoliday) dayLabel += ' <span class="badge" style="background:#fef3c7; color:#b45309; font-size:0.6rem; margin-left:4px;">Feriado</span>';
+    else if (day.isWeekend) dayLabel += ' <span style="font-size:0.7rem; color:var(--text-muted); margin-left:4px;">(Fim de semana)</span>';
+
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td style="font-weight:500; white-space:nowrap;">${day.dateLabel}</td>
+      <td style="font-weight:500; white-space:nowrap;">${dayLabel}</td>
       <td>${day.entrada}</td><td>${day.pausa}</td><td>${day.volta}</td><td>${day.saida}</td>
       <td><strong>${day.hasData ? formatMinutes(day.workedMin) : '—'}</strong></td>
       <td style="color:${day.hasData ? balClass : 'var(--text-muted)'}; font-weight:600;">${day.hasData ? balSign + formatMinutes(day.balanceMin) : '—'}</td>
