@@ -803,7 +803,8 @@ btnConfirmApprove.addEventListener('click', async () => {
       longitude:       originalData.longitude ?? null,
       accuracy:        originalData.accuracy  ?? null,
       nsr:             originalData.nsr       ?? null,  // herda o NSR original
-      // Audição completa da correção
+      insertedByAdmin: true,                           // obrigatório pelas regras do Firestore
+      // Auditoria completa da correção
       edited:          true,
       editedAt:        new Date(),
       editedBy:        currentUser.email,
@@ -1596,8 +1597,10 @@ btnConfirmDeleteUser.addEventListener('click', async () => {
     // 1. Deletar o documento do usuário em users
     await deleteDoc(doc(db, 'users', uid));
 
-    // 2. Deleção em cascata: remover todos os registros relacionados ao userId
-    const relatedCollections = ['time_records', 'edit_requests', 'insert_requests'];
+    // 2. Deleção em cascata: remover solicitações relacionadas ao userId
+    // Nota: time_records são imutáveis por auditoria (allow delete: if false nas regras),
+    // portanto apenas edit_requests e insert_requests são removidos.
+    const relatedCollections = ['edit_requests', 'insert_requests'];
 
     for (const collName of relatedCollections) {
       const snap = await getDocs(
