@@ -248,6 +248,9 @@
             <button class="employee-tab-btn active" data-etab="tab-registros" id="etab-btn-registros">
               <span data-icon="clipboard-list" class="icon-sm"></span> Registros de Hoje
             </button>
+            <button class="employee-tab-btn" data-etab="tab-historico" id="etab-btn-historico">
+              <span data-icon="calendario" class="icon-sm"></span> Histórico
+            </button>
             <button class="employee-tab-btn" data-etab="tab-banco-horas" id="etab-btn-bh">
               <span data-icon="folder-clock" class="icon-sm"></span> Banco de Horas
             </button>
@@ -306,6 +309,42 @@
               </div>
             </div>
             <div id="edit-requests-status" style="margin-top: 1rem;"></div>
+          </div>
+
+          <!-- Aba Histórico de Ponto -->
+          <div id="tab-historico" class="employee-tab-panel" style="display:none;">
+            <h2 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem;">
+              <span data-icon="calendario" class="icon-sm"></span> Histórico de Ponto
+            </h2>
+
+            <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:1.25rem; flex-wrap:wrap;">
+              <div style="flex:1; min-width:160px;">
+                <label class="form-label" for="hist-date-filter" style="margin-bottom:0.3rem; display:block;">Selecionar dia</label>
+                <input type="date" id="hist-date-filter" class="form-input">
+              </div>
+              <button class="btn btn-primary" id="btn-hist-load" style="align-self:flex-end;">
+                <span data-icon="search" class="icon-sm"></span> Buscar
+              </button>
+            </div>
+
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Tipo</th>
+                    <th>Horário</th>
+                    <th>Ação</th>
+                  </tr>
+                </thead>
+                <tbody id="hist-records-table-body">
+                  <tr><td colspan="3" class="text-center text-muted">Selecione uma data para ver os registros.</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div id="hist-edit-status" style="margin-top:0.75rem; font-size:0.8125rem; color:var(--text-muted);">
+              <span data-icon="info" class="icon-sm"></span> Clique em <strong>Editar</strong> para solicitar a correção de um registro. A alteração depende de aprovação do administrador.
+            </div>
           </div>
 
           <div id="tab-banco-horas" class="employee-tab-panel" style="display:none;">

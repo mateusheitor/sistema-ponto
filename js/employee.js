@@ -701,6 +701,9 @@ btnSubmitEdit.addEventListener('click', async () => {
       modalEdit.classList.remove('active');
       await loadTodayRecords();
       await loadMyEditRequests();
+      // Atualiza a aba de histórico também, se a data estiver preenchida
+      const histInput = document.getElementById('hist-date-filter');
+      if (histInput?.value) await loadHistoryRecords(histInput.value);
     }, 2000);
 
   } catch (err) {
@@ -720,7 +723,127 @@ employeeTabBtns.forEach(btn => {
     document.querySelectorAll('.employee-tab-panel').forEach(p => {
       p.style.display = p.id === targetPanel ? 'block' : 'none';
     });
+
+    // Ao abrir a aba Histórico, pré-preenche com a data de hoje
+    if (targetPanel === 'tab-historico') {
+      const histInput = document.getElementById('hist-date-filter');
+      if (histInput && !histInput.value) {
+        histInput.value = new Date().toISOString().split('T')[0];
+        loadHistoryRecords(histInput.value);
+      }
+    }
   });
+});
+
+// ── Histórico de Ponto ────────────────────────────────────────────────────────
+async function loadHistoryRecords(dateStr) {
+  if (!currentUser || !dateStr) return;
+
+  const tbody = document.getElementById('hist-records-table-body');
+  if (!tbody) return;
+
+  tbody.innerHTML = '<tr><td colspan="3" class="text-center"><span class="loader"></span></td></tr>';
+
+  try {
+    // Busca registros do dia selecionado
+    const snap = await getDocs(query(
+      collection(db, 'time_records'),
+      where('userId', '==', currentUser.uid),
+      where('dateString', '==', dateStr)
+    ));
+
+    const records = [];
+    snap.forEach(d => records.push({ id: d.id, ...d.data() }));
+    records.sort((a, b) => {
+      const ta = a.timestamp?.toDate?.() ?? new Date(0);
+      const tb = b.timestamp?.toDate?.() ?? new Date(0);
+      return ta - tb;
+    });
+
+    // Busca solicitações de edição pendentes para esses registros
+    const pendingEditIds = new Set();
+    if (records.length > 0) {
+      try {
+        const pendingSnap = await getDocs(query(
+          collection(db, 'edit_requests'),
+          where('userId', '==', currentUser.uid),
+          where('originalDateString', '==', dateStr),
+          where('status', '==', 'pending')
+        ));
+        pendingSnap.forEach(d => pendingEditIds.add(d.data().recordId));
+      } catch (_) { /* índice pode não existir ainda */ }
+    }
+
+    tbody.innerHTML = '';
+
+    if (records.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Nenhum registro encontrado neste dia.</td></tr>';
+      return;
+    }
+
+    records.forEach(data => {
+      const ts = data.timestamp?.toDate?.() ?? new Date();
+      const timeStr = ts.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+      let badgeClass = '';
+      if (data.type === 'Entrada') badgeClass = 'badge-entrada';
+      else if (data.type?.includes('Pausa')) badgeClass = 'badge-pausa';
+      else if (data.type?.includes('Volta')) badgeClass = 'badge-volta';
+      else if (data.type === 'Saída') badgeClass = 'badge-saida';
+
+      const isPending = pendingEditIds.has(data.id);
+      const actionCell = isPending
+        ? `<span class="badge badge-pending" style="font-size:0.7rem;"><span data-icon="ampulheta" class="icon-sm"></span> Aguardando</span>`
+        : `<button class="btn-edit-record btn-edit-hist" data-id="${data.id}" title="Solicitar edição"><span data-icon="edit" class="icon-sm"></span> Editar</button>`;
+
+      const editedBadge = data.edited
+        ? ` <span class="badge badge-edited" style="font-size:0.7rem; margin-left:4px;">Editado</span>` : '';
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><span class="badge ${badgeClass}">${data.type}</span></td>
+        <td><strong>${timeStr}</strong>${editedBadge}</td>
+        <td>${actionCell}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    insertSVGs();
+
+    // Wires dos botões de editar
+    tbody.querySelectorAll('.btn-edit-hist').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const record = records.find(r => r.id === btn.dataset.id);
+        if (record) openEditModal(record);
+      });
+    });
+
+  } catch (err) {
+    console.error('Erro ao carregar histórico:', err);
+    tbody.innerHTML = '<tr><td colspan="3" class="text-center" style="color:var(--danger);">Erro ao carregar dados.</td></tr>';
+  }
+}
+
+const histDateInput  = document.getElementById('hist-date-filter');
+const btnHistLoad    = document.getElementById('btn-hist-load');
+
+if (histDateInput) {
+  // Define o valor inicial como hoje
+  histDateInput.value = new Date().toISOString().split('T')[0];
+  // Permite buscar ao pressionar Enter no campo de data
+  histDateInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') loadHistoryRecords(histDateInput.value);
+  });
+}
+if (btnHistLoad) {
+  btnHistLoad.addEventListener('click', () => loadHistoryRecords(histDateInput?.value));
+}
+
+// Ao fechar o modal de edição, atualiza a tabela do histórico também (se estiver aberta)
+const _origCloseEdit = btnCloseEdit.onclick;
+btnCloseEdit.addEventListener('click', () => {
+  const histInput = document.getElementById('hist-date-filter');
+  if (histInput?.value) loadHistoryRecords(histInput.value);
 });
 
 function formatMinutes(totalMinutes) {
