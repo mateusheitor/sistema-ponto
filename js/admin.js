@@ -360,21 +360,43 @@ function renderAdminRecordsTable() {
     else if (data.type.includes('Volta')) badgeClass = 'badge-volta';
     else if (data.type === 'Saída') badgeClass = 'badge-saida';
 
+    const isSuperseded = data.superseded === true;
+    const isEdited     = data.edited === true && !isSuperseded;
+
     const locationCell = (data.latitude != null && data.longitude != null)
       ? `<a href="https://www.google.com/maps?q=${data.latitude},${data.longitude}" target="_blank" rel="noopener noreferrer" class="map-link" title="Precisão: ±${Math.round(data.accuracy ?? 0)}m"><span data-icon="map-pinned" class="icon-sm"></span> Ver no Mapa</a>`
       : '<span class="map-empty">—</span>';
 
-    const editedBadge = data.edited
-      ? ` <span class="badge badge-edited" style="font-size:0.7rem; margin-left:4px;">Editado</span>` : '';
-
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${dateStr}</td>
-      <td><strong>${data.userEmail || data.userId}</strong></td>
-      <td><span class="badge ${badgeClass}">${data.type}</span>${editedBadge}</td>
-      <td>${timeStr}</td>
-      <td>${locationCell}</td>
-    `;
+
+    if (isSuperseded) {
+      // Registro original corrigido — linha apagada com horário riscado
+      tr.style.opacity = '0.45';
+      tr.innerHTML = `
+        <td style="color:var(--text-muted);">${dateStr}</td>
+        <td><strong style="color:var(--text-muted);">${data.userEmail || data.userId}</strong></td>
+        <td>
+          <span class="badge ${badgeClass}" style="opacity:0.6">${data.type}</span>
+          <span style="font-size:0.65rem; margin-left:4px; background:#fee2e2; color:#991b1b; padding:1px 6px; border-radius:6px; font-weight:600;">Corrigido</span>
+        </td>
+        <td style="text-decoration:line-through; color:var(--text-muted);">${timeStr}</td>
+        <td>${locationCell}</td>
+      `;
+    } else {
+      // Registro normal ou versão corrigida vigente
+      const editedBadge = isEdited
+        ? ` <span style="font-size:0.65rem; margin-left:4px; background:#d1fae5; color:#065f46; padding:1px 6px; border-radius:6px; font-weight:600;">Corrigido</span>`
+        : '';
+
+      tr.innerHTML = `
+        <td>${dateStr}</td>
+        <td><strong>${data.userEmail || data.userId}</strong></td>
+        <td><span class="badge ${badgeClass}">${data.type}</span>${editedBadge}</td>
+        <td>${timeStr}</td>
+        <td>${locationCell}</td>
+      `;
+    }
+
     tableBody.appendChild(tr);
   });
   

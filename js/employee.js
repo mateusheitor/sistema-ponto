@@ -430,17 +430,41 @@ function renderTodayRecordsTable() {
     else if (data.type?.includes('Volta')) badgeClass = 'badge-volta';
     else if (data.type === 'Saída') badgeClass = 'badge-saida';
 
+    const isSuperseded = data.superseded === true;
+    const isEdited     = data.edited === true && !isSuperseded;
+
     const isPending = _todayPendingIds.has(data.id);
+
+    // Registro original que foi corrigido: linha apagada, sem ações
+    if (isSuperseded) {
+      const tr = document.createElement('tr');
+      tr.style.opacity = '0.45';
+      tr.innerHTML = `
+        <td><span class="badge ${badgeClass}" style="opacity:0.6">${data.type}</span></td>
+        <td style="text-decoration:line-through; color:var(--text-muted);"><strong>${timeStr}</strong>
+          <span class="badge" style="font-size:0.65rem; margin-left:4px; background:#fee2e2; color:#991b1b; padding:1px 6px; border-radius:6px;">Corrigido</span>
+        </td>
+        <td style="color:var(--text-muted); font-size:0.78rem;">Registro anterior</td>
+      `;
+      tbody.appendChild(tr);
+      return;
+    }
+
     const editBtnOrBadge = isPending
       ? `<span class="badge badge-pending" style="font-size:0.7rem;"><span data-icon="ampulheta" class="icon-sm"></span> Aguardando</span>`
       : `<button class="btn-edit-record" data-id="${data.id}" title="Solicitar edição"><span data-icon="edit" class="icon-sm"></span> Editar</button>`;
 
     const comprovanteBtn = `<button class="btn btn-outline btn-pdf-comprovante" data-id="${data.id}" style="padding:0.2rem 0.5rem; font-size:0.75rem;" title="Baixar Comprovante"><span data-icon="file-text" class="icon-sm"></span> PDF</button>`;
 
+    // Badge de horário corrigido (versão nova vigente)
+    const editedBadge = isEdited
+      ? ` <span style="font-size:0.65rem; margin-left:4px; background:#d1fae5; color:#065f46; padding:1px 6px; border-radius:6px; font-weight:600;">Corrigido</span>`
+      : '';
+
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><span class="badge ${badgeClass}">${data.type}</span></td>
-      <td><strong>${timeStr}</strong>${data.edited ? ' <span class="badge badge-edited" style="font-size:0.7rem; margin-left:4px;">Editado</span>' : ''}</td>
+      <td><strong>${timeStr}</strong>${editedBadge}</td>
       <td style="display:flex; gap:0.5rem; flex-wrap:wrap;">${editBtnOrBadge} ${comprovanteBtn}</td>
     `;
     tbody.appendChild(tr);
@@ -791,13 +815,33 @@ async function loadHistoryRecords(dateStr) {
       else if (data.type?.includes('Volta')) badgeClass = 'badge-volta';
       else if (data.type === 'Saída') badgeClass = 'badge-saida';
 
+      const isSuperseded = data.superseded === true;
+      const isEdited     = data.edited === true && !isSuperseded;
+
+      // Registro original que foi corrigido: riscado, sem ações
+      if (isSuperseded) {
+        const tr = document.createElement('tr');
+        tr.style.opacity = '0.45';
+        tr.innerHTML = `
+          <td><span class="badge ${badgeClass}" style="opacity:0.6">${data.type}</span></td>
+          <td style="text-decoration:line-through; color:var(--text-muted);"><strong>${timeStr}</strong>
+            <span style="font-size:0.65rem; margin-left:4px; background:#fee2e2; color:#991b1b; padding:1px 6px; border-radius:6px; font-weight:600; text-decoration:none; display:inline-block;">Corrigido</span>
+          </td>
+          <td style="color:var(--text-muted); font-size:0.78rem;">Registro anterior</td>
+        `;
+        tbody.appendChild(tr);
+        return;
+      }
+
       const isPending = pendingEditIds.has(data.id);
       const actionCell = isPending
         ? `<span class="badge badge-pending" style="font-size:0.7rem;"><span data-icon="ampulheta" class="icon-sm"></span> Aguardando</span>`
         : `<button class="btn-edit-record btn-edit-hist" data-id="${data.id}" title="Solicitar edição"><span data-icon="edit" class="icon-sm"></span> Editar</button>`;
 
-      const editedBadge = data.edited
-        ? ` <span class="badge badge-edited" style="font-size:0.7rem; margin-left:4px;">Editado</span>` : '';
+      // Versão nova/vigente corrigida
+      const editedBadge = isEdited
+        ? ` <span style="font-size:0.65rem; margin-left:4px; background:#d1fae5; color:#065f46; padding:1px 6px; border-radius:6px; font-weight:600;">Corrigido</span>`
+        : '';
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
