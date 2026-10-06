@@ -1283,6 +1283,50 @@ async function checkPendingRecords() {
 
 if (btnResolvePending) {
   btnResolvePending.addEventListener('click', () => {
+    // Restaurar as datas pendentes na caixa de seleção caso tenham sido sobrescritas pelo histórico
+    insertDate.innerHTML = '<option value="">Selecione uma data</option>';
+    const pendingDates = Object.keys(pendingDaysData).sort();
+    pendingDates.forEach(ds => {
+      const parts = ds.split('-');
+      const opt = document.createElement('option');
+      opt.value = ds;
+      opt.textContent = `${parts[2]}/${parts[1]}/${parts[0]}`;
+      insertDate.appendChild(opt);
+    });
+    insertDate.value = '';
+    insertType.innerHTML = '<option value="">Selecione o tipo</option>';
+    insertType.disabled = true;
+
+    modalInsert.classList.add('active');
+  });
+}
+
+const btnHistAdd = document.getElementById('btn-hist-add');
+if (btnHistAdd) {
+  btnHistAdd.addEventListener('click', () => {
+    const histDateFilter = document.getElementById('hist-date-filter');
+    const ds = histDateFilter.value;
+    if (!ds) {
+      showToast('Selecione um dia primeiro no filtro.', 'warning');
+      return;
+    }
+    
+    // Configura o modal para a data específica escolhida no histórico
+    const parts = ds.split('-');
+    insertDate.innerHTML = `<option value="${ds}">${parts[2]}/${parts[1]}/${parts[0]}</option>`;
+    insertDate.value = ds;
+    
+    // Libera todos os tipos, pois pode ser uma marcação arbitrária faltante
+    insertType.innerHTML = '<option value="">Selecione o tipo</option>';
+    insertType.disabled = false;
+    const ALL_TYPES = ['Entrada', 'Pausa para Almoço', 'Volta do Almoço', 'Saída'];
+    ALL_TYPES.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t;
+      opt.textContent = t;
+      insertType.appendChild(opt);
+    });
+    
     modalInsert.classList.add('active');
   });
 }

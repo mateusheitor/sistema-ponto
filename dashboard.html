@@ -317,14 +317,21 @@
               <span data-icon="calendario" class="icon-sm"></span> Histórico de Ponto
             </h2>
 
-            <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:1.25rem; flex-wrap:wrap;">
-              <div style="flex:1; min-width:160px;">
-                <label class="form-label" for="hist-date-filter" style="margin-bottom:0.3rem; display:block;">Selecionar dia</label>
-                <input type="date" id="hist-date-filter" class="form-input">
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem;">
+              <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap; flex:1;">
+                <div style="flex:1; min-width:160px; max-width:200px;">
+                  <label class="form-label" for="hist-date-filter" style="margin-bottom:0.3rem; display:block;">Selecionar dia</label>
+                  <input type="date" id="hist-date-filter" class="form-input">
+                </div>
+                <button class="btn btn-primary" id="btn-hist-load" style="align-self:flex-end;">
+                  <span data-icon="search" class="icon-sm"></span> Buscar
+                </button>
               </div>
-              <button class="btn btn-primary" id="btn-hist-load" style="align-self:flex-end;">
-                <span data-icon="search" class="icon-sm"></span> Buscar
-              </button>
+              <div style="align-self:flex-end;">
+                <button class="btn btn-outline" id="btn-hist-add">
+                  <span data-icon="file-plus" class="icon-sm"></span> Adicionar Ponto
+                </button>
+              </div>
             </div>
 
             <div class="table-container">
