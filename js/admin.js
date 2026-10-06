@@ -1190,7 +1190,9 @@ async function loadAdminBancoDeHoras(userId, start, end) {
     const records = [];
     snap.forEach(d => {
       const data = d.data();
-      if (data.dateString >= startStr && data.dateString <= endStr) {
+      // Exclui registros originais que foram corrigidos (superseded) —
+      // apenas o registro corrigido (edited: true) deve entrar no cálculo
+      if (data.dateString >= startStr && data.dateString <= endStr && !data.superseded) {
         records.push({ id: d.id, ...data });
       }
     });
