@@ -680,8 +680,9 @@ btnSubmitEdit.addEventListener('click', async () => {
 
     if (file) {
       try {
+        btnSubmitEdit.innerText = 'Enviando arquivo (0%)...';
         const uploadTimeout = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('timeout')), 30000)
+          setTimeout(() => reject(new Error('timeout')), 90000)
         );
         const path = `attachments/edit/${currentUser.uid}/${Date.now()}_${file.name}`;
         const storageRef = ref(storage, path);
@@ -696,11 +697,12 @@ btnSubmitEdit.addEventListener('click', async () => {
       } catch (uploadErr) {
         console.error('Erro no upload do anexo (edit):', uploadErr);
         const msg = uploadErr.message === 'timeout'
-          ? 'O upload do arquivo expirou. A solicitação será enviada sem o anexo.'
-          : 'Não foi possível enviar o arquivo. A solicitação será enviada sem o anexo.';
-        showToast(msg, 'warning');
-        attachmentUrl = null;
-        attachmentName = null;
+          ? 'Tempo esgotado ao enviar o arquivo. Verifique sua conexão e tente novamente.'
+          : `Não foi possível enviar o arquivo: ${uploadErr.message || 'erro desconhecido'}. Tente novamente.`;
+        showToast(msg, 'error');
+        btnSubmitEdit.disabled = false;
+        btnSubmitEdit.innerText = 'Enviar Solicitação';
+        return;
       }
     }
 
@@ -1419,7 +1421,7 @@ if (document.getElementById('form-insert-request')) {
       if (file) {
         try {
           const uploadTimeout = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('timeout')), 30000)
+            setTimeout(() => reject(new Error('timeout')), 90000)
           );
           const path = `attachments/insert/${currentUser.uid}/${Date.now()}_${file.name}`;
           const storageRef = ref(storage, path);
@@ -1434,11 +1436,12 @@ if (document.getElementById('form-insert-request')) {
         } catch (uploadErr) {
           console.error('Erro no upload do anexo (insert):', uploadErr);
           const msg = uploadErr.message === 'timeout'
-            ? 'O upload do arquivo expirou. A solicitação será enviada sem o anexo.'
-            : 'Não foi possível enviar o arquivo. A solicitação será enviada sem o anexo.';
-          showToast(msg, 'warning');
-          attachmentUrl = null;
-          attachmentName = null;
+            ? 'Tempo esgotado ao enviar o arquivo. Verifique sua conexão e tente novamente.'
+            : `Não foi possível enviar o arquivo: ${uploadErr.message || 'erro desconhecido'}. Tente novamente.`;
+          showToast(msg, 'error');
+          btnSubmitInsert.disabled = false;
+          btnSubmitInsert.innerHTML = 'Enviar Solicitação';
+          return;
         }
       }
 
