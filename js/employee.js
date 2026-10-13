@@ -1,8 +1,28 @@
 import {
   auth, onAuthStateChanged, signOut, updatePassword,
-  db, collection, addDoc, query, where, getDocs, doc, getDoc, updateDoc, serverTimestamp, runTransaction,
-  storage, ref, uploadBytes, getDownloadURL
+  db, collection, addDoc, query, where, getDocs, doc, getDoc, updateDoc, serverTimestamp, runTransaction
 } from './firebase-config.js';
+
+// ── Cloudinary upload (substitui Firebase Storage) ────────────────────────────
+const CLOUDINARY_CLOUD = 'j5zym39v';
+const CLOUDINARY_PRESET = 'sistema_ponto';
+
+async function uploadToCloudinary(file, folder = 'sistema-ponto/attachments') {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', CLOUDINARY_PRESET);
+  formData.append('folder', folder);
+  const res = await fetch(
+    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/auto/upload`,
+    { method: 'POST', body: formData }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  return data.secure_url;
+}
 import { insertSVGs, showToast } from './svg.js';
 import { gerarComprovantePDF, gerarRelatorioMensalPDF, gerarEspelhoPontoPDF } from './pdf.js';
 
@@ -680,26 +700,12 @@ btnSubmitEdit.addEventListener('click', async () => {
 
     if (file) {
       try {
-        btnSubmitEdit.innerText = 'Enviando arquivo (0%)...';
-        const uploadTimeout = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('timeout')), 90000)
-        );
-        const path = `attachments/edit/${currentUser.uid}/${Date.now()}_${file.name}`;
-        const storageRef = ref(storage, path);
-        await Promise.race([
-          (async () => {
-            await uploadBytes(storageRef, file, { contentType: file.type || 'application/octet-stream' });
-            attachmentUrl  = await getDownloadURL(storageRef);
-            attachmentName = file.name;
-          })(),
-          uploadTimeout
-        ]);
+        btnSubmitEdit.innerText = 'Enviando arquivo...';
+        attachmentUrl  = await uploadToCloudinary(file, `sistema-ponto/edit/${currentUser.uid}`);
+        attachmentName = file.name;
       } catch (uploadErr) {
         console.error('Erro no upload do anexo (edit):', uploadErr);
-        const msg = uploadErr.message === 'timeout'
-          ? 'Tempo esgotado ao enviar o arquivo. Verifique sua conexão e tente novamente.'
-          : `Não foi possível enviar o arquivo: ${uploadErr.message || 'erro desconhecido'}. Tente novamente.`;
-        showToast(msg, 'error');
+        showToast(`Não foi possível enviar o arquivo: ${uploadErr.message || 'erro desconhecido'}. Tente novamente.`, 'error');
         btnSubmitEdit.disabled = false;
         btnSubmitEdit.innerText = 'Enviar Solicitação';
         return;
@@ -1420,25 +1426,11 @@ if (document.getElementById('form-insert-request')) {
 
       if (file) {
         try {
-          const uploadTimeout = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('timeout')), 90000)
-          );
-          const path = `attachments/insert/${currentUser.uid}/${Date.now()}_${file.name}`;
-          const storageRef = ref(storage, path);
-          await Promise.race([
-            (async () => {
-              await uploadBytes(storageRef, file, { contentType: file.type || 'application/octet-stream' });
-              attachmentUrl  = await getDownloadURL(storageRef);
-              attachmentName = file.name;
-            })(),
-            uploadTimeout
-          ]);
+          attachmentUrl  = await uploadToCloudinary(file, `sistema-ponto/insert/${currentUser.uid}`);
+          attachmentName = file.name;
         } catch (uploadErr) {
           console.error('Erro no upload do anexo (insert):', uploadErr);
-          const msg = uploadErr.message === 'timeout'
-            ? 'Tempo esgotado ao enviar o arquivo. Verifique sua conexão e tente novamente.'
-            : `Não foi possível enviar o arquivo: ${uploadErr.message || 'erro desconhecido'}. Tente novamente.`;
-          showToast(msg, 'error');
+          showToast(`Não foi possível enviar o arquivo: ${uploadErr.message || 'erro desconhecido'}. Tente novamente.`, 'error');
           btnSubmitInsert.disabled = false;
           btnSubmitInsert.innerHTML = 'Enviar Solicitação';
           return;
