@@ -501,7 +501,11 @@ export function gerarEspelhoPontoPDF(records, userName, periodoLabel, totals, da
 
     // Calcular totais do dia
     const byType = {};
-    dayRecords.forEach(r => { byType[r.type] = r.timestamp?.toDate?.() ?? new Date(r.timestamp); });
+    let isDayAbonado = false;
+    dayRecords.forEach(r => {
+      byType[r.type] = r.timestamp?.toDate?.() ?? new Date(r.timestamp);
+      if (r.abonoAtestado || r.type?.includes('Atestado')) isDayAbonado = true;
+    });
     const ent    = byType['Entrada'];
     const pau    = byType['Pausa para Almoço'] || byType['Pausa para Almoco'];
     const vol    = byType['Volta do Almoço']   || byType['Volta do Almoco'];
@@ -510,7 +514,12 @@ export function gerarEspelhoPontoPDF(records, userName, periodoLabel, totals, da
     if (ent && sai) {
       dayWorked = (sai - ent) / 60000 - ((pau && vol) ? (vol - pau) / 60000 : 0);
     }
-    const dayBalance = dayWorked - dailyHours * 60;
+    let dayBalance = dayWorked - dailyHours * 60;
+    let abonoMin = 0;
+    if (isDayAbonado && dayBalance < 0) {
+      abonoMin = Math.abs(dayBalance);
+      dayBalance = 0; // Falta abonada por atestado médico
+    }
 
     dayRecords.forEach(r => {
       if (y > pageH - 22) {
@@ -535,15 +544,20 @@ export function gerarEspelhoPontoPDF(records, userName, periodoLabel, totals, da
         'Saida':             DANGER,
       };
 
+      let typeText = r.type + (r.edited ? ' ✎' : '');
+      if (r.abonoAtestado || r.type?.includes('Atestado')) {
+        typeText += ' [Atestado Medico]';
+      }
+
       let cx = mX + 2;
       const cells = [
         { text: dateLabel, color: TEXT, bold: false },
         { text: fmtTime(ts, true), color: TEXT, bold: true },
-        { text: r.type + (r.edited ? ' ✎' : ''), color: typeColors2[r.type] || TEXT, bold: false },
+        { text: typeText, color: typeColors2[r.type] || (r.abonoAtestado ? [49, 46, 129] : TEXT), bold: false },
         { text: nsr, color: MUTED, bold: false, align: 'center' },
         { text: (r.latitude && r.longitude)
             ? `${r.latitude.toFixed(4)},${r.longitude.toFixed(4)}`
-            : '—', color: MUTED, bold: false },
+            : (r.attachmentUrl ? 'Anexo arquivado' : '—'), color: MUTED, bold: false },
       ];
 
       cells.forEach((cell, ci) => {
@@ -564,17 +578,18 @@ export function gerarEspelhoPontoPDF(records, userName, periodoLabel, totals, da
     });
 
     // Subtotal do dia
-    if (dayWorked > 0) {
+    if (dayWorked > 0 || isDayAbonado) {
       if (y > pageH - 18) { doc.addPage(); y = drawTableHead(22); rowIdx = 0; }
       const balSign = dayBalance >= 0 ? '+' : '';
-      const balCol  = dayBalance >= 0 ? SUCCESS : DANGER;
-      doc.setFillColor(243, 232, 255);
+      const balCol  = (isDayAbonado && dayBalance === 0) ? SUCCESS : (dayBalance >= 0 ? SUCCESS : DANGER);
+      doc.setFillColor(isDayAbonado ? 238 : 243, isDayAbonado ? 242 : 232, 255);
       doc.rect(mX, y, cW, 5.5, 'F');
-      doc.setTextColor(109, 40, 217);
+      doc.setTextColor(isDayAbonado ? 49 : 109, isDayAbonado ? 46 : 40, isDayAbonado ? 129 : 217);
       doc.setFontSize(6);
       doc.setFont('helvetica', 'bold');
+      const abonoTxt = isDayAbonado ? '   (Falta Abonada - Atestado Medico)' : '';
       doc.text(
-        `Total do dia: ${formatMinutes(dayWorked)}   Saldo: ${balSign}${formatMinutes(dayBalance)}`,
+        `Total do dia: ${formatMinutes(dayWorked + abonoMin)}   Saldo: ${balSign}${formatMinutes(dayBalance)}${abonoTxt}`,
         mX + 4, y + 4
       );
       doc.setTextColor(...balCol);
@@ -752,6 +767,26 @@ export function gerarRelatorioMensalPDF(bhData, userName, periodoLabel, totals, 
     
     let label = day.dateLabel;
     if (day.isHoliday) label += ' (Feriado)';
+    if (day.isAbonado) label += ' (Abono Atestado)';
+
+    let workedTxt = '—';
+    if (day.isAbonado && day.abonoMin > 0) {
+      workedTxt = day.workedMin > 0
+        ? `${formatMinutes(day.workedMin + day.abonoMin)}*`
+        : `${formatMinutes(day.abonoMin)}*`;
+    } else if (day.hasData) {
+      workedTxt = formatMinutes(day.workedMin);
+    }
+
+    let balanceTxt = '—';
+    let balanceColor = MUTED;
+    if (day.isAbonado && day.balanceMin === 0) {
+      balanceTxt = '00:00 (Abonado)';
+      balanceColor = [5, 150, 105];
+    } else if (day.hasData) {
+      balanceTxt = balSign + formatMinutes(day.balanceMin);
+      balanceColor = day.balanceMin >= 0 ? [5, 150, 105] : [185, 28, 28];
+    }
 
     const cells = [
       { text: label, color: TEXT, bold: day.hasData },
@@ -759,10 +794,8 @@ export function gerarRelatorioMensalPDF(bhData, userName, periodoLabel, totals, 
       { text: day.pausa,   color: TEXT, bold: false },
       { text: day.volta,   color: TEXT, bold: false },
       { text: day.saida,   color: TEXT, bold: false },
-      { text: day.hasData ? formatMinutes(day.workedMin) : '—', color: TEXT, bold: day.hasData },
-      { text: day.hasData ? balSign + formatMinutes(day.balanceMin) : '—',
-        color: day.hasData ? (day.balanceMin >= 0 ? [5, 150, 105] : [185, 28, 28]) : MUTED,
-        bold: day.hasData },
+      { text: workedTxt, color: TEXT, bold: day.hasData },
+      { text: balanceTxt, color: balanceColor, bold: day.hasData },
     ];
 
     let cx = mX + 2;
@@ -779,6 +812,14 @@ export function gerarRelatorioMensalPDF(bhData, userName, periodoLabel, totals, 
     doc.line(mX, y + rowH, mX + cW, y + rowH);
     y += rowH;
   });
+
+  if (bhData.some(d => d.isAbonado)) {
+    doc.setTextColor(...MUTED);
+    doc.setFontSize(6.5);
+    doc.setFont('helvetica', 'italic');
+    doc.text('* Dias com falta abonada por motivo de Atestado Medico comprovado.', mX, y + 4);
+    y += 6;
+  }
 
   // ── Assinaturas ──
   y += 8;

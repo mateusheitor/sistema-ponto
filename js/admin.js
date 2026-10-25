@@ -82,6 +82,27 @@ const approveInsertInfoType = document.getElementById('approve-insert-info-type'
 const approveInsertInfoTime = document.getElementById('approve-insert-info-time');
 const approveInsertInfoJust = document.getElementById('approve-insert-info-just');
 
+const approveAtestadoAlert = document.getElementById('approve-atestado-alert');
+const approveAbonoCheckbox = document.getElementById('approve-abono-checkbox');
+const approveInsertAtestadoAlert = document.getElementById('approve-insert-atestado-alert');
+const approveInsertAbonoCheckbox = document.getElementById('approve-insert-abono-checkbox');
+
+function isMedicalJustification(text) {
+  if (!text || typeof text !== 'string') return false;
+  const normalized = text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return /\b(atestado|medico|medica|medicos|medicas|consulta|hospital|clinica|clinico|doenca|licenca|repouso|cid|declaracao|exame|odonto|dentista|cirurgia|receita|pronto socorro|upa|ps|internacao|covid|laudo)\b/i.test(normalized);
+}
+
+function isMedicalRequest(req) {
+  if (!req) return false;
+  if (req.isMedicalCertificate || req.abonoAtestado) return true;
+  if (req.type === 'Atestado Médico' || req.type === 'Atestado Médico (Dia Completo)') return true;
+  const hasAttachment = Boolean(req.attachmentUrl);
+  const text = (req.justification || req.insertNote || req.editNote || req.supersededReason || '');
+  const hasJustification = isMedicalJustification(text);
+  return hasAttachment && hasJustification;
+}
+
 let pendingApproval = null; // { reqId, req, btn }
 let pendingApprovalInsert = null;
 
@@ -500,14 +521,18 @@ function renderEditRequestsTable() {
       : `<span style="font-size:0.8rem; color:var(--text-muted);">${req.resolvedAt?.toDate ? req.resolvedAt.toDate().toLocaleDateString('pt-BR') : '—'}</span>`;
 
     const origDateDisplay = req.originalDateString ? req.originalDateString.split('-').reverse().join('/') : '';
+    const isMed = isMedicalRequest(req);
+    const medBadge = isMed
+      ? `<br><span class="badge badge-atestado" style="font-size:0.65rem; margin-top:3px; display:inline-block;" title="Solicitação com Atestado Médico para abono de falta">🩺 Atestado Médico (Abono)</span>`
+      : '';
     const attachmentHtml = req.attachmentUrl
-      ? `<br><a class="attachment-link" href="${req.attachmentUrl}" target="_blank" rel="noopener noreferrer" title="${req.attachmentName || 'Anexo'}">📎 Ver Anexo</a>`
+      ? `<br><a class="attachment-link" href="${req.attachmentUrl}" target="_blank" rel="noopener noreferrer" title="${req.attachmentName || 'Anexo'}" style="color:var(--primary-color); font-weight:600;">📎 ${isMed ? 'Ver Atestado' : 'Ver Anexo'}</a>`
       : '';
     const tr = document.createElement('tr');
     tr.dataset.reqId = req.id;
     tr.innerHTML = `
       <td style="font-size:0.875rem;">${req.userEmail || req.userId}</td>
-      <td><span class="badge ${req.type === 'Entrada' ? 'badge-entrada' : req.type.includes('Pausa') ? 'badge-pausa' : req.type.includes('Volta') ? 'badge-volta' : 'badge-saida'}">${req.type}</span></td>
+      <td><span class="badge ${req.type === 'Entrada' ? 'badge-entrada' : req.type.includes('Pausa') ? 'badge-pausa' : req.type.includes('Volta') ? 'badge-volta' : 'badge-saida'}">${req.type}</span>${medBadge}</td>
       <td>${origTime}<br><small style="color:var(--text-muted);">${origDateDisplay}</small></td>
       <td><strong>${req.requestedTime}</strong></td>
       <td style="font-size:0.8125rem; max-width:200px;">${req.justification}${attachmentHtml}</td>
@@ -620,15 +645,19 @@ function renderInsertRequestsTable() {
          </div>`
       : `<span style="font-size:0.8rem; color:var(--text-muted);">${req.resolvedAt?.toDate ? req.resolvedAt.toDate().toLocaleDateString('pt-BR') : '—'}</span>`;
 
+    const isMed = isMedicalRequest(req);
+    const medBadge = isMed
+      ? `<br><span class="badge badge-atestado" style="font-size:0.65rem; margin-top:3px; display:inline-block;" title="Solicitação com Atestado Médico para abono de falta">🩺 Atestado Médico (Abono)</span>`
+      : '';
     const attachmentHtml = req.attachmentUrl
-      ? `<br><a class="attachment-link" href="${req.attachmentUrl}" target="_blank" rel="noopener noreferrer" title="${req.attachmentName || 'Anexo'}">📎 Ver Anexo</a>`
+      ? `<br><a class="attachment-link" href="${req.attachmentUrl}" target="_blank" rel="noopener noreferrer" title="${req.attachmentName || 'Anexo'}" style="color:var(--primary-color); font-weight:600;">📎 ${isMed ? 'Ver Atestado' : 'Ver Anexo'}</a>`
       : '';
     const tr = document.createElement('tr');
     tr.dataset.reqId = req.id;
     tr.innerHTML = `
       <td style="font-size:0.875rem;">${req.userEmail || req.userId}</td>
       <td><strong>${formattedDate}</strong></td>
-      <td><span class="badge ${req.type === 'Entrada' ? 'badge-entrada' : req.type.includes('Pausa') ? 'badge-pausa' : req.type.includes('Volta') ? 'badge-volta' : 'badge-saida'}">${req.type}</span></td>
+      <td><span class="badge ${req.type === 'Entrada' ? 'badge-entrada' : req.type.includes('Pausa') ? 'badge-pausa' : req.type.includes('Volta') ? 'badge-volta' : 'badge-saida'}">${req.type}</span>${medBadge}</td>
       <td><strong>${req.requestedTime}</strong></td>
       <td style="font-size:0.8125rem; max-width:200px;">${req.justification}${attachmentHtml}</td>
       <td>${statusBadge}</td>
@@ -713,7 +742,30 @@ async function approveInsertRequest(reqId, req, btn) {
   approveInsertInfoType.innerText = req.type;
   approveInsertInfoTime.innerText = req.requestedTime;
   approveInsertInfoJust.innerText = req.justification;
+
+  const isMed = isMedicalRequest(req);
+  if (approveInsertAbonoCheckbox) {
+    approveInsertAbonoCheckbox.checked = isMed;
+  }
+  if (approveInsertAtestadoAlert) {
+    approveInsertAtestadoAlert.style.display = isMed ? 'block' : 'none';
+    if (isMed) {
+      approveInsertAtestadoAlert.innerHTML = '🩺 <strong>Atestado Médico detectado com documento anexado:</strong> Ao aprovar, a falta deste dia será <strong>ABONADA</strong> para o funcionário no banco de horas e espelho de ponto.';
+    }
+  }
+
   modalConfirmApproveInsert.classList.add('active');
+}
+
+if (approveInsertAbonoCheckbox) {
+  approveInsertAbonoCheckbox.addEventListener('change', () => {
+    if (approveInsertAtestadoAlert) {
+      approveInsertAtestadoAlert.style.display = approveInsertAbonoCheckbox.checked ? 'block' : 'none';
+      if (approveInsertAbonoCheckbox.checked) {
+        approveInsertAtestadoAlert.innerHTML = '🩺 <strong>Atestado Médico selecionado:</strong> Ao aprovar, a falta deste dia será <strong>ABONADA</strong> para o funcionário no banco de horas e espelho de ponto.';
+      }
+    }
+  });
 }
 
 btnCloseConfApproveInsert.addEventListener('click', () => modalConfirmApproveInsert.classList.remove('active'));
@@ -723,6 +775,7 @@ modalConfirmApproveInsert.addEventListener('click', e => { if (e.target === moda
 btnConfirmApproveInsert.addEventListener('click', async () => {
   if (!pendingApprovalInsert) return;
   const { reqId, req, btn } = pendingApprovalInsert;
+  const isMed = approveInsertAbonoCheckbox ? approveInsertAbonoCheckbox.checked : isMedicalRequest(req);
   pendingApprovalInsert = null;
   modalConfirmApproveInsert.classList.remove('active');
 
@@ -730,9 +783,9 @@ btnConfirmApproveInsert.addEventListener('click', async () => {
   btn.innerText = '...';
 
   try {
-    const [h, m] = req.requestedTime.split(':').map(Number);
+    const [h, m] = (req.requestedTime || '08:00').split(':').map(Number);
     const dateParts = req.requestedDateString.split('-');
-    const timestamp = new Date(dateParts[0], dateParts[1] - 1, dateParts[2], h, m, 0, 0);
+    const timestamp = new Date(dateParts[0], dateParts[1] - 1, dateParts[2], h || 8, m || 0, 0, 0);
 
     await addDoc(collection(db, 'time_records'), {
       userId: req.userId,
@@ -745,16 +798,21 @@ btnConfirmApproveInsert.addEventListener('click', async () => {
       accuracy: null,
       insertedByAdmin: true,
       insertedAt: new Date(),
-      insertNote: req.justification
+      insertNote: req.justification,
+      abonoAtestado: isMed,
+      abonoReason: isMed ? 'Atestado Médico' : null,
+      attachmentUrl: req.attachmentUrl || null,
+      attachmentName: req.attachmentName || null
     });
 
     await updateDoc(doc(db, 'insert_requests', reqId), {
       status: 'approved',
+      abonoAtestado: isMed,
       resolvedAt: new Date(),
       resolvedBy: currentUser.email
     });
 
-    showToast(`Inserção aprovada! Ponto de "${req.type}" criado com sucesso.`, 'success');
+    showToast(`Inserção aprovada! ${isMed ? 'Falta abonada por atestado médico com sucesso.' : `Ponto de "${req.type}" criado com sucesso.`}`, 'success');
     await loadInsertRequests();
     await loadRecords();
   } catch (err) {
@@ -772,7 +830,30 @@ async function approveEditRequest(reqId, req, btn) {
   approveInfoType.innerText = req.type;
   approveInfoTime.innerText = req.requestedTime;
   approveInfoJust.innerText = req.justification;
+
+  const isMed = isMedicalRequest(req);
+  if (approveAbonoCheckbox) {
+    approveAbonoCheckbox.checked = isMed;
+  }
+  if (approveAtestadoAlert) {
+    approveAtestadoAlert.style.display = isMed ? 'block' : 'none';
+    if (isMed) {
+      approveAtestadoAlert.innerHTML = '🩺 <strong>Atestado Médico detectado com documento anexado:</strong> Ao aprovar, a falta deste dia será <strong>ABONADA</strong> para o funcionário no banco de horas e espelho de ponto.';
+    }
+  }
+
   modalConfirmApprove.classList.add('active');
+}
+
+if (approveAbonoCheckbox) {
+  approveAbonoCheckbox.addEventListener('change', () => {
+    if (approveAtestadoAlert) {
+      approveAtestadoAlert.style.display = approveAbonoCheckbox.checked ? 'block' : 'none';
+      if (approveAbonoCheckbox.checked) {
+        approveAtestadoAlert.innerHTML = '🩺 <strong>Atestado Médico selecionado:</strong> Ao aprovar, a falta deste dia será <strong>ABONADA</strong> para o funcionário no banco de horas e espelho de ponto.';
+      }
+    }
+  });
 }
 
 btnCloseConfApprove.addEventListener('click', () => modalConfirmApprove.classList.remove('active'));
@@ -782,6 +863,7 @@ modalConfirmApprove.addEventListener('click', e => { if (e.target === modalConfi
 btnConfirmApprove.addEventListener('click', async () => {
   if (!pendingApproval) return;
   const { reqId, req, btn } = pendingApproval;
+  const isMed = approveAbonoCheckbox ? approveAbonoCheckbox.checked : isMedicalRequest(req);
   pendingApproval = null;
   modalConfirmApprove.classList.remove('active');
 
@@ -835,11 +917,16 @@ btnConfirmApprove.addEventListener('click', async () => {
       originalTimestamp: originalData.timestamp, // preserva valor antigo
       editReqId:       reqId,
       createdAt:       new Date(),
+      abonoAtestado:   isMed,
+      abonoReason:     isMed ? 'Atestado Médico' : null,
+      attachmentUrl:   req.attachmentUrl || null,
+      attachmentName:  req.attachmentName || null
     });
 
     // 4. Atualiza a solicitação como aprovada
     batch.update(doc(db, 'edit_requests', reqId), {
       status:          'approved',
+      abonoAtestado:   isMed,
       resolvedAt:      new Date(),
       resolvedBy:      currentUser.email,
       newRecordId:     newRecordRef.id,
@@ -847,7 +934,7 @@ btnConfirmApprove.addEventListener('click', async () => {
 
     await batch.commit();
 
-    showToast(`Edição aprovada! Novo registro de "${req.type}" criado para ${req.requestedTime}.`, 'success');
+    showToast(`Edição aprovada! ${isMed ? 'Falta abonada por atestado médico com sucesso.' : `Novo registro de "${req.type}" criado para ${req.requestedTime}.`}`, 'success');
     await loadEditRequests();
     await loadRecords();
 
@@ -1152,20 +1239,35 @@ async function getHolidays(years) {
 
 function calcBancoDeHoras(records, dailyHours = DEFAULT_DAILY_HOURS, holidays = new Set()) {
   const byDay = {};
+  const abonosByDay = {};
+
   records.forEach(r => {
     const ds = r.dateString;
     if (!byDay[ds]) byDay[ds] = {};
-    byDay[ds][r.type] = r.timestamp.toDate();
+    if (r.type) {
+      const ts = r.timestamp?.toDate ? r.timestamp.toDate() : new Date(r.timestamp);
+      byDay[ds][r.type] = ts;
+    }
+    const isMed = r.abonoAtestado || r.type === 'Atestado Médico' || r.type === 'Atestado Médico (Dia Completo)' || (r.attachmentUrl && isMedicalJustification(r.insertNote || r.editNote || r.supersededReason || ''));
+    if (isMed) {
+      abonosByDay[ds] = {
+        reason: r.abonoReason || 'Atestado Médico',
+        attachmentUrl: r.attachmentUrl,
+        attachmentName: r.attachmentName,
+        note: r.insertNote || r.editNote || r.supersededReason || ''
+      };
+    }
   });
 
-  return Object.keys(byDay).sort().map(ds => {
-    const d = byDay[ds];
+  const allDays = new Set([...Object.keys(byDay), ...Object.keys(abonosByDay)]);
+  return Array.from(allDays).sort().map(ds => {
+    const d = byDay[ds] || {};
     const entrada = d['Entrada'], pausa = d['Pausa para Almoço'], volta = d['Volta do Almoço'], saida = d['Saída'];
     let workedMin = 0;
     if (entrada && saida) {
       const total = (saida - entrada) / 60000;
       const pause = (pausa && volta) ? (volta - pausa) / 60000 : 0;
-      workedMin = total - pause;
+      workedMin = Math.max(0, total - pause);
     } else if (entrada && pausa) {
       workedMin = (pausa - entrada) / 60000;
     } else if (volta && saida) {
@@ -1178,12 +1280,25 @@ function calcBancoDeHoras(records, dailyHours = DEFAULT_DAILY_HOURS, holidays = 
     const isDayOff = isWeekend || isHoliday;
 
     const metaMin = isDayOff ? 0 : dailyHours * 60;
-    const balanceMin = workedMin - metaMin;
+    const isAbonado = Boolean(abonosByDay[ds]);
+    const abonoInfo = abonosByDay[ds] || null;
+
+    let abonoMin = 0;
+    let balanceMin = workedMin - metaMin;
+
+    if (isAbonado && !isDayOff) {
+      if (workedMin < metaMin) {
+        abonoMin = metaMin - workedMin;
+        balanceMin = 0; // Falta abonada por atestado médico
+      }
+    }
+
     const fmt = t => t ? t.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
     return {
+      dateString: ds,
       dateLabel: dateObj.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' }),
       entrada: fmt(entrada), pausa: fmt(pausa), volta: fmt(volta), saida: fmt(saida),
-      workedMin, balanceMin, hasData: workedMin > 0,
+      workedMin, abonoMin, isAbonado, abonoInfo, balanceMin, hasData: workedMin > 0 || isAbonado,
       isDayOff, isHoliday, isWeekend
     };
   });
@@ -1243,9 +1358,10 @@ async function loadAdminBancoDeHoras(userId, start, end) {
 
     _adminBhData = calcBancoDeHoras(records, userDailyHours, holidays);
     
-    let totalWorked = 0, totalExpected = 0, daysWithData = 0;
+    let totalWorked = 0, totalExpected = 0, totalAbono = 0, daysWithData = 0;
     _adminBhData.forEach(day => {
       totalWorked += day.workedMin;
+      if (day.abonoMin) totalAbono += day.abonoMin;
       if (day.hasData) {
         daysWithData++;
         if (!day.isDayOff) {
@@ -1254,9 +1370,11 @@ async function loadAdminBancoDeHoras(userId, start, end) {
       }
     });
 
-    const totalBalance = totalWorked - totalExpected;
+    const totalBalance = (totalWorked + totalAbono) - totalExpected;
 
-    adminBhTotalWorked.innerText = formatMinutes(totalWorked);
+    adminBhTotalWorked.innerText = totalAbono > 0
+      ? `${formatMinutes(totalWorked)} (+${formatMinutes(totalAbono)} abonadas)`
+      : formatMinutes(totalWorked);
     adminBhTotalExpected.innerText = formatMinutes(totalExpected);
     adminBhBalance.innerText = (totalBalance >= 0 ? '+' : '') + formatMinutes(totalBalance);
     adminBhDaysWorked.innerText = daysWithData;
@@ -1274,7 +1392,7 @@ async function loadAdminBancoDeHoras(userId, start, end) {
       const startDisplay = startStr.split('-').reverse().join('/');
       const endDisplay = endStr.split('-').reverse().join('/');
       const periodoLabel = `${startDisplay} a ${endDisplay}`;
-      const totals = { totalWorkedMin: totalWorked, totalExpectedMin: totalExpected, totalBalanceMin: totalBalance, daysWorked: daysWithData };
+      const totals = { totalWorkedMin: totalWorked, totalExpectedMin: totalExpected, totalAbonoMin: totalAbono, totalBalanceMin: totalBalance, daysWorked: daysWithData };
       // Carregar companyName e dados do funcionário para o PDF
       let companyName = null;
       let cnpj = null;
@@ -1333,12 +1451,38 @@ function renderAdminBhTable() {
     if (day.isHoliday) dayLabel += ' <br><span class="badge" style="background:#fef3c7; color:#b45309; font-size:0.6rem; margin-top:2px; display:inline-block;">Feriado</span>';
     else if (day.isWeekend) dayLabel += ' <br><span style="font-size:0.7rem; color:var(--text-muted); display:inline-block; margin-top:2px;">(Fim de semana)</span>';
 
+    if (day.isAbonado) {
+      dayLabel += ` <br><span class="badge badge-abono" style="font-size:0.65rem; margin-top:2px; display:inline-block;" title="Falta abonada por Atestado Médico">🩺 Falta Abonada (Atestado)</span>`;
+      if (day.abonoInfo?.attachmentUrl) {
+        dayLabel += ` <a href="${day.abonoInfo.attachmentUrl}" target="_blank" rel="noopener noreferrer" style="font-size:0.7rem; color:var(--primary-color); font-weight:600; text-decoration:none; display:inline-block; margin-top:2px;" title="Ver atestado anexado">📎 Atestado</a>`;
+      }
+    }
+
+    let workedDisplay = '—';
+    if (day.isAbonado && day.abonoMin > 0) {
+      workedDisplay = day.workedMin > 0
+        ? `${formatMinutes(day.workedMin)} <small style="color:#065f46;">(+${formatMinutes(day.abonoMin)} abonadas)</small>`
+        : `<span style="color:#065f46;">${formatMinutes(day.abonoMin)} (Abonado)</span>`;
+    } else if (day.hasData) {
+      workedDisplay = formatMinutes(day.workedMin);
+    }
+
+    let balanceDisplay = '—';
+    let balanceColor = 'var(--text-muted)';
+    if (day.isAbonado && day.balanceMin === 0) {
+      balanceDisplay = '00:00 (Abonado)';
+      balanceColor = '#065f46';
+    } else if (day.hasData) {
+      balanceDisplay = balSign + formatMinutes(day.balanceMin);
+      balanceColor = balClass;
+    }
+
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td style="font-weight:500; white-space:nowrap;">${dayLabel}</td>
       <td>${day.entrada}</td><td>${day.pausa}</td><td>${day.volta}</td><td>${day.saida}</td>
-      <td><strong>${day.hasData ? formatMinutes(day.workedMin) : '—'}</strong></td>
-      <td style="color:${day.hasData ? balClass : 'var(--text-muted)'}; font-weight:600;">${day.hasData ? balSign + formatMinutes(day.balanceMin) : '—'}</td>
+      <td><strong>${workedDisplay}</strong></td>
+      <td style="color:${balanceColor}; font-weight:600;">${balanceDisplay}</td>
     `;
     adminBhTableBody.appendChild(tr);
   });

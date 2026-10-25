@@ -484,9 +484,18 @@
           style="resize: vertical;"></textarea>
       </div>
 
+      <div class="medical-cert-toggle" id="edit-medical-toggle">
+        <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-weight:500; font-size:0.875rem; margin:0;">
+          <input type="checkbox" id="edit-is-medical" style="width:16px; height:16px; cursor:pointer;">
+          <span>Referente a <strong>Atestado Médico</strong> (Abono de falta do dia)</span>
+        </label>
+        <div id="edit-medical-hint" style="display:none; margin-top:0.5rem; font-size:0.8rem; color:#065f46; background:#ecfdf5; padding:0.5rem 0.75rem; border-radius:var(--radius-sm); border:1px solid #a7f3d0;">
+          🩺 <strong>Atestado Médico:</strong> É obrigatório anexar o comprovante abaixo. Ao ser aprovado pelo administrador, a falta deste dia será automaticamente abonada.
+        </div>
+      </div>
+
       <div class="form-group">
-        <label class="form-label">Anexo <span style="color:var(--text-muted); font-weight:400;">(opcional — ex: atestado
-            médico)</span></label>
+        <label class="form-label" id="edit-attachment-label">Anexo <span id="edit-attachment-required" style="color:var(--danger); display:none;">*</span> <span style="color:var(--text-muted); font-weight:400;">(opcional — obrigatório se atestado médico)</span></label>
         <div class="file-upload-area" id="edit-file-area">
           <input type="file" id="edit-attachment" accept="image/*,.pdf,.doc,.docx" title="Selecionar arquivo">
           <span class="file-upload-icon" data-icon="file-plus"></span>
@@ -551,9 +560,18 @@
             placeholder="Descreva por que esqueceu de bater o ponto..." style="resize: vertical;" required></textarea>
         </div>
 
+        <div class="medical-cert-toggle" id="insert-medical-toggle">
+          <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-weight:500; font-size:0.875rem; margin:0;">
+            <input type="checkbox" id="insert-is-medical" style="width:16px; height:16px; cursor:pointer;">
+            <span>Referente a <strong>Atestado Médico</strong> (Abono de falta do dia)</span>
+          </label>
+          <div id="insert-medical-hint" style="display:none; margin-top:0.5rem; font-size:0.8rem; color:#065f46; background:#ecfdf5; padding:0.5rem 0.75rem; border-radius:var(--radius-sm); border:1px solid #a7f3d0;">
+            🩺 <strong>Atestado Médico:</strong> É obrigatório anexar o comprovante abaixo. Ao ser aprovado pelo administrador, a falta deste dia será automaticamente abonada.
+          </div>
+        </div>
+
         <div class="form-group">
-          <label class="form-label">Anexo <span style="color:var(--text-muted); font-weight:400;">(opcional — ex:
-              atestado médico)</span></label>
+          <label class="form-label" id="insert-attachment-label">Anexo <span id="insert-attachment-required" style="color:var(--danger); display:none;">*</span> <span style="color:var(--text-muted); font-weight:400;">(opcional — obrigatório se atestado médico)</span></label>
           <div class="file-upload-area" id="insert-file-area">
             <input type="file" id="insert-attachment" accept="image/*,.pdf,.doc,.docx" title="Selecionar arquivo">
             <span class="file-upload-icon" data-icon="file-plus"></span>

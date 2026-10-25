@@ -56,19 +56,47 @@ const btnSubmitInsert = document.getElementById('btn-submit-insert');
 
 // File upload: edit modal
 const editAttachmentInput = document.getElementById('edit-attachment');
-const editFileArea        = document.getElementById('edit-file-area');
-const editFilePreview     = document.getElementById('edit-file-preview');
-const editFileName        = document.getElementById('edit-file-name');
-const editFileClear       = document.getElementById('edit-file-clear');
+const editFileArea = document.getElementById('edit-file-area');
+const editFilePreview = document.getElementById('edit-file-preview');
+const editFileName = document.getElementById('edit-file-name');
+const editFileClear = document.getElementById('edit-file-clear');
 let _editFile = null; // arquivo selecionado (via input ou drag-and-drop)
 
 // File upload: insert modal
 const insertAttachmentInput = document.getElementById('insert-attachment');
-const insertFileArea        = document.getElementById('insert-file-area');
-const insertFilePreview     = document.getElementById('insert-file-preview');
-const insertFileName        = document.getElementById('insert-file-name');
-const insertFileClear       = document.getElementById('insert-file-clear');
+const insertFileArea = document.getElementById('insert-file-area');
+const insertFilePreview = document.getElementById('insert-file-preview');
+const insertFileName = document.getElementById('insert-file-name');
+const insertFileClear = document.getElementById('insert-file-clear');
 let _insertFile = null; // arquivo selecionado (via input ou drag-and-drop)
+
+// Atestado Médico controls: edit modal
+const editIsMedical = document.getElementById('edit-is-medical');
+const editMedicalToggle = document.getElementById('edit-medical-toggle');
+const editMedicalHint = document.getElementById('edit-medical-hint');
+const editAttachmentRequired = document.getElementById('edit-attachment-required');
+
+// Atestado Médico controls: insert modal
+const insertIsMedical = document.getElementById('insert-is-medical');
+const insertMedicalToggle = document.getElementById('insert-medical-toggle');
+const insertMedicalHint = document.getElementById('insert-medical-hint');
+const insertAttachmentRequired = document.getElementById('insert-attachment-required');
+
+function isMedicalJustification(text) {
+  if (!text || typeof text !== 'string') return false;
+  const normalized = text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return /\b(atestado|medico|medica|medicos|medicas|consulta|hospital|clinica|clinico|doenca|licenca|repouso|cid|declaracao|exame|odonto|dentista|cirurgia|receita|pronto socorro|upa|ps|internacao|covid|laudo)\b/i.test(normalized);
+}
+
+function isMedicalRequest(req) {
+  if (!req) return false;
+  if (req.isMedicalCertificate || req.abonoAtestado) return true;
+  if (req.type === 'Atestado Médico' || req.type === 'Atestado Médico (Dia Completo)') return true;
+  const hasAttachment = Boolean(req.attachmentUrl);
+  const text = (req.justification || req.insertNote || req.editNote || req.supersededReason || '');
+  const hasJustification = isMedicalJustification(text);
+  return hasAttachment && hasJustification;
+}
 
 const bhTableBody = document.getElementById('bh-table-body');
 const bhTotalWorked = document.getElementById('bh-total-worked');
@@ -114,13 +142,13 @@ let todayRegisteredTypes = new Set();
 let editingRecord = null;
 
 // ── Modal pós-batida ───────────────────────────────────────────────────────────
-const modalPunchSuccess  = document.getElementById('modal-punch-success');
-const punchSuccessType   = document.getElementById('punch-success-type');
-const punchSuccessTime   = document.getElementById('punch-success-time');
-const punchSuccessDate   = document.getElementById('punch-success-date');
-const btnModalDownload   = document.getElementById('btn-modal-download-comprovante');
-const btnModalSkip       = document.getElementById('btn-modal-skip-comprovante');
-let   _lastPunchRecord   = null;  // guarda o último registro para o download
+const modalPunchSuccess = document.getElementById('modal-punch-success');
+const punchSuccessType = document.getElementById('punch-success-type');
+const punchSuccessTime = document.getElementById('punch-success-time');
+const punchSuccessDate = document.getElementById('punch-success-date');
+const btnModalDownload = document.getElementById('btn-modal-download-comprovante');
+const btnModalSkip = document.getElementById('btn-modal-skip-comprovante');
+let _lastPunchRecord = null;  // guarda o último registro para o download
 
 if (btnModalSkip) {
   btnModalSkip.addEventListener('click', () => {
@@ -172,9 +200,9 @@ onAuthStateChanged(auth, async (user) => {
         userWorkDays = userData.workDays || DEFAULT_WORK_DAYS;
         // Dados trabalhistas para os PDFs
         userEmployeeData = {
-          cpf:          userData.cpf          || null,
-          matricula:    userData.matricula    || null,
-          cargo:        userData.cargo        || null,
+          cpf: userData.cpf || null,
+          matricula: userData.matricula || null,
+          cargo: userData.cargo || null,
           departamento: userData.departamento || null,
         };
 
@@ -337,9 +365,9 @@ async function registerPunch(type) {
     let latitude, longitude, accuracy;
     try {
       const pos = await getCurrentPosition();
-      latitude  = pos.coords.latitude;
+      latitude = pos.coords.latitude;
       longitude = pos.coords.longitude;
-      accuracy  = pos.coords.accuracy;
+      accuracy = pos.coords.accuracy;
     } catch (geoError) {
       let msg = 'É necessário permitir o acesso à localização para registrar o ponto.';
       if (geoError.code === 1) msg = 'Permissão de localização negada. Permita o acesso ao GPS nas configurações do navegador e tente novamente.';
@@ -375,14 +403,14 @@ async function registerPunch(type) {
       nsr = await getNextNSR(transaction);
       docRef = doc(collection(db, 'time_records'));
       transaction.set(docRef, {
-        userId:    currentUser.uid,
+        userId: currentUser.uid,
         userEmail: currentUser.email || '',
         timestamp: serverTimestamp(),
         type,
         dateString: todayStr,
-        latitude:  latitude ?? null,
+        latitude: latitude ?? null,
         longitude: longitude ?? null,
-        accuracy:  accuracy ?? null,
+        accuracy: accuracy ?? null,
         nsr,                         // NSR sequencial e único (Portaria 671/2021)
         createdAt: serverTimestamp(),
       });
@@ -391,7 +419,7 @@ async function registerPunch(type) {
     // Mostra modal de sucesso com oferta de comprovante
     const recordForModal = {
       id: docRef.id,
-      userId:    currentUser.uid,
+      userId: currentUser.uid,
       userEmail: currentUser.email || '',
       timestamp: now,
       type,
@@ -451,7 +479,7 @@ function renderTodayRecordsTable() {
     else if (data.type === 'Saída') badgeClass = 'badge-saida';
 
     const isSuperseded = data.superseded === true;
-    const isEdited     = data.edited === true && !isSuperseded;
+    const isEdited = data.edited === true && !isSuperseded;
 
     const isPending = _todayPendingIds.has(data.id);
 
@@ -481,9 +509,17 @@ function renderTodayRecordsTable() {
       ? ` <span style="font-size:0.65rem; margin-left:4px; background:#d1fae5; color:#065f46; padding:1px 6px; border-radius:6px; font-weight:600;">Corrigido</span>`
       : '';
 
+    const isMedRecord = data.abonoAtestado || data.type?.includes('Atestado') || (data.attachmentUrl && isMedicalJustification(data.insertNote || data.editNote || ''));
+    const abonoBadge = isMedRecord
+      ? ` <span class="badge badge-abono" style="font-size:0.65rem; margin-left:4px; font-weight:600;" title="Falta abonada por Atestado Médico">🩺 Falta Abonada (Atestado)</span>`
+      : '';
+    const atestadoLink = (isMedRecord && data.attachmentUrl)
+      ? ` <a href="${data.attachmentUrl}" target="_blank" rel="noopener noreferrer" style="font-size:0.75rem; color:var(--primary-color); font-weight:600; text-decoration:none; margin-left:4px;" title="Ver comprovante anexado">📎 Atestado</a>`
+      : '';
+
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><span class="badge ${badgeClass}">${data.type}</span></td>
+      <td><span class="badge ${badgeClass}">${data.type}</span>${abonoBadge}${atestadoLink}</td>
       <td><strong>${timeStr}</strong>${editedBadge}</td>
       <td style="display:flex; gap:0.5rem; flex-wrap:wrap;">${editBtnOrBadge} ${comprovanteBtn}</td>
     `;
@@ -609,10 +645,15 @@ async function loadMyEditRequests() {
       where('status', '==', 'pending')
     ));
     const count = snapEdit.size + snapInsert.size;
+    let medCount = 0;
+    snapEdit.forEach(d => { if (isMedicalRequest(d.data())) medCount++; });
+    snapInsert.forEach(d => { if (isMedicalRequest(d.data())) medCount++; });
+
     if (count > 0) {
+      const medText = medCount > 0 ? ` (${medCount} com Atestado Médico para abono de falta)` : '';
       editRequestsStatus.innerHTML = `
         <div class="edit-info-box">
-          <span data-icon="ampulheta" class="icon-sm"></span> Você tem <strong>${count}</strong> solicitação(ões) (edição/inserção) aguardando aprovação do administrador.
+          <span data-icon="ampulheta" class="icon-sm"></span> Você tem <strong>${count}</strong> solicitação(ões) (edição/inserção)${medText} aguardando aprovação do administrador.
         </div>`;
     } else {
       editRequestsStatus.innerHTML = '';
@@ -633,6 +674,11 @@ function openEditModal(record) {
   editNewTime.value = `${h}:${m}`;
   editJustification.value = '';
 
+  if (editIsMedical) editIsMedical.checked = false;
+  if (editMedicalToggle) editMedicalToggle.classList.remove('active');
+  if (editMedicalHint) editMedicalHint.style.display = 'none';
+  if (editAttachmentRequired) editAttachmentRequired.style.display = 'none';
+
   modalEdit.classList.add('active');
 }
 
@@ -641,6 +687,29 @@ function clearEditFile() {
   editAttachmentInput.value = '';
   editFilePreview.classList.remove('visible');
   editFileName.innerText = '';
+  if (editIsMedical) editIsMedical.checked = false;
+  if (editMedicalToggle) editMedicalToggle.classList.remove('active');
+  if (editMedicalHint) editMedicalHint.style.display = 'none';
+  if (editAttachmentRequired) editAttachmentRequired.style.display = 'none';
+}
+
+if (editJustification) {
+  editJustification.addEventListener('input', () => {
+    if (isMedicalJustification(editJustification.value)) {
+      if (editIsMedical) editIsMedical.checked = true;
+      if (editMedicalToggle) editMedicalToggle.classList.add('active');
+      if (editMedicalHint) editMedicalHint.style.display = 'block';
+      if (editAttachmentRequired) editAttachmentRequired.style.display = 'inline';
+    }
+  });
+}
+if (editIsMedical) {
+  editIsMedical.addEventListener('change', () => {
+    const checked = editIsMedical.checked;
+    if (editMedicalToggle) editMedicalToggle.classList.toggle('active', checked);
+    if (editMedicalHint) editMedicalHint.style.display = checked ? 'block' : 'none';
+    if (editAttachmentRequired) editAttachmentRequired.style.display = checked ? 'inline' : 'none';
+  });
 }
 
 btnCloseEdit.addEventListener('click', () => { modalEdit.classList.remove('active'); clearEditFile(); });
@@ -686,6 +755,13 @@ btnSubmitEdit.addEventListener('click', async () => {
   }
 
   const file = _editFile || editAttachmentInput?.files[0] || null;
+  const isMed = Boolean((editIsMedical && editIsMedical.checked) || isMedicalJustification(justification));
+
+  if (isMed && !file) {
+    showToast('Para abonar a falta por atestado médico, é obrigatório anexar o documento comprobatório.', 'warning');
+    return;
+  }
+
   if (file && file.size > 10 * 1024 * 1024) {
     showToast('O arquivo deve ter no máximo 10MB.', 'warning');
     return;
@@ -701,7 +777,7 @@ btnSubmitEdit.addEventListener('click', async () => {
     if (file) {
       try {
         btnSubmitEdit.innerText = 'Enviando arquivo...';
-        attachmentUrl  = await uploadToCloudinary(file, `sistema-ponto/edit/${currentUser.uid}`);
+        attachmentUrl = await uploadToCloudinary(file, `sistema-ponto/edit/${currentUser.uid}`);
         attachmentName = file.name;
       } catch (uploadErr) {
         console.error('Erro no upload do anexo (edit):', uploadErr);
@@ -722,6 +798,8 @@ btnSubmitEdit.addEventListener('click', async () => {
       requestedTime: newTime,
       justification,
       ...(attachmentUrl ? { attachmentUrl, attachmentName } : {}),
+      isMedicalCertificate: Boolean(isMed && (file || attachmentUrl)),
+      abonoAtestado: Boolean(isMed && (file || attachmentUrl)),
       status: 'pending',
       createdAt: new Date()
     });
@@ -824,7 +902,7 @@ async function loadHistoryRecords(dateStr) {
       else if (data.type === 'Saída') badgeClass = 'badge-saida';
 
       const isSuperseded = data.superseded === true;
-      const isEdited     = data.edited === true && !isSuperseded;
+      const isEdited = data.edited === true && !isSuperseded;
 
       // Registro original que foi corrigido: riscado, sem ações
       if (isSuperseded) {
@@ -850,10 +928,17 @@ async function loadHistoryRecords(dateStr) {
       const editedBadge = isEdited
         ? ` <span style="font-size:0.65rem; margin-left:4px; background:#d1fae5; color:#065f46; padding:1px 6px; border-radius:6px; font-weight:600;">Corrigido</span>`
         : '';
+      const isMedRecord = data.abonoAtestado || data.type?.includes('Atestado') || (data.attachmentUrl && isMedicalJustification(data.insertNote || data.editNote || ''));
+      const abonoBadge = isMedRecord
+        ? ` <span class="badge badge-abono" style="font-size:0.65rem; margin-left:4px; font-weight:600;" title="Falta abonada por Atestado Médico">🩺 Falta Abonada (Atestado)</span>`
+        : '';
+      const atestadoLink = (isMedRecord && data.attachmentUrl)
+        ? ` <a href="${data.attachmentUrl}" target="_blank" rel="noopener noreferrer" style="font-size:0.75rem; color:var(--primary-color); font-weight:600; text-decoration:none; margin-left:4px;" title="Ver comprovante anexado">📎 Atestado</a>`
+        : '';
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><span class="badge ${badgeClass}">${data.type}</span></td>
+        <td><span class="badge ${badgeClass}">${data.type}</span>${abonoBadge}${atestadoLink}</td>
         <td><strong>${timeStr}</strong>${editedBadge}</td>
         <td>${actionCell}</td>
       `;
@@ -876,8 +961,8 @@ async function loadHistoryRecords(dateStr) {
   }
 }
 
-const histDateInput  = document.getElementById('hist-date-filter');
-const btnHistLoad    = document.getElementById('btn-hist-load');
+const histDateInput = document.getElementById('hist-date-filter');
+const btnHistLoad = document.getElementById('btn-hist-load');
 
 if (histDateInput) {
   // Define o valor inicial como hoje
@@ -960,18 +1045,32 @@ async function getHolidays(years) {
 }
 
 function calcBancoDeHoras(records, dailyHours = DEFAULT_DAILY_HOURS, holidays = new Set()) {
-
   const byDay = {};
+  const abonosByDay = {};
+
   records.forEach(r => {
     const ds = r.dateString;
     if (!byDay[ds]) byDay[ds] = {};
-    byDay[ds][r.type] = r.timestamp.toDate();
+    if (r.type) {
+      const ts = r.timestamp?.toDate ? r.timestamp.toDate() : new Date(r.timestamp);
+      byDay[ds][r.type] = ts;
+    }
+    const isMed = r.abonoAtestado || r.type === 'Atestado Médico' || r.type === 'Atestado Médico (Dia Completo)' || (r.attachmentUrl && isMedicalJustification(r.insertNote || r.editNote || r.supersededReason || ''));
+    if (isMed) {
+      abonosByDay[ds] = {
+        reason: r.abonoReason || 'Atestado Médico',
+        attachmentUrl: r.attachmentUrl,
+        attachmentName: r.attachmentName,
+        note: r.insertNote || r.editNote || r.supersededReason || ''
+      };
+    }
   });
 
-  const days = Object.keys(byDay).sort();
+  const allDays = new Set([...Object.keys(byDay), ...Object.keys(abonosByDay)]);
+  const days = Array.from(allDays).sort();
 
   return days.map(ds => {
-    const d = byDay[ds];
+    const d = byDay[ds] || {};
     const entrada = d['Entrada'];
     const pausa = d['Pausa para Almoço'];
     const volta = d['Volta do Almoço'];
@@ -982,12 +1081,10 @@ function calcBancoDeHoras(records, dailyHours = DEFAULT_DAILY_HOURS, holidays = 
     if (entrada && saida) {
       const totalMin = (saida - entrada) / 60000;
       const pauseMin = (pausa && volta) ? (volta - pausa) / 60000 : 0;
-      workedMin = totalMin - pauseMin;
+      workedMin = Math.max(0, totalMin - pauseMin);
     } else if (entrada && pausa) {
-
       workedMin = (pausa - entrada) / 60000;
     } else if (volta && saida) {
-
       workedMin = (saida - volta) / 60000;
     }
 
@@ -997,7 +1094,18 @@ function calcBancoDeHoras(records, dailyHours = DEFAULT_DAILY_HOURS, holidays = 
     const isDayOff = isWeekend || isHoliday;
 
     const metaMin = isDayOff ? 0 : dailyHours * 60;
-    const balanceMin = workedMin - metaMin;
+    const isAbonado = Boolean(abonosByDay[ds]);
+    const abonoInfo = abonosByDay[ds] || null;
+
+    let abonoMin = 0;
+    let balanceMin = workedMin - metaMin;
+
+    if (isAbonado && !isDayOff) {
+      if (workedMin < metaMin) {
+        abonoMin = metaMin - workedMin;
+        balanceMin = 0; // Falta abonada: o funcionário tem a falta abonada por atestado médico
+      }
+    }
 
     const fmt = t => t ? t.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
 
@@ -1009,8 +1117,11 @@ function calcBancoDeHoras(records, dailyHours = DEFAULT_DAILY_HOURS, holidays = 
       volta: fmt(volta),
       saida: fmt(saida),
       workedMin,
+      abonoMin,
+      isAbonado,
+      abonoInfo,
       balanceMin,
-      hasData: workedMin > 0,
+      hasData: workedMin > 0 || isAbonado,
       isDayOff,
       isWeekend,
       isHoliday
@@ -1051,10 +1162,10 @@ async function loadBancoDeHoras(start, end) {
       const startDisplay = startStr.split('-').reverse().join('/');
       const endDisplay = endStr.split('-').reverse().join('/');
       bhTableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">Nenhum registro neste período (${startDisplay} a ${endDisplay}).</td></tr>`;
-      bhTotalWorked.innerText   = '00:00';
+      bhTotalWorked.innerText = '00:00';
       bhTotalExpected.innerText = '00:00';
-      bhBalance.innerText       = '00:00';
-      bhDaysWorked.innerText    = '0';
+      bhBalance.innerText = '00:00';
+      bhDaysWorked.innerText = '0';
       const btnExport = document.getElementById('btn-export-pdf');
       if (btnExport) btnExport.disabled = true;
       const btnEspelho = document.getElementById('btn-export-espelho');
@@ -1071,10 +1182,12 @@ async function loadBancoDeHoras(start, end) {
 
     let totalWorkedMin = 0;
     let totalExpectedMin = 0;
+    let totalAbonoMin = 0;
     let daysWithData = 0;
 
     _employeeBhData.forEach(day => {
       totalWorkedMin += day.workedMin;
+      if (day.abonoMin) totalAbonoMin += day.abonoMin;
       if (day.hasData) {
         daysWithData++;
         if (!day.isDayOff) {
@@ -1083,9 +1196,11 @@ async function loadBancoDeHoras(start, end) {
       }
     });
 
-    const totalBalanceMin = totalWorkedMin - totalExpectedMin;
+    const totalBalanceMin = (totalWorkedMin + totalAbonoMin) - totalExpectedMin;
 
-    bhTotalWorked.innerText = formatMinutes(totalWorkedMin);
+    bhTotalWorked.innerText = totalAbonoMin > 0
+      ? `${formatMinutes(totalWorkedMin)} (+${formatMinutes(totalAbonoMin)} abonadas)`
+      : formatMinutes(totalWorkedMin);
     bhTotalExpected.innerText = formatMinutes(totalExpectedMin);
     bhBalance.innerText = (totalBalanceMin >= 0 ? '+' : '') + formatMinutes(totalBalanceMin);
     bhDaysWorked.innerText = daysWithData;
@@ -1104,7 +1219,7 @@ async function loadBancoDeHoras(start, end) {
       const startDisplay = startStr.split('-').reverse().join('/');
       const endDisplay = endStr.split('-').reverse().join('/');
       const periodoLabel = `${startDisplay} a ${endDisplay}`;
-      const totals = { totalWorkedMin, totalExpectedMin, totalBalanceMin, daysWorked: daysWithData };
+      const totals = { totalWorkedMin, totalExpectedMin, totalAbonoMin, totalBalanceMin, daysWorked: daysWithData };
       btnExport.onclick = () => {
         gerarRelatorioMensalPDF(_employeeBhData, userNameStr, periodoLabel, totals, userDailyHours, companyName, userEmployeeData);
       };
@@ -1117,7 +1232,7 @@ async function loadBancoDeHoras(start, end) {
       const startDisplay = startStr.split('-').reverse().join('/');
       const endDisplay = endStr.split('-').reverse().join('/');
       const periodoLabel = `${startDisplay} a ${endDisplay}`;
-      const totals = { totalWorkedMin, totalExpectedMin, totalBalanceMin, daysWorked: daysWithData };
+      const totals = { totalWorkedMin, totalExpectedMin, totalAbonoMin, totalBalanceMin, daysWorked: daysWithData };
       // Passa os registros brutos (não agregados) para o espelho de ponto
       btnEspelho.onclick = () => {
         gerarEspelhoPontoPDF(records, userNameStr, periodoLabel, totals, userDailyHours, companyName, userEmployeeData);
@@ -1216,28 +1331,76 @@ async function checkPendingRecords() {
       collection(db, 'time_records'),
       where('userId', '==', currentUser.uid)
     ));
-    const requestsSnap = await getDocs(query(
+
+    // Busca insert_requests aprovadas (para detectar dias abonados por atestado)
+    const approvedInsertSnap = await getDocs(query(
+      collection(db, 'insert_requests'),
+      where('userId', '==', currentUser.uid),
+      where('status', '==', 'approved')
+    )).catch(() => ({ forEach: () => {} }));
+
+    // Busca insert_requests pendentes (o dia está "em tratamento")
+    const pendingInsertSnap = await getDocs(query(
       collection(db, 'insert_requests'),
       where('userId', '==', currentUser.uid),
       where('status', '==', 'pending')
     ));
 
+    // Busca edit_requests pendentes (o batimento está "em tratamento")
+    const pendingEditSnap = await getDocs(query(
+      collection(db, 'edit_requests'),
+      where('userId', '==', currentUser.uid),
+      where('status', '==', 'pending')
+    )).catch(() => ({ forEach: () => {} }));
+
+    const abonedDays = new Set();
     const recordsByDay = {};
+
     recordsSnap.forEach(d => {
       const data = d.data();
+
+      // Ignorar registros superseded na contagem de batimentos (mas checar atestado neles)
+      const isMed = data.abonoAtestado || data.type === 'Atestado Médico' || data.type === 'Atestado Médico (Dia Completo)' || (data.attachmentUrl && isMedicalJustification(data.insertNote || data.editNote || data.supersededReason || ''));
+      if (isMed) abonedDays.add(data.dateString);
+
+      // Registros superseded não contam para verificar se o ponto está completo
+      if (data.superseded === true) return;
+
       if (data.dateString >= startStr && data.dateString <= endStr) {
         if (!recordsByDay[data.dateString]) recordsByDay[data.dateString] = new Set();
-        recordsByDay[data.dateString].add(data.type);
+        if (data.type) recordsByDay[data.dateString].add(data.type);
       }
     });
 
-    const pendingRequestsByDay = {};
-    requestsSnap.forEach(d => {
+    // insert_requests APROVADAS com atestado → dia abonado
+    approvedInsertSnap.forEach(d => {
       const data = d.data();
+      const isMed = data.abonoAtestado || data.isMedicalCertificate || data.type === 'Atestado Médico (Dia Completo)' || (data.attachmentUrl && isMedicalJustification(data.justification || ''));
+      if (isMed) abonedDays.add(data.requestedDateString);
+    });
+
+    const pendingRequestsByDay = {};
+
+    // insert_requests pendentes: o dia está "sendo tratado" pelos tipos pedidos
+    pendingInsertSnap.forEach(d => {
+      const data = d.data();
+      const isMed = data.isMedicalCertificate || data.abonoAtestado || data.type === 'Atestado Médico (Dia Completo)' || (data.attachmentUrl && isMedicalJustification(data.justification || ''));
+      if (isMed) abonedDays.add(data.requestedDateString);
+
       if (data.requestedDateString >= startStr && data.requestedDateString <= endStr) {
         if (!pendingRequestsByDay[data.requestedDateString]) pendingRequestsByDay[data.requestedDateString] = new Set();
         pendingRequestsByDay[data.requestedDateString].add(data.type);
       }
+    });
+
+    // edit_requests pendentes: o batimento está "sendo tratado"
+    pendingEditSnap.forEach(d => {
+      const data = d.data();
+      const dateStr = data.originalDateString;
+      if (!dateStr || dateStr < startStr || dateStr > endStr) return;
+      if (!pendingRequestsByDay[dateStr]) pendingRequestsByDay[dateStr] = new Set();
+      // Marca o tipo original como "coberto" pela solicitação pendente
+      if (data.type) pendingRequestsByDay[dateStr].add(data.type);
     });
 
     const years = new Set([start.getFullYear(), end.getFullYear()]);
@@ -1251,6 +1414,7 @@ async function checkPendingRecords() {
 
       const ds = toDateStr(d);
       if (holidays.has(ds)) continue; // Feriados não geram pendência
+      if (abonedDays.has(ds)) continue; // Dias abonados por atestado não geram pendência
 
       const existing = recordsByDay[ds] || new Set();
       const requested = pendingRequestsByDay[ds] || new Set();
@@ -1305,6 +1469,7 @@ if (btnResolvePending) {
     insertType.innerHTML = '<option value="">Selecione o tipo</option>';
     insertType.disabled = true;
 
+    clearInsertFile();
     modalInsert.classList.add('active');
   });
 }
@@ -1318,27 +1483,27 @@ if (btnHistAdd) {
       showToast('Selecione um dia primeiro no filtro.', 'warning');
       return;
     }
-    
+
     // Configura o modal para a data específica escolhida no histórico
     const parts = ds.split('-');
     insertDate.innerHTML = `<option value="${ds}">${parts[2]}/${parts[1]}/${parts[0]}</option>`;
     insertDate.value = ds;
-    
-    // Libera todos os tipos, pois pode ser uma marcação arbitrária faltante
+
+    // Libera todos os tipos, mais a opção de Atestado Médico
     insertType.innerHTML = '<option value="">Selecione o tipo</option>';
     insertType.disabled = false;
-    const ALL_TYPES = ['Entrada', 'Pausa para Almoço', 'Volta do Almoço', 'Saída'];
+    const ALL_TYPES = ['Entrada', 'Pausa para Almoço', 'Volta do Almoço', 'Saída', 'Atestado Médico (Dia Completo)'];
     ALL_TYPES.forEach(t => {
       const opt = document.createElement('option');
       opt.value = t;
-      opt.textContent = t;
+      opt.textContent = t.includes('Atestado') ? `🩺 ${t}` : t;
       insertType.appendChild(opt);
     });
-    
+
+    clearInsertFile();
     modalInsert.classList.add('active');
   });
 }
-
 
 if (insertDate) {
   insertDate.addEventListener('change', () => {
@@ -1352,8 +1517,25 @@ if (insertDate) {
         opt.textContent = type;
         insertType.appendChild(opt);
       });
+      // Permite também justificar o dia completo com Atestado Médico
+      const optMed = document.createElement('option');
+      optMed.value = 'Atestado Médico (Dia Completo)';
+      optMed.textContent = '🩺 Atestado Médico (Dia Completo)';
+      insertType.appendChild(optMed);
     } else {
       insertType.disabled = true;
+    }
+  });
+}
+
+if (insertType) {
+  insertType.addEventListener('change', () => {
+    if (insertType.value === 'Atestado Médico (Dia Completo)') {
+      if (insertIsMedical) insertIsMedical.checked = true;
+      if (insertMedicalToggle) insertMedicalToggle.classList.add('active');
+      if (insertMedicalHint) insertMedicalHint.style.display = 'block';
+      if (insertAttachmentRequired) insertAttachmentRequired.style.display = 'inline';
+      if (insertTime && !insertTime.value) insertTime.value = '08:00';
     }
   });
 }
@@ -1363,6 +1545,29 @@ function clearInsertFile() {
   insertAttachmentInput.value = '';
   insertFilePreview.classList.remove('visible');
   insertFileName.innerText = '';
+  if (insertIsMedical) insertIsMedical.checked = false;
+  if (insertMedicalToggle) insertMedicalToggle.classList.remove('active');
+  if (insertMedicalHint) insertMedicalHint.style.display = 'none';
+  if (insertAttachmentRequired) insertAttachmentRequired.style.display = 'none';
+}
+
+if (insertJustification) {
+  insertJustification.addEventListener('input', () => {
+    if (isMedicalJustification(insertJustification.value)) {
+      if (insertIsMedical) insertIsMedical.checked = true;
+      if (insertMedicalToggle) insertMedicalToggle.classList.add('active');
+      if (insertMedicalHint) insertMedicalHint.style.display = 'block';
+      if (insertAttachmentRequired) insertAttachmentRequired.style.display = 'inline';
+    }
+  });
+}
+if (insertIsMedical) {
+  insertIsMedical.addEventListener('change', () => {
+    const checked = insertIsMedical.checked;
+    if (insertMedicalToggle) insertMedicalToggle.classList.toggle('active', checked);
+    if (insertMedicalHint) insertMedicalHint.style.display = checked ? 'block' : 'none';
+    if (insertAttachmentRequired) insertAttachmentRequired.style.display = checked ? 'inline' : 'none';
+  });
 }
 
 // File upload UI — insert
@@ -1399,7 +1604,7 @@ if (btnCloseInsert) {
 if (document.getElementById('form-insert-request')) {
   document.getElementById('form-insert-request').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const ds   = insertDate.value;
+    const ds = insertDate.value;
     const type = insertType.value;
     const time = insertTime.value;
     const just = insertJustification.value.trim();
@@ -1410,6 +1615,13 @@ if (document.getElementById('form-insert-request')) {
     }
 
     const file = _insertFile || insertAttachmentInput?.files[0] || null;
+    const isMed = Boolean((insertIsMedical && insertIsMedical.checked) || (type && type.includes('Atestado')) || isMedicalJustification(just));
+
+    if (isMed && !file) {
+      showToast('Para abonar a falta por atestado médico, é obrigatório anexar o documento comprobatório.', 'warning');
+      return;
+    }
+
     if (file && file.size > 10 * 1024 * 1024) {
       showToast('O arquivo deve ter no máximo 10MB.', 'warning');
       return;
@@ -1421,12 +1633,12 @@ if (document.getElementById('form-insert-request')) {
       : '<span class="loader" style="width:16px;height:16px;border-width:2px;border-top-color:transparent;display:inline-block;vertical-align:middle;margin-right:8px;"></span> Enviando...';
 
     try {
-      let attachmentUrl  = null;
+      let attachmentUrl = null;
       let attachmentName = null;
 
       if (file) {
         try {
-          attachmentUrl  = await uploadToCloudinary(file, `sistema-ponto/insert/${currentUser.uid}`);
+          attachmentUrl = await uploadToCloudinary(file, `sistema-ponto/insert/${currentUser.uid}`);
           attachmentName = file.name;
         } catch (uploadErr) {
           console.error('Erro no upload do anexo (insert):', uploadErr);
@@ -1445,6 +1657,8 @@ if (document.getElementById('form-insert-request')) {
         requestedTime: time,
         justification: just,
         ...(attachmentUrl ? { attachmentUrl, attachmentName } : {}),
+        isMedicalCertificate: Boolean(isMed && (file || attachmentUrl)),
+        abonoAtestado: Boolean(isMed && (file || attachmentUrl)),
         status: 'pending',
         createdAt: serverTimestamp()
       });
@@ -1488,17 +1702,43 @@ function renderEmployeeBhTable() {
   pageData.forEach(day => {
     const balClass = day.balanceMin >= 0 ? '#065f46' : '#991b1b';
     const balSign = day.balanceMin >= 0 ? '+' : '';
-    
+
     let dayLabel = day.dateLabel;
     if (day.isHoliday) dayLabel += ' <span class="badge" style="background:#fef3c7; color:#b45309; font-size:0.6rem; margin-left:4px;">Feriado</span>';
     else if (day.isWeekend) dayLabel += ' <span style="font-size:0.7rem; color:var(--text-muted); margin-left:4px;">(Fim de semana)</span>';
+
+    if (day.isAbonado) {
+      dayLabel += ` <span class="badge badge-abono" style="font-size:0.65rem; margin-left:4px;" title="Falta abonada por Atestado Médico">🩺 Falta Abonada (Atestado)</span>`;
+      if (day.abonoInfo?.attachmentUrl) {
+        dayLabel += ` <a href="${day.abonoInfo.attachmentUrl}" target="_blank" rel="noopener noreferrer" style="font-size:0.7rem; color:var(--primary-color); font-weight:600; text-decoration:none; margin-left:4px;" title="Ver atestado anexado">📎 Atestado</a>`;
+      }
+    }
+
+    let workedDisplay = '—';
+    if (day.isAbonado && day.abonoMin > 0) {
+      workedDisplay = day.workedMin > 0
+        ? `${formatMinutes(day.workedMin)} <small style="color:#065f46;">(+${formatMinutes(day.abonoMin)} abonadas)</small>`
+        : `<span style="color:#065f46;">${formatMinutes(day.abonoMin)} (Abonado)</span>`;
+    } else if (day.hasData) {
+      workedDisplay = formatMinutes(day.workedMin);
+    }
+
+    let balanceDisplay = '—';
+    let balanceColor = 'var(--text-muted)';
+    if (day.isAbonado && day.balanceMin === 0) {
+      balanceDisplay = '00:00 (Abonado)';
+      balanceColor = '#065f46';
+    } else if (day.hasData) {
+      balanceDisplay = balSign + formatMinutes(day.balanceMin);
+      balanceColor = balClass;
+    }
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td style="font-weight:500; white-space:nowrap;">${dayLabel}</td>
       <td>${day.entrada}</td><td>${day.pausa}</td><td>${day.volta}</td><td>${day.saida}</td>
-      <td><strong>${day.hasData ? formatMinutes(day.workedMin) : '—'}</strong></td>
-      <td style="color:${day.hasData ? balClass : 'var(--text-muted)'}; font-weight:600;">${day.hasData ? balSign + formatMinutes(day.balanceMin) : '—'}</td>
+      <td><strong>${workedDisplay}</strong></td>
+      <td style="color:${balanceColor}; font-weight:600;">${balanceDisplay}</td>
     `;
     bhTableBody.appendChild(tr);
   });
